@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option go_package = "nukeship/pb";
+
+service RoomService {
+    rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse);
+    rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
+    rpc SubscribeMessages (SubscribeMessagesRequest) returns (stream MessageStreamResponse);
+}
+
+message SubscribeMessagesRequest {
+    string client_id = 1;
+}
+
+message MessageStreamResponse {
+  string message = 1;
+}
+
+message CreateRoomRequest {
+    string client_id = 1;
+}
+
+message CreateRoomResponse {
+    bool status = 1;
+    string room_id = 2;
+}
+
+message JoinRoomRequest {
+    string client_id = 1;
+    string code = 2;
+}
+
+message JoinRoomResponse {
+    bool status = 1;
+}
