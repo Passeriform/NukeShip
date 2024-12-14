@@ -4,17 +4,23 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"nukeship/internal/pb"
 	"nukeship/internal/utility"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/status"
 )
 
 type Server struct {
 	pb.UnimplementedRoomServiceServer
+	ShutdownCtx context.Context
 }
 
 type Client struct {
@@ -51,6 +57,10 @@ func (s *Server) SubscribeMessages(in *pb.SubscribeMessagesRequest, srv grpc.Ser
 			log.Println("Client was disconnected or context was cancelled")
 			return nil
 
+		case <-s.ShutdownCtx.Done():
+			log.Println("Server shutting down. Gracefully disconnecting clients")
+			return status.Errorf(codes.Unavailable, "Server is shutting down")
+
 		case <-ticker.C:
 			err := srv.Send(&pb.MessageStreamResponse{Message: "Updates..."})
 			if err != nil {
@@ -67,9 +77,19 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	shutdownCtx, stop := context.WithCancel(context.Background())
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-c
+		log.Println("Received shutdown signal. Relaying stop to server context")
+		stop()
+	}()
+
 	s := grpc.NewServer(grpc.KeepaliveEnforcementPolicy(enforcementPolicy), grpc.KeepaliveParams(keepAliveParams))
 
-	pb.RegisterRoomServiceServer(s, &Server{})
+	pb.RegisterRoomServiceServer(s, &Server{ShutdownCtx: shutdownCtx})
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
