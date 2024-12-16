@@ -1,5 +1,16 @@
 package utility
 
+// TODO: Migrate to use iter.Seq
+
+func Map[T, U any](slice []T, predicate func(T) U) []U {
+	result := make([]U, len(slice))
+
+	for i := range slice {
+		result[i] = predicate(slice[i])
+	}
+	return result
+}
+
 func Filter[T any](slice []T, matchFunc func(T) bool) []T {
 	result := []T{}
 

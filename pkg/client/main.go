@@ -22,7 +22,7 @@ func main() {
 	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithKeepaliveParams(keepAliveParams))
 
 	if err != nil {
-		log.Fatalf("could not connect: %v", err)
+		log.Panicf("could not connect: %v", err)
 	}
 	defer conn.Close()
 
@@ -38,7 +38,7 @@ func main() {
 
 	s, err := client.SubscribeMessages(subCtx, &pb.SubscribeMessagesRequest{ClientId: clientId})
 	if err != nil {
-		log.Fatalf("subscription to server messages failed: %v", err)
+		log.Panicf("subscription to server messages failed: %v", err)
 	}
 
 	done := make(chan bool)
@@ -52,7 +52,7 @@ func main() {
 				break
 			}
 			if err != nil {
-				log.Fatalf("received error frame: %v", err)
+				log.Panicf("received error frame: %v", err)
 				return err
 			}
 			log.Println(update.GetMessage())
@@ -62,7 +62,7 @@ func main() {
 
 	r, err := client.CreateRoom(ctx, &pb.CreateRoomRequest{ClientId: clientId})
 	if err != nil {
-		log.Fatalf("could not create room: %v", err)
+		log.Panicf("could not create room: %v", err)
 	}
 
 	log.Printf("Room created: %s", r.GetRoomId())

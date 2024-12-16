@@ -74,7 +74,7 @@ func (s *Server) SubscribeMessages(in *pb.SubscribeMessagesRequest, srv grpc.Ser
 func main() {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Panicf("failed to listen: %v", err)
 	}
 
 	shutdownCtx, stop := context.WithCancel(context.Background())
@@ -92,7 +92,7 @@ func main() {
 	pb.RegisterRoomServiceServer(s, &Server{ShutdownCtx: shutdownCtx})
 
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Panicf("failed to serve: %v", err)
 	}
 
 }
