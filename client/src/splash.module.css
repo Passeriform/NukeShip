@@ -1,0 +1,58 @@
+@import url("./glitch.css");
+
+:root {
+    --glitch-red-layer-color: #e0287d;
+    --glitch-blue-layer-color: #1bc7fb;
+}
+
+.container {
+    text-align: center;
+    position: relative;
+}
+
+.title {
+    display: inline-block;
+    z-index: 2;
+}
+
+.layers {
+    position: relative;
+}
+
+.layers::before,
+.layers::after {
+    content: attr(data-text);
+    position: absolute;
+    width: 110%;
+    z-index: -1;
+}
+
+.layers::before {
+    top: 10px;
+    left: 15px;
+    color: var(--glitch-red-layer-color);
+}
+
+.layers::after {
+    top: 5px;
+    left: -10px;
+    color: var(--glitch-blue-layer-color);
+}
+
+.glitch span {
+    animation: glitch-path 5s step-end infinite;
+}
+
+.glitch::before {
+    animation: glitch-path 5s step-end infinite,
+        glitch-opacity 5s step-end infinite,
+        glitch-font 8s step-end infinite,
+        glitch-movement 10s step-end infinite;
+}
+
+.glitch::after {
+    animation: glitch-path 5s step-end infinite,
+        glitch-opacity 5s step-end infinite,
+        glitch-font 7s step-end infinite,
+        glitch-movement 8s step-end infinite;
+}
