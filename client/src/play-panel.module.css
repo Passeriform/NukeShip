@@ -1,13 +1,13 @@
 .container {
-    /* Reduce this bloat with tailwind */
+    /* TODO: Reduce this bloat with tailwind. */
     position: relative;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-evenly;
-    border: 1px solid #00d6fc;
+    border: 1px solid var(--accent-color);
     border-radius: 0.5rem;
-    background: #1e1d2fcc;
+    background-color: #1e1d2fcc;
     gap: 2rem;
 }
 
@@ -23,5 +23,5 @@
 .divider {
     width: 2rem;
     height: 24rem;
-    background-image: repeating-linear-gradient(-45deg, #00d6fc, #00d6fc 10px, transparent 10px, transparent 20px);
+    background-image: repeating-linear-gradient(-45deg, var(--accent-color), var(--accent-color) 10px, transparent 10px, transparent 20px);
 }

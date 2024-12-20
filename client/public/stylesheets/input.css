@@ -1,0 +1,27 @@
+input {
+    appearance: none;
+    position: relative;
+    border: solid 1px var(--accent-color-op-3);
+    background-color: transparent;
+    color: var(--accent-color-op-5);
+    font-family: "Fugaz One", sans-serif;
+    font-size: 2rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    transition: all 0.25s ease;
+    outline: none;
+    width: 12rem;
+    height: 5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+input:focus {
+    box-shadow: 1px 1px 8px var(--accent-color-op-3);
+    color: var(--accent-color);
+    text-shadow: 0 0 8px var(--accent-color-op-4);
+    border-color: var(--accent-color-alt);
+}

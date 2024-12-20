@@ -1,4 +1,4 @@
-/* Extract out all styles from components and redo the default styles here */
+/* TODO: Extract out all styles from components and redo the default styles here. */
 
 :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -15,9 +15,17 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+:root {
+    --accent-color: #00d6fc;
+    --accent-color-op-3: #00d6fc4c;
+    --accent-color-op-4: #00d6fc66;
+    --accent-color-op-5: #00d6fc80;
+    --accent-color-alt: #646cff;
+}
+
 a {
     font-weight: 500;
-    color: #646cff;
+    color: var(--accent-color-alt);
     text-decoration: inherit;
 }
 
@@ -42,26 +50,6 @@ h1, h2, h3, h4, h5, h6 {
     color: #08deff;
     line-height: 1;
     filter: drop-shadow(0 1px 3px);
-}
-
-button {
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: #1a1a1a;
-    cursor: pointer;
-    transition: border-color 0.25s;
-}
-
-button:hover {
-    border-color: #646cff;
-}
-
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
 }
 
 @media (prefers-color-scheme: light) {

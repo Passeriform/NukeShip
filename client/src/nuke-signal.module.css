@@ -17,7 +17,7 @@
     transform-origin: top;
 }
 
-/* These are all pre-computed values derived from rotated circle equations */
+/* NOTE: These are all pre-computed values derived from rotated circle equations. */
 .signal::before {
     width: 36rem;
     height: 42.5rem;

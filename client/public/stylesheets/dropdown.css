@@ -1,0 +1,67 @@
+.dropdown.solid-select-container {
+    position: relative;
+    border: solid 1px var(--accent-color-op-3);
+    background-color: transparent;
+    color: var(--accent-color-op-5);
+    font-family: "Fugaz One", sans-serif;
+    font-size: 2rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    transition: all 0.25s ease;
+    outline: none;
+    min-width: 14rem;
+    min-height: 5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.dropdown.solid-select-container:focus-within {
+    box-shadow: 1px 1px 8px var(--accent-color-op-3);
+    border-color: var(--accent-color-alt);
+}
+
+.dropdown.solid-select-container>.solid-select-control {
+    outline: none;
+    border: none;
+    padding: 0;
+    transition: all 0.25s ease;
+}
+
+.dropdown.solid-select-container .solid-select-input,
+.dropdown.solid-select-container .solid-select-single-value,
+.dropdown.solid-select-container .solid-select-placeholder {
+    appearance: none;
+    color: var(--accent-color-op-5);
+    padding: 1rem;
+    width: 100%;
+    line-height: 1.5;
+    transition: all 0.25s ease;
+    cursor: pointer;
+}
+
+.dropdown.solid-select-container:focus-within .solid-select-input,
+.dropdown.solid-select-container:focus-within .solid-select-single-value,
+.dropdown.solid-select-container:focus-within .solid-select-placeholder {
+    color: var(--accent-color);
+    box-shadow: none;
+    text-shadow: 0 0 8px var(--accent-color-op-4);
+}
+
+.dropdown.solid-select-container .solid-select-list {
+    background-color: #1e1d2fcc;
+    border: 1px solid var(--accent-color-op-3);
+    border-radius: 0 0 0.5rem 0.5rem;
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.dropdown.solid-select-container .solid-select-option:hover,
+.dropdown.solid-select-container .solid-select-option[data-focused="true"] {
+    background-color: #0c354fcc;
+    color: #ccc;
+}

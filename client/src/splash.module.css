@@ -1,4 +1,4 @@
-@import url("./glitch.css");
+@import url("./glitch.module.css");
 
 :root {
     --glitch-red-layer-color: #e0287d;
