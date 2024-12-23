@@ -1,0 +1,19 @@
+.solid-select-container > .solid-select-control {
+    @apply border-none p-0 outline-none transition-all duration-200 ease-in-out;
+}
+
+.solid-select-container :is(.solid-select-input, .solid-select-single-value, .solid-select-placeholder) {
+    @apply w-full cursor-pointer appearance-none p-4 pe-9 text-lg text-accent/50 outline-none transition-all duration-200 ease-in-out;
+}
+
+.solid-select-container:focus-within :is(.solid-select-input, .solid-select-single-value, .solid-select-placeholder) {
+    @apply shadow-transparent text-shadow cursor-pointer text-accent;
+}
+
+.solid-select-container .solid-select-list {
+    @apply bg-background/75 flex flex-col gap-1 rounded-lg border border-accent/30;
+}
+
+.solid-select-container .solid-select-option:is(:hover, [data-focused="true"]) {
+    @apply bg-highlight/75 text-accent;
+}
