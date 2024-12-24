@@ -1,12 +1,12 @@
 import Splash from "./Splash"
 import NukeSignal from "./NukeSignal"
 import PlayPanel from "./PlayPanel"
-import { Component } from "solid-js"
+import { VoidComponent } from "solid-js"
 
-const App: Component = () => {
+const App: VoidComponent = () => {
     return (
         <>
-            <div class="blur absolute inset-0 -z-10 bg-city bg-cover bg-center bg-no-repeat opacity-50" />
+            <div class="absolute inset-0 -z-10 bg-city bg-cover bg-center bg-no-repeat opacity-50 blur" />
             <NukeSignal />
             <Splash />
             <PlayPanel />

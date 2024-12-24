@@ -7,11 +7,11 @@
 }
 
 .solid-select-container:focus-within :is(.solid-select-input, .solid-select-single-value, .solid-select-placeholder) {
-    @apply shadow-transparent text-shadow cursor-pointer text-accent;
+    @apply cursor-pointer text-accent shadow-transparent text-shadow;
 }
 
 .solid-select-container .solid-select-list {
-    @apply bg-background/75 flex flex-col gap-1 rounded-lg border border-accent/30;
+    @apply flex flex-col gap-1 rounded-lg border border-accent/30 bg-background/75;
 }
 
 .solid-select-container .solid-select-option:is(:hover, [data-focused="true"]) {
