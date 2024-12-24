@@ -29,6 +29,9 @@ func NewConnection(id string) (*Connection, bool) {
 }
 
 func RemoveConnection(id string) {
-	delete(RoomMap[*ConnectionMap[id].Room].Clients, id)
+	if ConnectionMap[id].Room != nil {
+		delete(RoomMap[*ConnectionMap[id].Room].Clients, id)
+	}
+
 	delete(ConnectionMap, id)
 }
