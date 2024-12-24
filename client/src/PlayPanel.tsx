@@ -1,6 +1,8 @@
 import { VoidComponent, createSignal } from "solid-js"
 import { Select } from "@thisbeyond/solid-select"
 import Button from "./Button"
+import "./wasm_exec.js"
+import "./wasm.d.ts"
 
 const MAX_ROOM_CODE_LENGTH = 5
 
@@ -19,11 +21,11 @@ const PlayPanel: VoidComponent = () => {
     const [inputRef, setInputRef] = createSignal<HTMLInputElement>()
 
     const createRoom = () => {
-        console.log(gameMode())
+        window.go.createRoom(/* gameMode() */)
     }
 
     const joinRoom = () => {
-        console.log(roomCode())
+        window.go.joinRoom(roomCode())
     }
 
     const setCaretToEnd = () => {
