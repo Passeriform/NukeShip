@@ -6,24 +6,78 @@
         {
             "label": "Refresh protobuf",
             "type": "shell",
-            "command": "protoc --go_out=${workspaceFolder}\\internal\\pb\\ --go_opt=paths=source_relative --go-grpc_out=${workspaceFolder}\\internal\\pb\\ --go-grpc_opt=paths=source_relative --proto_path=${workspaceFolder}\\internal\\pb\\ ${workspaceFolder}\\internal\\pb\\room.proto",
-            "problemMatcher": []
+            "command": "protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./room.proto",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}/internal/pb"
+            }
         },
         {
             "label": "Spawn server",
             "type": "shell",
-            "command": "go run ${workspaceFolder}/pkg/server/main.go",
+            "command": "go run .",
             "problemMatcher": [
                 "$go"
-            ]
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/server"
+            }
         },
         {
             "label": "Spawn client",
             "type": "shell",
-            "command": "go run ${workspaceFolder}/pkg/client/main.go",
+            "command": "go run .",
             "problemMatcher": [
                 "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            }
+        },
+        {
+            "label": "[WASM] Build",
+            "hide": true,
+            "type": "shell",
+            "command": "go build -o ${workspaceFolder}/client/public/main.wasm .",
+            "problemMatcher": [
+                "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client",
+                "env": {
+                    "GOOS": "js",
+                    "GOARCH": "wasm"
+                }
+            }
+        },
+        // TODO: Optimize wasm after building
+        // TODO: Use tinygo
+        {
+            "label": "[WASM] Copy Shim",
+            "hide": true,
+            "type": "shell",
+            "command": "cp",
+            "problemMatcher": [],
+            "args": [
+                {
+                    "value": "\"\"$(go env GOROOT)/misc/wasm/wasm_exec.js\"\"",
+                    "quoting": "weak"
+                },
+                {
+                    "value": "${workspaceFolder}/client/src/",
+                    "quoting": "strong"
+                }
             ]
+        },
+        {
+            "label": "Build client - WASM",
+            "type": "shell",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[WASM] Build",
+                "[WASM] Copy Shim"
+            ],
+            "problemMatcher": []
         }
     ]
 }

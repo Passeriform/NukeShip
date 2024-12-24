@@ -63,6 +63,7 @@ func (s *Server) SubscribeMessages(in *pb.SubscribeMessagesRequest, srv grpc.Ser
 			server.RemoveConnection(clientId)
 			return nil
 
+		// TODO: Fix graceful shutdown getting stuck.
 		case <-s.ShutdownCtx.Done():
 			log.Printf("Server shutting down. Gracefully disconnecting client %s", clientId)
 			return status.Errorf(codes.Unavailable, "Server is shutting down")

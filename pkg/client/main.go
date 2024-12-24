@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log"
-	"os"
 	"time"
 
 	"nukeship/internal/pb"
@@ -16,29 +15,26 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const SERVER_HOST = "localhost"
-const SERVER_PORT = "50051"
+const SERVER_HOST string = "localhost"
+const SERVER_PORT string = "50051"
 
-/* Player simulations. Remove after implementing UI */
-func player1(client pb.RoomServiceClient, ctx context.Context) {
+func createRoom(client pb.RoomServiceClient, ctx context.Context) {
 	r, err := client.CreateRoom(ctx, &pb.CreateRoomRequest{})
 	if err != nil {
-		log.Panicf("could not create room: %v", err)
+		log.Printf("could not create room: %v", err)
 	}
 
 	log.Printf("Room created: %s", r.GetRoomId())
 }
 
-func player2(client pb.RoomServiceClient, ctx context.Context, roomId string) {
+func joinRoom(client pb.RoomServiceClient, ctx context.Context, roomId string) {
 	r, err := client.JoinRoom(ctx, &pb.JoinRoomRequest{RoomId: roomId})
 	if err != nil {
-		log.Panicf("Could not join room with id: %v", err)
+		log.Printf("Could not join room with id: %v", err)
 	}
 
 	log.Printf("Room joined: %s", r.Status.String())
 }
-
-/* --- */
 
 func handleServerUpdate(s grpc.ServerStreamingClient[pb.MessageStreamResponse], done chan<- bool) error {
 	for {
@@ -99,12 +95,7 @@ func main() {
 	done := make(chan bool)
 
 	go handleServerUpdate(s, done)
-
-	if os.Args[1] == "player1" {
-		player1(client, unaryCtx)
-	} else if os.Args[1] == "player2" {
-		player2(client, unaryCtx, os.Args[2])
-	}
+	go postClientSetup(client, unaryCtx, done)
 
 	<-done
 }
