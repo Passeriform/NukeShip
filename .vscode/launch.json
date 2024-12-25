@@ -5,24 +5,36 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "gRPC Server",
+            "name": "Run Server",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/pkg/server/main.go",
+            "program": "${workspaceFolder}/pkg/server/",
             "env": {
                 "GOPATH": "${workspaceFolder}"
             }
         },
         {
-            "name": "gRPC Client",
+            "name": "Run Native Client",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/pkg/client/main.go",
+            "program": "${workspaceFolder}/pkg/client/",
             "env": {
                 "GOPATH": "${workspaceFolder}"
             }
+        },
+        {
+            "name": "Run Web Client",
+            "type": "firefox",
+            "request": "launch",
+            "reAttach": true,
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/web/",
+            "skipFiles": [
+                "${workspaceFolder}/node_modules/**/*.js"
+            ],
+            "preLaunchTask": "npm run dev",
         }
     ]
 }

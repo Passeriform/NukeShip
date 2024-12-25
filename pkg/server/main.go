@@ -12,13 +12,16 @@ import (
 	"nukeship/internal/server"
 	"nukeship/internal/utility"
 
+	"github.com/caarlos0/env/v11"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 )
 
-const LISTEN_PORT = "50051"
+type serverConfig struct {
+	Port string `env:"PORT" envDefault:"50051"`
+}
 
 type Server struct {
 	pb.UnimplementedRoomServiceServer
@@ -89,7 +92,9 @@ func onShutdown(cancel context.CancelFunc) {
 }
 
 func main() {
-	lis, err := net.Listen("tcp", ":"+LISTEN_PORT)
+	cfg, _ := env.ParseAs[serverConfig]()
+
+	lis, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {
 		log.Panicf("failed to listen: %v", err)
 	}
@@ -110,6 +115,8 @@ func main() {
 		),
 	)
 	defer s.GracefulStop()
+
+	log.Printf("Started server on port: %v", cfg.Port)
 
 	pb.RegisterRoomServiceServer(s, &Server{ShutdownCtx: shutdownCtx})
 

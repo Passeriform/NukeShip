@@ -9,14 +9,17 @@ import (
 	"nukeship/internal/pb"
 	"nukeship/internal/utility"
 
+	"github.com/caarlos0/env/v11"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 )
 
-const SERVER_HOST string = "localhost"
-const SERVER_PORT string = "50051"
+type clientConfig struct {
+	Host       string `env:"HOST" envDefault:"localhost"`
+	ServerPort string `env:"SERVER_PORT" envDefault:"50051"`
+}
 
 func createRoom(client pb.RoomServiceClient, ctx context.Context) {
 	r, err := client.CreateRoom(ctx, &pb.CreateRoomRequest{})
@@ -54,10 +57,11 @@ func handleServerUpdate(s grpc.ServerStreamingClient[pb.MessageStreamResponse], 
 }
 
 func main() {
+	cfg, _ := env.ParseAs[clientConfig]()
 	clientId := utility.NewRandomString(5)
 
 	conn, err := grpc.NewClient(
-		SERVER_HOST+":"+SERVER_PORT,
+		cfg.Host+":"+cfg.ServerPort,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
 	)

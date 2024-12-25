@@ -3,42 +3,23 @@
     // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
+        // Utility tasks
         {
-            "label": "Refresh protobuf",
+            "label": "[Protobuf] Refresh",
             "type": "shell",
             "command": "protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./room.proto",
             "problemMatcher": [],
             "options": {
                 "cwd": "${workspaceFolder}/internal/pb"
-            }
+            },
         },
-        {
-            "label": "Spawn server",
-            "type": "shell",
-            "command": "go run .",
-            "problemMatcher": [
-                "$go"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/pkg/server"
-            }
-        },
-        {
-            "label": "Spawn client",
-            "type": "shell",
-            "command": "go run .",
-            "problemMatcher": [
-                "$go"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
-            }
-        },
+        // WASM utility tasks
+        // TODO: Optimize wasm after building
+        // TODO: Use tinygo
         {
             "label": "[WASM] Build",
-            "hide": true,
             "type": "shell",
-            "command": "go build -o ${workspaceFolder}/client/public/main.wasm .",
+            "command": "go build -o ${workspaceFolder}/web/public/main.wasm .",
             "problemMatcher": [
                 "$go"
             ],
@@ -50,11 +31,8 @@
                 }
             }
         },
-        // TODO: Optimize wasm after building
-        // TODO: Use tinygo
         {
             "label": "[WASM] Copy Shim",
-            "hide": true,
             "type": "shell",
             "command": "cp",
             "problemMatcher": [],
@@ -64,20 +42,115 @@
                     "quoting": "weak"
                 },
                 {
-                    "value": "${workspaceFolder}/client/src/",
+                    "value": "${workspaceFolder}/web/src/",
                     "quoting": "strong"
                 }
             ]
         },
+        // NukeShip local stack
         {
-            "label": "Build client - WASM",
+            "label": "[NukeShip] [Local] Run Server",
             "type": "shell",
+            "command": "go run .",
+            "problemMatcher": [
+                "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/server"
+            },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[WASM] Build",
-                "[WASM] Copy Shim"
+                "[Protobuf] Refresh",
             ],
-            "problemMatcher": []
+        },
+        {
+            "label": "[NukeShip] [Local] Run Web Client",
+            "type": "shell",
+            "command": "npm run dev",
+            "options": {
+                "cwd": "${workspaceFolder}/web"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Protobuf] Refresh",
+                "[WASM] Build",
+                "[WASM] Copy Shim",
+            ],
+            "problemMatcher": [
+                "$vite"
+            ]
+        },
+        {
+            // TODO: Add regular and seige selection types
+            "label": "[NukeShip] [Local] Run Native Client - Create Room",
+            "type": "shell",
+            "command": "go run .",
+            "problemMatcher": [
+                "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            }
+        },
+        {
+            "label": "[NukeShip] [Local] Run Native Client - Join Room",
+            "type": "shell",
+            "command": "go run . ${input:roomCode} ",
+            "problemMatcher": [
+                "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            }
+        },
+        // [NukeShip] Docker stack
+        {
+            "label": "[NukeShip] [Docker] Run Web Stack",
+            "type": "docker-compose",
+            "dockerCompose": {
+                "up": {
+                    "build": true,
+                    "services": [
+                        "client",
+                        "server"
+                    ],
+                    "customOptions": "--force-recreate --remove-orphans"
+                },
+                "files": [
+                    "docker-compose.web.yml"
+                ],
+                "envFile": ".env"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "[NukeShip] [Docker] Run Native Stack",
+            "type": "docker-compose",
+            "dockerCompose": {
+                "up": {
+                    "build": true,
+                    "services": [
+                        "client",
+                        "server"
+                    ]
+                },
+                "files": [
+                    "docker-compose.native.yml"
+                ],
+                "envFile": ".env"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "roomCode",
+            "description": "Room code to join",
+            "type": "promptString"
         }
     ]
 }
