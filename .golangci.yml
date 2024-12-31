@@ -1,0 +1,209 @@
+linters:
+  enable-all: true
+  disable:
+    - exportloopref
+
+linters-settings:
+  asasalint:
+    use-builtin-exclusions: false
+    ignore-test: false
+  bidichk:
+    left-to-right-embedding: true
+    right-to-left-embedding: true
+    pop-directional-formatting: true
+    left-to-right-override: true
+    right-to-left-override: true
+    left-to-right-isolate: true
+    right-to-left-isolate: true
+    first-strong-isolate: true
+    pop-directional-isolate: true
+  copyloopvar:
+    check-alias: true
+  decorder:
+    dec-order:
+      - const
+      - var
+      - type
+      - func
+    ignore-underscore-vars: false
+    disable-dec-order-check: false
+    disable-init-func-first-check: false
+    disable-dec-num-check: false
+    disable-type-dec-num-check: true
+    disable-const-dec-num-check: false
+    disable-var-dec-num-check: false
+  depguard:
+    rules:
+      main:
+        list-mode: lax
+        deny:
+          - pkg: math/rand
+            desc: use crypto/rand or other package using crypto/rand instead
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - encoding/json.Marshal
+      - encoding/json.MarshalIndent
+  errchkjson:
+    check-error-free-encoding: true
+    report-no-exported: true
+  exhaustive:
+    check:
+      - switch
+      - map
+  exhaustruct:
+    exclude:
+      - passeriform\.com/nukeship/internal/game\.FsTreeNode
+      - google\.golang\.org/grpc/keepalive\.ClientParameters
+      - google\.golang\.org/grpc/keepalive\.EnforcementPolicy
+      - google\.golang\.org/grpc/keepalive\.ServerParameters
+  gci:
+    sections:
+      - standard
+      - prefix(google.golang.org/grpc)
+      - default
+      - prefix(passeriform.com/nukeship)
+  gocognit:
+    min-complexity: 10
+  goconst:
+    min-occurrences: 2
+    ignore-calls: false
+    numbers: true
+    min: -99999999
+    max: 99999999
+    ignore-strings: "\\%w: \\%v"
+  gocritic:
+    enable-all: true
+    disabled-checks:
+      - unnamedResult
+    settings:
+      captLocal:
+        paramsOnly: false
+      elseif:
+        skipBalanced: false
+      underef:
+        skipRecvDeref: false
+  gocyclo:
+    min-complexity: 10
+  godot:
+    scope: all
+    capital: true
+  gofumpt:
+    extra-rules: true
+  govet:
+    enable-all: true
+  grouper:
+    # TODO: Recheck what this does
+    const-require-single-const: true
+    const-require-grouping: false
+    import-require-single-import: true
+    import-require-grouping: true
+    type-require-single-type: false
+    type-require-grouping: false
+    var-require-single-var: true
+    var-require-grouping: false
+  iface:
+    enable:
+      - identical
+      - opaque
+      - unused
+  importas:
+    no-extra-aliases: true
+  mnd:
+    ignored-files:
+      # TODO: Enable after implementing argument parsing
+      - local\.go
+  nestif:
+    min-complexity: 3
+  nilnil:
+    detect-opposite: true
+  nlreturn:
+    block-size: 3
+  perfsprint:
+    err-error: true
+  predeclared:
+    q: true
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: add-constant
+        arguments:
+          - allowInts: "0,1"
+      - name: context-as-argument
+        arguments:
+          - allowTypesBefore: "passeriform.com/nukeship/internal/pb.RoomServiceClient"
+      - name: confusing-results
+        disabled: true
+      - name: line-length-limit
+        arguments:
+          - 120
+      - name: flag-parameter
+        disabled: true
+  tagalign:
+    strict: true
+  tenv:
+    all: true
+  testifylint:
+    enable-all: true
+  usestdlibvars:
+    time-weekday: true
+    time-month: true
+    time-layout: true
+    crypto-hash: true
+    default-rpc-path: true
+    sql-isolation-level: true
+    tls-signature-scheme: true
+    constant-kind: true
+  unconvert:
+    fast-math: true
+    safe: true
+  unparam:
+    check-exported: true
+  unused:
+    field-writes-are-uses: false
+    exported-fields-are-used: false
+    parameters-are-used: false
+    local-variables-are-used: false
+    generated-is-used: true
+  varnamelen:
+    check-receiver: true
+    check-return: true
+    check-type-param: true
+  whitespace:
+    multi-if: true
+  wrapcheck:
+    ignoreSigs:
+      - google.golang.org/grpc/status.Errorf(
+  wsl:
+    allow-assign-and-call: false
+    allow-multiline-assign: true
+    force-err-cuddling: true
+    force-short-decl-cuddling: true
+    strict-append: true
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - revive
+      text: "add-constant: avoid magic numbers like"
+    - path: _test\.go
+      linters:
+        - goconst
+      text: "cognitive complexity"
+    - path: _test\.go
+      linters:
+        - goconst
+      text: "Got %v, want %v"
+    - path: _test\.go
+      linters:
+        - revive
+      text: "cognitive-complexity"
+    - path: _test\.go
+      linters:
+        - gocognit
+      text: "cognitive complexity"
+    - path: _test\.go
+      linters:
+        - govet
+      text: "fieldalignment"

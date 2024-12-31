@@ -4,16 +4,43 @@ package main
 
 import (
 	"context"
+	"log"
 
-	"nukeship/internal/pb"
+	"github.com/jxskiss/mcli"
 
-	"os"
+	"passeriform.com/nukeship/internal/pb"
 )
 
-func postClientSetup(client pb.RoomServiceClient, ctx context.Context, _ chan<- bool) {
-	if len(os.Args) == 2 {
+func createRoomCmd(client pb.RoomServiceClient, ctx context.Context) func() {
+	return func() {
+		var args struct{}
+
+		if _, err := mcli.Parse(&args); err != nil {
+			log.Panicf("Error occurred while parsing arguments for `createRoom` command: %v", err)
+		}
+
 		createRoom(client, ctx)
-	} else if len(os.Args) == 3 {
-		joinRoom(client, ctx, os.Args[2])
 	}
+}
+
+func joinRoomCmd(client pb.RoomServiceClient, ctx context.Context) func() {
+	return func() {
+		var args struct {
+			RoomCode string `cli:"#R, -c, --code, Room code to join"`
+		}
+
+		if _, err := mcli.Parse(&args); err != nil {
+			log.Panicf("Error occurred while parsing arguments for `joinRoom` command: %v", err)
+		}
+
+		joinRoom(client, ctx, args.RoomCode)
+	}
+}
+
+func handleApp(client pb.RoomServiceClient, ctx context.Context, _ chan<- bool) {
+	mcli.Add("createRoom", createRoomCmd(client, ctx), "Launch client and create a room", mcli.EnableFlagCompletion())
+	mcli.Add("joinRoom", joinRoomCmd(client, ctx), "Launch client and join a room", mcli.EnableFlagCompletion())
+	mcli.AddHelp()
+	mcli.AddCompletion()
+	mcli.Run()
 }

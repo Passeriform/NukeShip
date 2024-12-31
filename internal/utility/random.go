@@ -1,15 +1,11 @@
 package utility
 
-import "math/rand"
+import (
+	"strings"
 
-const (
-	letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	"github.com/google/uuid"
 )
 
 func NewRandomString(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
-	}
-	return string(b)
+	return strings.ReplaceAll(uuid.New().String(), "-", "")[:length]
 }

@@ -127,7 +127,7 @@ func RegisterRoomServiceServer(s grpc.ServiceRegistrar, srv RoomServiceServer) {
 	s.RegisterService(&RoomService_ServiceDesc, srv)
 }
 
-func _RoomService_CreateRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RoomService_CreateRoom_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(CreateRoomRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -139,13 +139,13 @@ func _RoomService_CreateRoom_Handler(srv interface{}, ctx context.Context, dec f
 		Server:     srv,
 		FullMethod: RoomService_CreateRoom_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(RoomServiceServer).CreateRoom(ctx, req.(*CreateRoomRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RoomService_JoinRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RoomService_JoinRoom_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(JoinRoomRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -157,13 +157,13 @@ func _RoomService_JoinRoom_Handler(srv interface{}, ctx context.Context, dec fun
 		Server:     srv,
 		FullMethod: RoomService_JoinRoom_FullMethodName,
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(RoomServiceServer).JoinRoom(ctx, req.(*JoinRoomRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RoomService_SubscribeMessages_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _RoomService_SubscribeMessages_Handler(srv any, stream grpc.ServerStream) error {
 	m := new(SubscribeMessagesRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err

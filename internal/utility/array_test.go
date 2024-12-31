@@ -1,10 +1,14 @@
-package utility
+package utility_test
 
 import (
 	"testing"
+
+	"passeriform.com/nukeship/internal/utility"
 )
 
 func TestFilter(t *testing.T) {
+	t.Parallel()
+
 	array := []int{1, 4, 2, 4, 9, 2, 7, 3, 9, 2, 5}
 
 	testCases := []struct {
@@ -41,11 +45,14 @@ func TestFilter(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			testArray := array
-			result := Filter[int](testArray, testCase.what)
+
+			result := utility.Filter[int](testArray, testCase.what)
 			for index, resultElement := range result {
 				if resultElement != testCase.want[index] {
-					t.Errorf("got %v, want %v", result, testCase.want)
+					t.Errorf("Got %v, want %v", result, testCase.want)
 				}
 			}
 		})
@@ -53,6 +60,8 @@ func TestFilter(t *testing.T) {
 }
 
 func TestPartition(t *testing.T) {
+	t.Parallel()
+
 	array := []int{1, 4, 2, 4, 9, 2, 7, 3, 9, 2, 5}
 
 	testCases := []struct {
@@ -83,16 +92,20 @@ func TestPartition(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			testArray := array
-			partitioned, leftover := Partition[int](testArray, testCase.what)
+
+			partitioned, leftover := utility.Partition[int](testArray, testCase.what)
 			for index, element := range partitioned {
 				if element != testCase.wantPartitioned[index] {
-					t.Errorf("got %v, want %v", partitioned, testCase.wantPartitioned)
+					t.Errorf("Got %v, want %v", partitioned, testCase.wantPartitioned)
 				}
 			}
+
 			for index, element := range leftover {
 				if element != testCase.wantLeftover[index] {
-					t.Errorf("got %v, want %v", partitioned, testCase.wantLeftover)
+					t.Errorf("Got %v, want %v", partitioned, testCase.wantLeftover)
 				}
 			}
 		})
@@ -100,6 +113,8 @@ func TestPartition(t *testing.T) {
 }
 
 func TestPartitionMany(t *testing.T) {
+	t.Parallel()
+
 	array := []int{1, 4, 2, 4, 9, 2, 7, 3, 9, 2, 5}
 
 	testCases := []struct {
@@ -121,15 +136,19 @@ func TestPartitionMany(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			testArray := array
-			pMap := PartitionMany[int, int](testArray, testCase.what)
+
+			pMap := utility.PartitionMany[int, int](testArray, testCase.what)
 			for key, elements := range pMap {
 				if _, ok := testCase.want[key]; !ok {
-					t.Errorf("got %v, want %v", pMap, testCase.want)
+					t.Errorf("Got %v, want %v", pMap, testCase.want)
 				}
+
 				for index, element := range elements {
 					if element != testCase.want[key][index] {
-						t.Errorf("got %v, want %v", elements, testCase.want[key][index])
+						t.Errorf("Got %v, want %v", elements, testCase.want[key][index])
 					}
 				}
 			}

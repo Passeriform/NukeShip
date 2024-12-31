@@ -1,37 +1,38 @@
 package server
 
-var ConnectionMap map[string]*Connection = map[string]*Connection{}
+//nolint:gochecknoglobals // Holding a global map for connections against wrapping struct.
+var ConnectionMap = map[string]*Connection{}
 
 type Connection struct {
-	Id     string
+	ID     string
 	Ready  bool
 	Joined bool
 	Room   *string
 }
 
-func NewConnection(id string) (*Connection, bool) {
-	connection, ok := ConnectionMap[id]
+func NewConnection(connectionID string) (*Connection, bool) {
+	connection, ok := ConnectionMap[connectionID]
 
 	if ok {
 		return connection, false
 	}
 
 	connection = &Connection{
-		Id:     id,
+		ID:     connectionID,
 		Ready:  false,
 		Joined: false,
 		Room:   nil,
 	}
 
-	ConnectionMap[id] = connection
+	ConnectionMap[connectionID] = connection
 
 	return connection, true
 }
 
-func RemoveConnection(id string) {
-	if ConnectionMap[id].Room != nil {
-		delete(RoomMap[*ConnectionMap[id].Room].Clients, id)
+func RemoveConnection(connectionID string) {
+	if ConnectionMap[connectionID].Room != nil {
+		delete(RoomMap[*ConnectionMap[connectionID].Room].Clients, connectionID)
 	}
 
-	delete(ConnectionMap, id)
+	delete(ConnectionMap, connectionID)
 }

@@ -1,10 +1,16 @@
 syntax = "proto3";
 
-option go_package = "nukeship/pb";
+option go_package = "passeriform.com/nukeship/pb";
 
 enum ResponseStatus {
     OK = 0;
     ROOM_NOT_FOUND = 1;
+}
+
+enum ServerMessage {
+    PARTICIPANT_JOINED = 0;
+    PARTICIPANT_LEFT = 1;
+    GAME_STARTED = 2;
 }
 
 service RoomService {
@@ -13,15 +19,13 @@ service RoomService {
     rpc SubscribeMessages (SubscribeMessagesRequest) returns (stream MessageStreamResponse);
 }
 
-message SubscribeMessagesRequest {
-}
+message SubscribeMessagesRequest { }
 
 message MessageStreamResponse {
-    string message = 1;
+    ServerMessage type = 1;
 }
 
-message CreateRoomRequest {
-}
+message CreateRoomRequest { }
 
 message CreateRoomResponse {
     ResponseStatus status = 1;

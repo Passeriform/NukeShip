@@ -1,35 +1,36 @@
 package server
 
-var RoomMap map[string]*Room = map[string]*Room{}
+//nolint:gochecknoglobals // Holding a global map for rooms against wrapping struct.
+var RoomMap = map[string]*Room{}
 
 type Room struct {
-	Id      string
+	ID      string
 	Clients map[string]*Connection
 }
 
-func NewRoom(id string) (*Room, bool) {
-	room, ok := RoomMap[id]
+func NewRoom(roomID string) (*Room, bool) {
+	room, ok := RoomMap[roomID]
 
 	if ok {
 		return room, false
 	}
 
 	room = &Room{
-		Id:      id,
+		ID:      roomID,
 		Clients: map[string]*Connection{},
 	}
 
-	RoomMap[id] = room
+	RoomMap[roomID] = room
 
 	return room, true
 }
 
 func GetRoom(id string) *Room {
-	room, _ := RoomMap[id]
+	room := RoomMap[id]
 	return room
 }
 
 func (room *Room) AddConnection(conn *Connection) {
-	room.Clients[conn.Id] = conn
-	conn.Room = &room.Id
+	room.Clients[conn.ID] = conn
+	conn.Room = &room.ID
 }

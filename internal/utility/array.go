@@ -1,6 +1,6 @@
 package utility
 
-// TODO: Migrate to use iter.Seq
+// TODO: Migrate to use iter.Seq.
 
 func Map[T, U any](slice []T, predicate func(T) U) []U {
 	result := make([]U, len(slice))
@@ -8,6 +8,7 @@ func Map[T, U any](slice []T, predicate func(T) U) []U {
 	for i := range slice {
 		result[i] = predicate(slice[i])
 	}
+
 	return result
 }
 
@@ -45,6 +46,7 @@ func PartitionMany[K comparable, T any](slice []T, identityFunc func(T) K) map[K
 
 	for _, element := range slice {
 		key := identityFunc(element)
+
 		partitions[key] = append(partitions[key], element)
 	}
 

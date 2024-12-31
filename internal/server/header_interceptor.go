@@ -10,30 +10,32 @@ import (
 
 func HeaderUnaryInterceptor(
 	ctx context.Context,
-	req interface{},
-	info *grpc.UnaryServerInfo,
+	req any,
+	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
-) (interface{}, error) {
-	clientId, err := ExtractClientIdMetadata(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, err.Error())
+) (any, error) {
+	clientID, ok := ExtractClientIDMetadata(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "missing metadata in context")
 	}
 
-	NewConnection(clientId)
+	NewConnection(clientID)
+
 	return handler(ctx, req)
 }
 
 func HeaderStreamInterceptor(
-	srv interface{},
-	ss grpc.ServerStream,
-	info *grpc.StreamServerInfo,
+	srv any,
+	stream grpc.ServerStream,
+	_ *grpc.StreamServerInfo,
 	handler grpc.StreamHandler,
 ) error {
-	clientId, err := ExtractClientIdMetadata(ss.Context())
-	if err != nil {
-		return status.Errorf(codes.Unauthenticated, err.Error())
+	clientID, ok := ExtractClientIDMetadata(stream.Context())
+	if !ok {
+		return status.Error(codes.Unauthenticated, "missing client-id in context metadata")
 	}
 
-	NewConnection(clientId)
-	return handler(srv, ss)
+	NewConnection(clientID)
+
+	return handler(srv, stream)
 }

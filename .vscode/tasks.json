@@ -3,7 +3,7 @@
     // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
-        // Utility tasks
+        // [Protobuf] Utility tasks
         {
             "label": "[Protobuf] Refresh",
             "type": "shell",
@@ -13,7 +13,7 @@
                 "cwd": "${workspaceFolder}/internal/pb"
             },
         },
-        // WASM utility tasks
+        // [WASM] Utility tasks
         // TODO: Optimize wasm after building
         // TODO: Use tinygo
         {
@@ -47,7 +47,7 @@
                 }
             ]
         },
-        // NukeShip local stack
+        // [NukeShip] Local stack
         {
             "label": "[NukeShip] [Local] Run Server",
             "type": "shell",
@@ -84,7 +84,7 @@
             // TODO: Add regular and seige selection types
             "label": "[NukeShip] [Local] Run Native Client - Create Room",
             "type": "shell",
-            "command": "go run .",
+            "command": "go run . -- createRoom",
             "problemMatcher": [
                 "$go"
             ],
@@ -95,7 +95,7 @@
         {
             "label": "[NukeShip] [Local] Run Native Client - Join Room",
             "type": "shell",
-            "command": "go run . ${input:roomCode} ",
+            "command": "go run . joinRoom -roomCode=${input:roomCode}",
             "problemMatcher": [
                 "$go"
             ],
