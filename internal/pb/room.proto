@@ -8,8 +8,8 @@ enum ResponseStatus {
 }
 
 enum ServerMessage {
-    PARTICIPANT_JOINED = 0;
-    PARTICIPANT_LEFT = 1;
+    OPPONENT_JOINED = 0;
+    OPPONENT_LEFT = 1;
     GAME_STARTED = 2;
 }
 
