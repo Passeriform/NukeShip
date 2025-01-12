@@ -4,8 +4,8 @@ package server
 var RoomMap = map[string]*Room{}
 
 type Room struct {
-	ID      string
 	Clients map[string]*Connection
+	ID      string
 }
 
 func NewRoom(roomID string) (*Room, bool) {

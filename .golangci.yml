@@ -2,6 +2,7 @@ linters:
   enable-all: true
   disable:
     - exportloopref
+    - godox
 
 linters-settings:
   asasalint:
@@ -140,6 +141,8 @@ linters-settings:
           - 120
       - name: flag-parameter
         disabled: true
+      - name: deep-exit
+        disabled: true
   tagalign:
     strict: true
   tenv:
@@ -174,6 +177,7 @@ linters-settings:
     multi-if: true
   wrapcheck:
     ignoreSigs:
+      - google.golang.org/grpc/status.Error(
       - google.golang.org/grpc/status.Errorf(
   wsl:
     allow-assign-and-call: false

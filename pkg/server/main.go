@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	"passeriform.com/nukeship/internal/pb"
@@ -23,15 +24,17 @@ import (
 const UniqueIDLength = 5
 
 type serverConfig struct {
-	Port string `env:"PORT" envDefault:"50051"`
+	Port        string `env:"PORT"        envDefault:"50051"`
+	Environment string `env:"ENVIRONMENT" envDefault:"PRODUCTION"`
 }
 
 type Server struct {
 	pb.UnimplementedRoomServiceServer `exhaustruct:"optional"`
-	ShutdownCtx                       context.Context
+	//nolint:containedctx // Carrying shutdown context for in-request client cancellation.
+	ShutdownCtx context.Context
 }
 
-func (s *Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.CreateRoomResponse, error) {
+func (*Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.CreateRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 	roomID := utility.NewRandomString(UniqueIDLength)
 
@@ -39,10 +42,12 @@ func (s *Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.C
 	room, _ := server.NewRoom(roomID)
 	room.AddConnection(client)
 
+	log.Println(roomID)
+
 	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_OK, RoomId: roomID}, nil
 }
 
-func (s *Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRoomResponse, error) {
+func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 	roomID := in.GetRoomId()
 
@@ -55,35 +60,39 @@ func (s *Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.Join
 
 	room.AddConnection(client)
 
+	for _, client := range room.Clients {
+		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_JOINED}
+	}
+
 	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_OK}, nil
 }
 
-func (s *Server) SubscribeMessages(
+func (srv *Server) SubscribeMessages(
 	_ *pb.SubscribeMessagesRequest,
-	srv grpc.ServerStreamingServer[pb.MessageStreamResponse],
+	stream grpc.ServerStreamingServer[pb.MessageStreamResponse],
 ) error {
-	clientID, _ := server.ExtractClientIDMetadata(srv.Context())
+	clientID, _ := server.ExtractClientIDMetadata(stream.Context())
 	client, _ := server.NewConnection(clientID)
 
 	for {
 		select {
-		case <-srv.Context().Done():
+		case msg := <-client.MsgChan:
+			err := stream.Send(msg)
+			if err != nil {
+				log.Printf("Error sending message: %v", err)
+				return nil
+			}
+
+		case <-stream.Context().Done():
 			log.Printf("Client was disconnected or context was cancelled for client %s", client.ID)
 			server.RemoveConnection(clientID)
 
 			return nil
 
 		// TODO: Fix graceful shutdown getting stuck.
-		case <-s.ShutdownCtx.Done():
+		case <-srv.ShutdownCtx.Done():
 			log.Printf("Server shutting down. Gracefully disconnecting client %s", clientID)
 			return status.Errorf(codes.Unavailable, "Server is shutting down")
-
-			/* case <-ticker.C:
-			err := srv.Send(&pb.MessageStreamResponse{Message: "Updates..."})
-			if err != nil {
-				log.Printf("Error sending message: %v", err)
-				return err
-			} */
 		}
 	}
 }
@@ -127,6 +136,10 @@ func main() {
 		),
 	)
 	defer srv.GracefulStop()
+
+	if cfg.Environment == "DEVELOPMENT" {
+		reflection.Register(srv)
+	}
 
 	log.Printf("Started server on port: %v", cfg.Port)
 

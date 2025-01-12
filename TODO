@@ -9,6 +9,12 @@ Line of action
         Improvements
             ☐ Replace centering with place-items css
             ☐
+    Lint
+        ☐ Fix all linter issues
+        ☐ Disable unused lints (remove if default satisfies)
+    Refactors
+        ☐ Migrate to data-driven approach
+        ☐ Benchmark performance for room and connection against direct data storage instead of using pointers
 
 Ideas
     Special powers

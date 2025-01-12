@@ -3,7 +3,10 @@ import { glitchFont, glitchMovement, glitchOpacity, glitchPath } from "./glitch"
 /** @type {import("tailwindcss").Config} */
 export default {
     mode: "jit",
-    content: ["./src/**/*.{ts,tsx}"],
+    content: [
+        "./index.html",
+        "./src/**/*.{ts,tsx}"
+    ],
     purge: {
         enabled: process.env.NODE_ENV === "production",
         safeList: [],

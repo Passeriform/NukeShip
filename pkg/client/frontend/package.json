@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "type": "module",
     "scripts": {
+        "start": "vite",
         "dev": "vite",
         "build": "tsc -b && vite build",
         "preview": "vite preview",
@@ -17,6 +18,7 @@
     },
     "devDependencies": {
         "@pyncz/tailwind-mask-image": "^2.0.0",
+        "@types/node": "^22.10.5",
         "@xpd/tailwind-3dtransforms": "^1.0.3",
         "autoprefixer": "^10.4.20",
         "postcss": "^8.4.49",

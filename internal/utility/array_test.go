@@ -50,6 +50,7 @@ func TestFilter(t *testing.T) {
 			testArray := array
 
 			result := utility.Filter[int](testArray, testCase.what)
+
 			for index, resultElement := range result {
 				if resultElement != testCase.want[index] {
 					t.Errorf("Got %v, want %v", result, testCase.want)
@@ -97,6 +98,7 @@ func TestPartition(t *testing.T) {
 			testArray := array
 
 			partitioned, leftover := utility.Partition[int](testArray, testCase.what)
+
 			for index, element := range partitioned {
 				if element != testCase.wantPartitioned[index] {
 					t.Errorf("Got %v, want %v", partitioned, testCase.wantPartitioned)
@@ -141,6 +143,7 @@ func TestPartitionMany(t *testing.T) {
 			testArray := array
 
 			pMap := utility.PartitionMany[int, int](testArray, testCase.what)
+
 			for key, elements := range pMap {
 				if _, ok := testCase.want[key]; !ok {
 					t.Errorf("Got %v, want %v", pMap, testCase.want)

@@ -2,56 +2,59 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
+    "options": {
+        "env": {
+            "ENVIRONMENT": "PRODUCTION",
+            "PORT": "50051",
+            "SERVER_PORT": "50051",
+            "HOST": "127.0.0.1",
+            "SERVER_HOST": "127.0.0.1",
+        }
+    },
     "tasks": [
-        // [Protobuf] Utility tasks
         {
             "label": "[Protobuf] Refresh",
             "type": "shell",
-            "command": "protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./room.proto",
+            "command": "protoc",
+            "args": [
+                "--go_out=.",
+                "--go_opt=paths=source_relative",
+                "--go-grpc_out=.",
+                "--go-grpc_opt=paths=source_relative",
+                "--proto_path=.",
+                "./room.proto"
+            ],
             "problemMatcher": [],
             "options": {
                 "cwd": "${workspaceFolder}/internal/pb"
-            },
-        },
-        // [WASM] Utility tasks
-        // TODO: Optimize wasm after building
-        // TODO: Use tinygo
-        {
-            "label": "[WASM] Build",
-            "type": "shell",
-            "command": "go build -o ${workspaceFolder}/web/public/main.wasm .",
-            "problemMatcher": [
-                "$go"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/pkg/client",
-                "env": {
-                    "GOOS": "js",
-                    "GOARCH": "wasm"
-                }
             }
         },
         {
-            "label": "[WASM] Copy Shim",
+            "label": "[App] Build Client",
             "type": "shell",
-            "command": "cp",
-            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            },
+            "hide": true,
+            "command": "wails",
             "args": [
-                {
-                    "value": "\"\"$(go env GOROOT)/misc/wasm/wasm_exec.js\"\"",
-                    "quoting": "weak"
-                },
-                {
-                    "value": "${workspaceFolder}/web/src/",
-                    "quoting": "strong"
-                }
+                "build",
+                "-tags",
+                "gui"
+            ],
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Protobuf] Refresh"
             ]
         },
-        // [NukeShip] Local stack
         {
             "label": "[NukeShip] [Local] Run Server",
             "type": "shell",
-            "command": "go run .",
+            "command": "go",
+            "args": [
+                "run",
+                "."
+            ],
             "problemMatcher": [
                 "$go"
             ],
@@ -60,33 +63,43 @@
             },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[Protobuf] Refresh",
-            ],
-        },
-        {
-            "label": "[NukeShip] [Local] Run Web Client",
-            "type": "shell",
-            "command": "npm run dev",
-            "options": {
-                "cwd": "${workspaceFolder}/web"
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "[Protobuf] Refresh",
-                "[WASM] Build",
-                "[WASM] Copy Shim",
-            ],
-            "problemMatcher": [
-                "$vite"
+                "[Protobuf] Refresh"
             ]
         },
         {
-            // TODO: Add regular and seige selection types
+            "label": "[NukeShip] [Local] Run App Client",
+            "type": "shell",
+            "command": "wails",
+            "args": [
+                "dev",
+                "-tags",
+                "gui"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Protobuf] Refresh"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "instanceLimit": 2
+            }
+        },
+        {
             "label": "[NukeShip] [Local] Run Native Client - Create Room",
             "type": "shell",
-            "command": "go run . -- createRoom",
+            "command": "go",
             "problemMatcher": [
                 "$go"
+            ],
+            "args": [
+                "run",
+                "-tags",
+                "cli",
+                ".",
+                "createRoom"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
@@ -95,49 +108,35 @@
         {
             "label": "[NukeShip] [Local] Run Native Client - Join Room",
             "type": "shell",
-            "command": "go run . joinRoom -roomCode=${input:roomCode}",
+            "command": "go",
             "problemMatcher": [
                 "$go"
+            ],
+            "args": [
+                "run",
+                "-tags",
+                "cli",
+                ".",
+                "joinRoom",
+                "-code=${input:roomCode}"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
             }
         },
-        // [NukeShip] Docker stack
         {
-            "label": "[NukeShip] [Docker] Run Web Stack",
+            "label": "[NukeShip] [Docker] Run Server",
             "type": "docker-compose",
             "dockerCompose": {
                 "up": {
                     "build": true,
                     "services": [
-                        "client",
                         "server"
                     ],
                     "customOptions": "--force-recreate --remove-orphans"
                 },
                 "files": [
-                    "docker-compose.web.yml"
-                ],
-                "envFile": ".env"
-            },
-            "options": {
-                "cwd": "${workspaceFolder}"
-            }
-        },
-        {
-            "label": "[NukeShip] [Docker] Run Native Stack",
-            "type": "docker-compose",
-            "dockerCompose": {
-                "up": {
-                    "build": true,
-                    "services": [
-                        "client",
-                        "server"
-                    ]
-                },
-                "files": [
-                    "docker-compose.native.yml"
+                    "docker-compose.yml"
                 ],
                 "envFile": ".env"
             },

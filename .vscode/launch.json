@@ -20,21 +20,24 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/pkg/client/",
+            "buildFlags": [
+                "-tags",
+                "cli"
+            ],
             "env": {
                 "GOPATH": "${workspaceFolder}"
-            }
+            },
+            "args": [
+                "createRoom"
+            ]
         },
         {
-            "name": "Run Web Client",
-            "type": "firefox",
+            "name": "Run App Client",
+            "type": "go",
             "request": "launch",
-            "reAttach": true,
-            "url": "http://localhost:5173",
-            "webRoot": "${workspaceFolder}/web/",
-            "skipFiles": [
-                "${workspaceFolder}/node_modules/**/*.js"
-            ],
-            "preLaunchTask": "npm run dev",
+            "mode": "exec",
+            "program": "${workspaceFolder}/pkg/client/build/bin/NukeShip.exe",
+            "preLaunchTask": "[App] Build Client",
         }
     ]
 }

@@ -1,8 +1,7 @@
 import { VoidComponent, createSignal } from "solid-js"
 import { Select } from "@thisbeyond/solid-select"
 import Button from "./Button"
-import "./wasm_exec.js"
-import "./wasm.d.ts"
+import { CreateRoom, JoinRoom } from "../wailsjs/go/client/WailsApp"
 
 const MAX_ROOM_CODE_LENGTH = 5
 
@@ -20,12 +19,13 @@ const PlayPanel: VoidComponent = () => {
     const [roomCode, setRoomCode] = createSignal("")
     const [inputRef, setInputRef] = createSignal<HTMLInputElement>()
 
-    const createRoom = () => {
-        window.go.createRoom(/* gameMode() */)
+    const createRoom = async () => {
+        const code = await CreateRoom()
+        setRoomCode(code)
     }
 
-    const joinRoom = () => {
-        window.go.joinRoom(roomCode())
+    const joinRoom = async () => {
+        await JoinRoom(roomCode())
     }
 
     const setCaretToEnd = () => {

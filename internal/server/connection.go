@@ -1,13 +1,18 @@
 package server
 
+import (
+	"passeriform.com/nukeship/internal/pb"
+)
+
 //nolint:gochecknoglobals // Holding a global map for connections against wrapping struct.
 var ConnectionMap = map[string]*Connection{}
 
 type Connection struct {
-	ID     string
-	Ready  bool
-	Joined bool
-	Room   *string
+	Room    *string
+	MsgChan chan *pb.MessageStreamResponse
+	ID      string
+	Ready   bool
+	Joined  bool
 }
 
 func NewConnection(connectionID string) (*Connection, bool) {
@@ -18,10 +23,11 @@ func NewConnection(connectionID string) (*Connection, bool) {
 	}
 
 	connection = &Connection{
-		ID:     connectionID,
-		Ready:  false,
-		Joined: false,
-		Room:   nil,
+		Room:    nil,
+		MsgChan: make(chan *pb.MessageStreamResponse),
+		ID:      connectionID,
+		Ready:   false,
+		Joined:  false,
 	}
 
 	ConnectionMap[connectionID] = connection
