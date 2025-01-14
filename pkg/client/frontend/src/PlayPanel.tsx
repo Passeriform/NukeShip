@@ -85,10 +85,10 @@ const PlayPanel: VoidComponent = () => {
     }
 
     return (
-        <section class="relative flex flex-row items-center justify-evenly gap-8 rounded-lg border border-accent bg-background/75">
+        <section class="relative flex flex-row items-center justify-evenly gap-8 rounded-lg border border-dark-turquoise bg-black-blue/75">
             <section class="flex flex-col items-center justify-evenly gap-16 p-24">
                 <Select
-                    class="after:text-lg-symbol/relaxed-symbol relative m-0 min-h-20 min-w-56 rounded-lg border border-accent/30 bg-transparent p-0 text-center text-lg/tight-symbol font-medium uppercase tracking-wide text-accent/50 transition-all duration-200 ease-in-out after:pointer-events-none after:absolute after:right-0 after:top-0 after:p-5 after:px-4 after:py-7 after:font-title after:text-accent/50 after:content-['˅'] focus-within:border-accent-alt focus-within:shadow-blue focus-within:after:text-shadow"
+                    class="after:text-lg-symbol/relaxed-symbol relative m-0 min-h-20 min-w-56 rounded-lg border border-dark-turquoise/30 bg-transparent p-0 text-center text-lg/tight-symbol font-medium uppercase tracking-wide text-dark-turquoise/50 transition-all duration-200 ease-in-out after:pointer-events-none after:absolute after:right-0 after:top-0 after:p-5 after:px-4 after:py-7 after:font-title after:text-dark-turquoise/50 after:content-['˅'] focus-within:border-medium-slate-blue focus-within:shadow-sm focus-within:shadow-dark-turquoise/30 focus-within:after:text-shadow"
                     options={gameOptions}
                     initialValue={gameMode()}
                     onChange={setGameMode}
@@ -98,7 +98,7 @@ const PlayPanel: VoidComponent = () => {
             <div class="h-96 w-8 bg-divider" />
             <section class="flex flex-col items-center justify-evenly gap-16 p-24">
                 <input
-                    class="relative m-0 min-h-20 w-48 min-w-48 appearance-none rounded-lg border border-accent/30 bg-transparent p-0 text-center text-lg/relaxed font-medium uppercase tracking-wide text-accent/50 caret-transparent outline-none transition-all duration-200 ease-in-out focus:border-accent-alt focus:text-accent focus:shadow-blue focus:text-shadow"
+                    class="relative m-0 min-h-20 w-48 min-w-48 appearance-none rounded-lg border border-dark-turquoise/30 bg-transparent p-0 text-center text-lg/relaxed font-medium uppercase tracking-wide text-dark-turquoise/50 caret-transparent outline-none transition-all duration-200 ease-in-out focus:border-medium-slate-blue focus:text-dark-turquoise focus:shadow-sm focus:shadow-dark-turquoise/30 focus:text-shadow"
                     ref={setInputRef}
                     maxLength={MAX_ROOM_CODE_LENGTH}
                     placeholder="Code..."

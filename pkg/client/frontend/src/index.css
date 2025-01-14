@@ -2,8 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+    height: 100%;
+    overflow: hidden;
+}
+
 :root {
-    @apply bg-background font-normal text-accent;
+    @apply bg-black-blue font-normal text-dark-turquoise;
 
     color-scheme: light dark;
 

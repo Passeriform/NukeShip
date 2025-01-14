@@ -22,7 +22,7 @@ const App: VoidComponent = () => {
                         "line-height": "revert-layer",
                     },
                     className:
-                        "gap-2 rounded-lg border border-accent-alt text-left bg-transparent px-3 py-5 ps-6 text-base/relaxed font-medium tracking-wide text-accent shadow-blue text-shadow outline-none",
+                        "gap-2 rounded-lg border border-medium-slate-blue text-left bg-transparent px-3 py-5 ps-6 text-base/relaxed font-medium tracking-wide text-dark-turquoise shadow-sm shadow-dark-turquoise/30 text-shadow outline-none",
                 }}
                 gutter={32}
             />
