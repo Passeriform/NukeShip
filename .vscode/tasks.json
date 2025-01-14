@@ -35,16 +35,16 @@
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
             },
-            "hide": true,
             "command": "wails",
             "args": [
-                "build",
-                "-tags",
-                "gui"
+                "build"
             ],
             "dependsOrder": "sequence",
             "dependsOn": [
                 "[Protobuf] Refresh"
+            ],
+            "problemMatcher": [
+                "$go"
             ]
         },
         {
@@ -71,9 +71,7 @@
             "type": "shell",
             "command": "wails",
             "args": [
-                "dev",
-                "-tags",
-                "gui"
+                "dev"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"

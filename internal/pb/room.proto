@@ -9,8 +9,10 @@ enum ResponseStatus {
 
 enum ServerMessage {
     OPPONENT_JOINED = 0;
-    OPPONENT_LEFT = 1;
+    OPPONENT_READY = 1;
     GAME_STARTED = 2;
+    OPPONENT_LEFT = 3;
+    OPPONENT_REVERTED_READY = 4;
 }
 
 service RoomService {

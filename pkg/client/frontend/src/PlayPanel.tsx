@@ -1,7 +1,7 @@
 import { VoidComponent, createSignal } from "solid-js"
 import { Select } from "@thisbeyond/solid-select"
 import Button from "./Button"
-import { CreateRoom, JoinRoom } from "../wailsjs/go/client/WailsApp"
+import { CreateRoom, JoinRoom } from "../wailsjs/go/main/WailsApp"
 import { useNavigate } from "@solidjs/router"
 import toast from "solid-toast"
 
