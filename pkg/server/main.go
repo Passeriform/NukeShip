@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/necmettindev/randomstring"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -18,7 +19,6 @@ import (
 
 	"passeriform.com/nukeship/internal/pb"
 	"passeriform.com/nukeship/internal/server"
-	"passeriform.com/nukeship/internal/utility"
 )
 
 const UniqueIDLength = 5
@@ -36,13 +36,20 @@ type Server struct {
 
 func (*Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.CreateRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
-	roomID := utility.NewRandomString(UniqueIDLength)
+
+	// TODO: Move the id generation login inside NewRoom method.
+	roomID, err := randomstring.GenerateString(randomstring.GenerationOptions{
+		Length:           UniqueIDLength,
+		DisableNumeric:   true,
+		DisableLowercase: true,
+	})
+	if err != nil {
+		log.Panicf("Error occurred while creating client id: %v", err)
+	}
 
 	client, _ := server.NewConnection(clientID)
 	room, _ := server.NewRoom(roomID)
 	room.AddConnection(client)
-
-	log.Println(roomID)
 
 	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_OK, RoomId: roomID}, nil
 }

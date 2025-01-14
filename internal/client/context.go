@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
+	"log"
 	"time"
 
+	"github.com/necmettindev/randomstring"
 	"google.golang.org/grpc/metadata"
-
-	"passeriform.com/nukeship/internal/utility"
 )
 
 const (
@@ -22,8 +22,18 @@ type Context struct {
 }
 
 func NewContext(sHost, sPort string) context.Context {
+	clientID, err := randomstring.GenerateString(randomstring.GenerationOptions{
+		Length:           UniqueIDLength,
+		DisableNumeric:   true,
+		DisableLowercase: true,
+	})
+
+	if err != nil {
+		log.Panicf("Error occurred while creating client id: %v", err)
+	}
+
 	return context.WithValue(context.Background(), contextPropertyKey{}, Context{
-		ClientID:   utility.NewRandomString(UniqueIDLength),
+		ClientID:   clientID,
 		ServerHost: sHost,
 		ServerPort: sPort,
 	})

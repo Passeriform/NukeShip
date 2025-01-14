@@ -50,6 +50,8 @@
         "protobuf",
         "protoc",
         "pyncz",
+        "randomstring",
+        "solidjs",
         "tagalign",
         "tenv",
         "testifylint",
