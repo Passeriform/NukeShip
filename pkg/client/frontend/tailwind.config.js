@@ -18,7 +18,8 @@ export default {
             "base": "1rem",
             "lg-symbol": "1.5rem",
             "lg": "2rem",
-            "xl": "clamp(40px, 10vw, 100px)",
+            "lg-title": "clamp(40px, 10vw, 100px)",
+            "xl": "8rem",
         },
         fontFamily: {
             title: ["Orbitron", "sans-serif"],
@@ -29,6 +30,7 @@ export default {
         },
         dropShadow: {
             signal: "0.2rem 0.2rem 3px",
+            spinner: "0 1px 2px",
             title: "0 1px 3px",
         },
         textShadow: {
@@ -52,9 +54,12 @@ export default {
             height: {
                 "64-25deg": "42rem",
             },
+            inset: {
+                "1/8": "12.5%",
+            },
             lineHeight: {
-                "relaxed": "0.125rem",
-                "relaxed-symbol": "1.5rem",
+                "tight": "0.125rem",
+                "tight-symbol": "1.5rem",
             },
             backgroundImage: {
                 city: "url(https://images.unsplash.com/photo-1551712766-817b7d0e8291?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80)",
@@ -63,8 +68,15 @@ export default {
                     "conic-gradient(from -0.111turn at 100% 100%, #b4bbf425 0deg, transparent 12deg 351deg, #b4bbf425 360deg)",
                 divider: "repeating-linear-gradient(-45deg, #00d6fc, #00d6fc 10px, transparent 10px, transparent 20px)",
             },
+            saturate: {
+                lesser: 0.8
+            },
+            hueRotate: {
+                45: "45deg",
+            },
             blur: {
                 signal: "2px",
+                spinner: "1px",
             },
             translate: {
                 "1/2-25deg": "3rem",
