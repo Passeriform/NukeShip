@@ -1,0 +1,16 @@
+export const flicker = {
+    "0%": { opacity: 0.4 },
+    "1%": { opacity: 0.5 },
+    "2%": { opacity: 0.6 },
+    "3%": { opacity: 0.85 },
+    "5%": { opacity: 0.5 },
+    "6%": { opacity: 1 },
+    "7%": { opacity: 0.1 },
+    "8%": { opacity: 0.25 },
+    "9%": { opacity: 0.5 },
+    "12%": { opacity: 1 },
+    "14%": { opacity: 0.85 },
+    "16%": { opacity: 0.4 },
+    "18%": { opacity: 0.5 },
+    "20%": { opacity: 1 },
+}

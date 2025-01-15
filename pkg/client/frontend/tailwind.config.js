@@ -1,4 +1,4 @@
-import { slowBlink, glitchFont, glitchMovement, glitchOpacity, glitchPath } from "./src/animations"
+import { slowBlink, glitchFont, glitchMovement, glitchOpacity, glitchPath, flicker } from "./src/animations"
 
 /** @type {import("tailwindcss").Config} */
 export default {
@@ -81,6 +81,7 @@ export default {
                 "1/10": "10%",
             },
             keyframes: {
+                "flicker": flicker,
                 "glitch-path": glitchPath,
                 "glitch-opacity": glitchOpacity,
                 "glitch-font": glitchFont,
@@ -88,6 +89,7 @@ export default {
                 "slow-blink": slowBlink,
             },
             animation: {
+                "flicker": "flicker 2s linear alternate infinite",
                 "glitch-base": "glitch-path 5s step-end infinite",
                 "glitch-alpha":
                     "glitch-path 5s step-end infinite, glitch-opacity 5s step-end infinite, glitch-font 8s step-end infinite, glitch-movement 10s step-end infinite",
