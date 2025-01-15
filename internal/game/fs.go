@@ -120,6 +120,7 @@ func (node *FsTreeNode) WithChildren(children []*FsTreeNode) *FsTreeNode {
 
 func PopulateTree(root string, opts PopulationOptions) FsTree {
 	nodes := populateTreeInternal(root, opts, InitialDepth)
+
 	return FsTree{Top: NewFsTreeNode(filepath.Base(root)).WithChildren(nodes)}
 }
 

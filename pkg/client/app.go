@@ -138,6 +138,7 @@ func connect(ctx context.Context, app *WailsApp) {
 			if app.state == AppState_AWAITING_READY {
 				app.dispatchStateChange(AppState_AWAITING_GAME_START)
 			}
+
 			app.opponentReady = true
 		case pb.ServerMessage_GAME_STARTED:
 			app.dispatchStateChange(AppState_IN_GAME)

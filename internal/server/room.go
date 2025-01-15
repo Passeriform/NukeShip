@@ -1,5 +1,15 @@
 package server
 
+import (
+	"log"
+
+	"github.com/necmettindev/randomstring"
+)
+
+const (
+	UniqueIDLength = 5
+)
+
 //nolint:gochecknoglobals // Holding a global map for rooms against wrapping struct.
 var roomMap = map[string]*Room{}
 
@@ -9,7 +19,16 @@ type Room struct {
 	GameRunning bool
 }
 
-func NewRoom(roomID string) (*Room, bool) {
+func NewRoom() (*Room, bool) {
+	roomID, err := randomstring.GenerateString(randomstring.GenerationOptions{
+		Length:           UniqueIDLength,
+		DisableNumeric:   true,
+		DisableLowercase: true,
+	})
+	if err != nil {
+		log.Panicf("Error occurred while creating client id: %v", err)
+	}
+
 	room, ok := roomMap[roomID]
 
 	if ok {

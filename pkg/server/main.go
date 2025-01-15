@@ -15,14 +15,11 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/necmettindev/randomstring"
 
 	"passeriform.com/nukeship/internal/game"
 	"passeriform.com/nukeship/internal/pb"
 	"passeriform.com/nukeship/internal/server"
 )
-
-const UniqueIDLength = 5
 
 type serverConfig struct {
 	Port        string `env:"PORT"        envDefault:"50051"`
@@ -37,23 +34,13 @@ type Server struct {
 
 func (*Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.CreateRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
-
-	// TODO: Move the id generation login inside NewRoom method.
-	roomID, err := randomstring.GenerateString(randomstring.GenerationOptions{
-		Length:           UniqueIDLength,
-		DisableNumeric:   true,
-		DisableLowercase: true,
-	})
-	if err != nil {
-		log.Panicf("Error occurred while creating client id: %v", err)
-	}
-
 	client, _ := server.NewConnection(clientID)
-	room, _ := server.NewRoom(roomID)
+	room, _ := server.NewRoom()
 	room.AddConnection(client)
+
 	client.Room = room
 
-	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_OK, RoomId: roomID}, nil
+	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_OK, RoomId: room.ID}, nil
 }
 
 func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRoomResponse, error) {
@@ -68,6 +55,7 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 	}
 
 	room.AddConnection(client)
+
 	client.Room = room
 
 	for ID, client := range room.Clients {
@@ -80,7 +68,7 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_OK}, nil
 }
 
-func (*Server) LeaveRoom(ctx context.Context, in *pb.LeaveRoomRequest) (*pb.LeaveRoomResponse, error) {
+func (*Server) LeaveRoom(ctx context.Context, _ *pb.LeaveRoomRequest) (*pb.LeaveRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 
 	client := server.GetConnection(clientID)
@@ -116,17 +104,17 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 
 	startGameFlag := true
 
-	for ID, c := range room.Clients {
-		startGameFlag = startGameFlag && c.Ready
+	for ID, conn := range room.Clients {
+		startGameFlag = startGameFlag && conn.Ready
 
 		if ID == clientID {
 			continue
 		}
 
 		if ready {
-			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_READY}
+			conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_READY}
 		} else {
-			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_REVERTED_READY}
+			conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_REVERTED_READY}
 		}
 	}
 
