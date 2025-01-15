@@ -1,14 +1,13 @@
 import { useNavigate, useParams } from "@solidjs/router"
 import { createEffect, Show, VoidComponent } from "solid-js"
-import grid from "./assets/grid.mp4"
+import waitingRoomVideo from "./assets/waiting_room.mp4"
 import NavButton from "./NavButton"
 import Tips from "./Tips"
-import useConnection from "./useConnection"
 import VideoBackground from "./VideoBackground"
 import useGameState from "./useGameState"
 import { main } from "../wailsjs/go/models"
 import { Grid } from "solid-spinner"
-import { UpdateReady } from "../wailsjs/go/main/WailsApp"
+import { LeaveRoom, UpdateReady } from "../wailsjs/go/main/WailsApp"
 import Button from "./Button"
 
 // TODO: Leave room on back navigation.
@@ -29,7 +28,6 @@ const WaitingRoom: VoidComponent = () => {
     const { code } = useParams()
     const navigate = useNavigate()
     const { gameState } = useGameState()
-    useConnection()
 
     const showLoader = () =>
         [main.AppState.AWAITING_OPPONENT, main.AppState.AWAITING_READY, main.AppState].includes(
@@ -40,6 +38,7 @@ const WaitingRoom: VoidComponent = () => {
     const isReady = () => gameState() === main.AppState.AWAITING_READY
 
     const goBack = () => {
+        LeaveRoom()
         navigate("/")
     }
 
@@ -51,7 +50,7 @@ const WaitingRoom: VoidComponent = () => {
 
     return (
         <>
-            <VideoBackground src={grid} />
+            <VideoBackground src={waitingRoomVideo} />
             <NavButton position="left" text="🡐 Back" onClick={goBack} />
             <section class="flex flex-col items-center justify-evenly gap-4">
                 <h2 class="animate-glitch-base font-title text-xl font-bold text-dark-turquoise drop-shadow-default before:absolute before:left-4 before:top-2 before:-z-10 before:w-full-extend before:animate-glitch-alpha before:text-vivid-cerise before:content-[attr(data-text)] after:absolute after:-left-2 after:top-1 after:-z-10 after:w-full-extend after:animate-glitch-beta after:text-spiro-disco-ball after:content-[attr(data-text)]">

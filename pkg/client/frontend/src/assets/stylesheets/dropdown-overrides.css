@@ -11,7 +11,7 @@
 }
 
 .solid-select-container .solid-select-list {
-    @apply flex flex-col gap-1 rounded-lg border border-dark-turquoise/30 bg-black-blue/75;
+    @apply flex flex-col gap-1 rounded-lg border border-dark-turquoise/30 bg-midnight-blue/75 backdrop-blur-md;
 }
 
 .solid-select-container .solid-select-option:is(:hover, [data-focused="true"]) {

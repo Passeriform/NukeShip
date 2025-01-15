@@ -241,13 +241,30 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 
 	resp, err := app.Client.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
 	if err != nil {
-		log.Printf("Could not join room with id: %v", err)
+		log.Printf("Could not join room with id %v: %v", roomCode, err)
 		return false
 	}
 
-	log.Printf("Room joined: %s", resp.GetStatus().String())
+	log.Printf("Room joined status: %s", resp.GetStatus().String())
 
 	app.dispatchStateChange(AppState_ROOM_FILLED)
+
+	return resp.GetStatus() == pb.ResponseStatus_OK
+}
+
+func (app *WailsApp) LeaveRoom() bool {
+	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+	defer cancel()
+
+	resp, err := app.Client.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
+	if err != nil {
+		log.Printf("Could not leave room: %v", err)
+		return false
+	}
+
+	log.Printf("Room left status: %s", resp.GetStatus().String())
+
+	app.dispatchStateChange(AppState_INIT)
 
 	return resp.GetStatus() == pb.ResponseStatus_OK
 }

@@ -34,5 +34,8 @@ func GetRoom(roomID string) *Room {
 
 func (room *Room) AddConnection(conn *Connection) {
 	room.Clients[conn.ID] = conn
-	conn.Room = room
+}
+
+func (room *Room) RemoveConnection(connID string) {
+	delete(room.Clients, connID)
 }

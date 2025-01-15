@@ -97,6 +97,7 @@ export default {
                 "dark-turquoise": "#00ced1",
                 "medium-slate-blue": "#7b68ee",
                 "black-blue": "#151e29",
+                "midnight-blue": "#141b32",
                 "nile-blue": "#193751",
                 "vivid-cerise": "#da1d81",
                 "spiro-disco-ball": "#0fc0fc",

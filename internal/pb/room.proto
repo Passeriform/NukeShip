@@ -19,6 +19,7 @@ enum ServerMessage {
 service RoomService {
     rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse);
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
+    rpc LeaveRoom (LeaveRoomRequest) returns (LeaveRoomResponse);
     rpc UpdateReady (UpdateReadyRequest) returns (UpdateReadyResponse);
     rpc SubscribeMessages (SubscribeMessagesRequest) returns (stream MessageStreamResponse);
 }
@@ -41,6 +42,12 @@ message JoinRoomRequest {
 }
 
 message JoinRoomResponse {
+    ResponseStatus status = 1;
+}
+
+message LeaveRoomRequest { }
+
+message LeaveRoomResponse {
     ResponseStatus status = 1;
 }
 

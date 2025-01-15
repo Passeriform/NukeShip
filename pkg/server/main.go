@@ -51,6 +51,7 @@ func (*Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.Cre
 	client, _ := server.NewConnection(clientID)
 	room, _ := server.NewRoom(roomID)
 	room.AddConnection(client)
+	client.Room = room
 
 	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_OK, RoomId: roomID}, nil
 }
@@ -67,6 +68,7 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 	}
 
 	room.AddConnection(client)
+	client.Room = room
 
 	for ID, client := range room.Clients {
 		if ID == clientID {
@@ -76,6 +78,26 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 	}
 
 	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_OK}, nil
+}
+
+func (*Server) LeaveRoom(ctx context.Context, in *pb.LeaveRoomRequest) (*pb.LeaveRoomResponse, error) {
+	clientID, _ := server.ExtractClientIDMetadata(ctx)
+
+	client := server.GetConnection(clientID)
+
+	if client.Room == nil {
+		return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_NO_ROOM_JOINED_YET}, nil
+	}
+
+	room := client.Room
+
+	room.RemoveConnection(client.ID)
+
+	for _, client := range room.Clients {
+		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_LEFT}
+	}
+
+	return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_OK}, nil
 }
 
 func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.UpdateReadyResponse, error) {
@@ -88,26 +110,34 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 		return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_NO_ROOM_JOINED_YET}, nil
 	}
 
+	room := client.Room
+
 	client.Ready = ready
 
 	startGameFlag := true
 
-	for ID, client := range client.Room.Clients {
-		startGameFlag = startGameFlag && client.Ready
+	for ID, c := range room.Clients {
+		startGameFlag = startGameFlag && c.Ready
 
 		if ID == clientID {
 			continue
 		}
 
-		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_READY}
+		if ready {
+			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_READY}
+		} else {
+			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_REVERTED_READY}
+		}
 	}
 
 	if startGameFlag {
-		client.Room.GameRunning = true
+		room.GameRunning = true
 
 		go game.NewGame()
 
-		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_GAME_STARTED}
+		for _, c := range room.Clients {
+			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_GAME_STARTED}
+		}
 	}
 
 	return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_OK}, nil
@@ -131,7 +161,7 @@ func (srv *Server) SubscribeMessages(
 
 		case <-stream.Context().Done():
 			log.Printf("Client was disconnected or context was cancelled for client %s", client.ID)
-			server.RemoveConnection(clientID)
+			client.Remove()
 
 			return nil
 

@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	RoomService_CreateRoom_FullMethodName        = "/RoomService/CreateRoom"
 	RoomService_JoinRoom_FullMethodName          = "/RoomService/JoinRoom"
+	RoomService_LeaveRoom_FullMethodName         = "/RoomService/LeaveRoom"
 	RoomService_UpdateReady_FullMethodName       = "/RoomService/UpdateReady"
 	RoomService_SubscribeMessages_FullMethodName = "/RoomService/SubscribeMessages"
 )
@@ -31,6 +32,7 @@ const (
 type RoomServiceClient interface {
 	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
 	JoinRoom(ctx context.Context, in *JoinRoomRequest, opts ...grpc.CallOption) (*JoinRoomResponse, error)
+	LeaveRoom(ctx context.Context, in *LeaveRoomRequest, opts ...grpc.CallOption) (*LeaveRoomResponse, error)
 	UpdateReady(ctx context.Context, in *UpdateReadyRequest, opts ...grpc.CallOption) (*UpdateReadyResponse, error)
 	SubscribeMessages(ctx context.Context, in *SubscribeMessagesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageStreamResponse], error)
 }
@@ -57,6 +59,16 @@ func (c *roomServiceClient) JoinRoom(ctx context.Context, in *JoinRoomRequest, o
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(JoinRoomResponse)
 	err := c.cc.Invoke(ctx, RoomService_JoinRoom_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *roomServiceClient) LeaveRoom(ctx context.Context, in *LeaveRoomRequest, opts ...grpc.CallOption) (*LeaveRoomResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveRoomResponse)
+	err := c.cc.Invoke(ctx, RoomService_LeaveRoom_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +110,7 @@ type RoomService_SubscribeMessagesClient = grpc.ServerStreamingClient[MessageStr
 type RoomServiceServer interface {
 	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
 	JoinRoom(context.Context, *JoinRoomRequest) (*JoinRoomResponse, error)
+	LeaveRoom(context.Context, *LeaveRoomRequest) (*LeaveRoomResponse, error)
 	UpdateReady(context.Context, *UpdateReadyRequest) (*UpdateReadyResponse, error)
 	SubscribeMessages(*SubscribeMessagesRequest, grpc.ServerStreamingServer[MessageStreamResponse]) error
 	mustEmbedUnimplementedRoomServiceServer()
@@ -115,6 +128,9 @@ func (UnimplementedRoomServiceServer) CreateRoom(context.Context, *CreateRoomReq
 }
 func (UnimplementedRoomServiceServer) JoinRoom(context.Context, *JoinRoomRequest) (*JoinRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JoinRoom not implemented")
+}
+func (UnimplementedRoomServiceServer) LeaveRoom(context.Context, *LeaveRoomRequest) (*LeaveRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaveRoom not implemented")
 }
 func (UnimplementedRoomServiceServer) UpdateReady(context.Context, *UpdateReadyRequest) (*UpdateReadyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateReady not implemented")
@@ -179,6 +195,24 @@ func _RoomService_JoinRoom_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoomService_LeaveRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).LeaveRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoomService_LeaveRoom_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).LeaveRoom(ctx, req.(*LeaveRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RoomService_UpdateReady_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateReadyRequest)
 	if err := dec(in); err != nil {
@@ -222,6 +256,10 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "JoinRoom",
 			Handler:    _RoomService_JoinRoom_Handler,
+		},
+		{
+			MethodName: "LeaveRoom",
+			Handler:    _RoomService_LeaveRoom_Handler,
 		},
 		{
 			MethodName: "UpdateReady",

@@ -16,7 +16,7 @@ const NavButton: VoidComponent<NavButtonProps> = ({
 }) => {
     return (
         <nav class={`absolute ${position === "left" ? "left-16" : "right-16"} top-16 ${cls}`}>
-            <Button class="min-h-16 min-w-32" text={text} onClick={onClick} />
+            <Button class="min-h-16 min-w-32 backdrop-blur-md" text={text} onClick={onClick} />
         </nav>
     )
 }

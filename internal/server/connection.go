@@ -38,10 +38,10 @@ func GetConnection(connID string) *Connection {
 	return conn
 }
 
-func RemoveConnection(connID string) {
-	if connectionMap[connID].Room != nil {
-		delete(connectionMap[connID].Room.Clients, connID)
+func (conn *Connection) Remove() {
+	if connectionMap[conn.ID].Room != nil {
+		connectionMap[conn.ID].Room.RemoveConnection(conn.ID)
 	}
 
-	delete(connectionMap, connID)
+	delete(connectionMap, conn.ID)
 }

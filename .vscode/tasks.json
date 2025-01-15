@@ -49,26 +49,7 @@
             ]
         },
         {
-            "label": "[NukeShip] [Local] Run Server",
-            "type": "shell",
-            "command": "go",
-            "args": [
-                "run",
-                "."
-            ],
-            "problemMatcher": [
-                "$go"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/pkg/server"
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "[Protobuf] Refresh"
-            ]
-        },
-        {
-            "label": "[NukeShip] [Local] Run App Client",
+            "label": "[App] Run Client",
             "type": "shell",
             "command": "wails",
             "args": [
@@ -87,7 +68,46 @@
             }
         },
         {
-            "label": "[NukeShip] [Local] Run Native Client - Create Room",
+            "label": "[Server] [Local] Run Server",
+            "type": "shell",
+            "command": "go",
+            "args": [
+                "run",
+                "."
+            ],
+            "problemMatcher": [
+                "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/server"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Protobuf] Refresh"
+            ]
+        },
+        {
+            "label": "[Server] [Docker] Run Server",
+            "type": "docker-compose",
+            "dockerCompose": {
+                "up": {
+                    "build": true,
+                    "services": [
+                        "server"
+                    ],
+                    "customOptions": "--force-recreate --remove-orphans"
+                },
+                "files": [
+                    "docker-compose.yml"
+                ],
+                "envFile": ".env"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "[Cli] [Local] Run Native Client - Create Room",
             "type": "shell",
             "command": "go",
             "problemMatcher": [
@@ -105,7 +125,7 @@
             }
         },
         {
-            "label": "[NukeShip] [Local] Run Native Client - Join Room",
+            "label": "[Cli] [Local] Run Native Client - Join Room",
             "type": "shell",
             "command": "go",
             "problemMatcher": [
@@ -121,26 +141,6 @@
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
-            }
-        },
-        {
-            "label": "[NukeShip] [Docker] Run Server",
-            "type": "docker-compose",
-            "dockerCompose": {
-                "up": {
-                    "build": true,
-                    "services": [
-                        "server"
-                    ],
-                    "customOptions": "--force-recreate --remove-orphans"
-                },
-                "files": [
-                    "docker-compose.yml"
-                ],
-                "envFile": ".env"
-            },
-            "options": {
-                "cwd": "${workspaceFolder}"
             }
         }
     ],
