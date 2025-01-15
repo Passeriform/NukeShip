@@ -10,9 +10,7 @@ import { Grid } from "solid-spinner"
 import { LeaveRoom, UpdateReady } from "../wailsjs/go/main/WailsApp"
 import Button from "./Button"
 
-// TODO: Leave room on back navigation.
 // TODO: Disable all controls when server is disconnected.
-// TODO: Slow blink animation for loading text.
 
 const messageMapping = {
     [main.AppState.AWAITING_OPPONENT]: "Waiting for an opponent to join...",
@@ -60,7 +58,9 @@ const WaitingRoom: VoidComponent = () => {
                     <Show when={showLoader()}>
                         <Grid color="#00d6fc98" class="h-8 w-8 blur-px drop-shadow-spinner" />
                     </Show>
-                    <span class="px-8 text-base/relaxed font-medium uppercase tracking-wide text-dark-turquoise text-shadow">
+                    <span
+                        class={`px-8 text-base/relaxed font-medium uppercase tracking-wide text-dark-turquoise text-shadow ${showLoader() ? "animate-slow-blink" : ""}`}
+                    >
                         {getMessageString(gameState())}
                     </span>
                 </p>

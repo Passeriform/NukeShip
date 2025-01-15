@@ -1,4 +1,4 @@
-import { glitchFont, glitchMovement, glitchOpacity, glitchPath } from "./glitch"
+import { slowBlink, glitchFont, glitchMovement, glitchOpacity, glitchPath } from "./src/animations"
 
 /** @type {import("tailwindcss").Config} */
 export default {
@@ -85,6 +85,7 @@ export default {
                 "glitch-opacity": glitchOpacity,
                 "glitch-font": glitchFont,
                 "glitch-movement": glitchMovement,
+                "slow-blink": slowBlink,
             },
             animation: {
                 "glitch-base": "glitch-path 5s step-end infinite",
@@ -92,6 +93,7 @@ export default {
                     "glitch-path 5s step-end infinite, glitch-opacity 5s step-end infinite, glitch-font 8s step-end infinite, glitch-movement 10s step-end infinite",
                 "glitch-beta":
                     "glitch-path 5s step-end infinite, glitch-opacity 5s step-end infinite, glitch-font 7s step-end infinite, glitch-movement 8s step-end infinite",
+                "slow-blink": "slow-blink 3s linear alternate infinite"
             },
             colors: {
                 "dark-turquoise": "#00ced1",

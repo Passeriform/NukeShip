@@ -5,6 +5,8 @@ import Landing from "./Landing"
 import WaitingRoom from "./WaitingRoom"
 import useConnection from "./useConnection"
 
+// TODO: Move components into pages, components and hooks directories.
+
 const App: VoidComponent = () => {
     const { connected } = useConnection()
     const [disconnectedToastId, setDisconnectedToastId] = createSignal<string | undefined>(undefined)
