@@ -14,14 +14,14 @@ type Connection struct {
 	Ready   bool
 }
 
-func NewConnection(connID string) (*Connection, bool) {
-	conn, ok := connectionMap[connID]
+func CreateConnection(connID string) {
+	_, ok := connectionMap[connID]
 
 	if ok {
-		return conn, false
+		return
 	}
 
-	conn = &Connection{
+	conn := &Connection{
 		Room:    nil,
 		MsgChan: make(chan *pb.MessageStreamResponse),
 		ID:      connID,
@@ -29,8 +29,6 @@ func NewConnection(connID string) (*Connection, bool) {
 	}
 
 	connectionMap[connID] = conn
-
-	return conn, true
 }
 
 func GetConnection(connID string) *Connection {

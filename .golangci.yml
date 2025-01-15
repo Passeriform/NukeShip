@@ -82,7 +82,6 @@ linters-settings:
     numbers: true
     min: -99999999
     max: 99999999
-    ignore-strings: "\\%w: \\%v"
   gocritic:
     enable-all: true
     disabled-checks:
@@ -191,31 +190,34 @@ linters-settings:
     allow-assign-and-call: false
     allow-multiline-assign: true
     force-err-cuddling: true
-    force-short-decl-cuddling: true
     strict-append: true
 issues:
   exclude-rules:
-    - path: _test\.go
+    - path: .go
+      linters:
+        - unused
+      text: var `_` is unused
+    - path: _test/.go
       linters:
         - revive
       text: "add-constant: avoid magic numbers like"
-    - path: _test\.go
+    - path: _test/.go
       linters:
         - goconst
       text: "cognitive complexity"
-    - path: _test\.go
+    - path: _test/.go
       linters:
         - goconst
       text: "Got %v, want %v"
-    - path: _test\.go
+    - path: _test/.go
       linters:
         - revive
       text: "cognitive-complexity"
-    - path: _test\.go
+    - path: _test/.go
       linters:
         - gocognit
       text: "cognitive complexity"
-    - path: _test\.go
+    - path: _test/.go
       linters:
         - govet
       text: "fieldalignment"

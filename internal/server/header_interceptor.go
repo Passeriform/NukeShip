@@ -19,7 +19,7 @@ func HeaderUnaryInterceptor(
 		return nil, status.Error(codes.Unauthenticated, "missing metadata in context")
 	}
 
-	NewConnection(clientID)
+	CreateConnection(clientID)
 
 	return handler(ctx, req)
 }
@@ -35,7 +35,7 @@ func HeaderStreamInterceptor(
 		return status.Error(codes.Unauthenticated, "missing client-id in context metadata")
 	}
 
-	NewConnection(clientID)
+	CreateConnection(clientID)
 
 	return handler(srv, stream)
 }

@@ -3,8 +3,6 @@ import { GetConnectionState } from "../wailsjs/go/main/WailsApp"
 import { main } from "../wailsjs/go/models"
 import { EventsOff, EventsOn } from "../wailsjs/runtime/runtime"
 
-// TODO: Handle toasts in the caller instead.
-
 const useConnection = () => {
     const [connected, { mutate }] = createResource(GetConnectionState)
 

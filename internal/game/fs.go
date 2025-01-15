@@ -52,7 +52,7 @@ func (node *FsTreeNode) countChildren() (int, int) {
 	return surfaceCount, nestedCount
 }
 
-//nolint:gocognit // Alternative to resolving cognitive complexity creates needless clone methods
+//nolint:gocognit,revive // Alternative to resolving cognitive complexity creates needless clone methods
 func populateTreeInternal(root string, opts PopulationOptions, depth int) []*FsTreeNode {
 	// If error occurs while reading directory, return the node as leaf.
 	entries, err := os.ReadDir(root)

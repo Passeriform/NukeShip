@@ -34,7 +34,7 @@ type Server struct {
 
 func (*Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.CreateRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
-	client, _ := server.NewConnection(clientID)
+	client := server.GetConnection(clientID)
 	room, _ := server.NewRoom()
 	room.AddConnection(client)
 
@@ -88,6 +88,7 @@ func (*Server) LeaveRoom(ctx context.Context, _ *pb.LeaveRoomRequest) (*pb.Leave
 	return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_OK}, nil
 }
 
+//nolint:gocognit,revive // TODO: Split and remodel using FSM.
 func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.UpdateReadyResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 	ready := in.GetReady()
@@ -136,7 +137,7 @@ func (srv *Server) SubscribeMessages(
 	stream grpc.ServerStreamingServer[pb.MessageStreamResponse],
 ) error {
 	clientID, _ := server.ExtractClientIDMetadata(stream.Context())
-	client, _ := server.NewConnection(clientID)
+	client := server.GetConnection(clientID)
 
 	for {
 		select {
@@ -153,7 +154,6 @@ func (srv *Server) SubscribeMessages(
 
 			return nil
 
-		// TODO: Fix graceful shutdown getting stuck.
 		case <-srv.ShutdownCtx.Done():
 			log.Printf("Server shutting down. Gracefully disconnecting client %s", clientID)
 			return status.Errorf(codes.Unavailable, "Server is shutting down")
@@ -161,16 +161,16 @@ func (srv *Server) SubscribeMessages(
 	}
 }
 
-func onShutdown(cancel context.CancelFunc) {
+func handleQuit(cancel context.CancelFunc, srv *grpc.Server) {
 	c := make(chan os.Signal, 1)
-
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
-	go func() {
-		<-c
-		log.Println("Received shutdown signal. Relaying stop to server context.")
-		cancel()
-	}()
+	<-c
+
+	log.Println("Received shutdown signal. Relaying stop to server context.")
+
+	cancel()
+	srv.GracefulStop()
 }
 
 func main() {
@@ -187,8 +187,6 @@ func main() {
 
 	shutdownCtx, stop := context.WithCancel(context.Background())
 
-	onShutdown(stop)
-
 	srv := grpc.NewServer(
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{}),
 		grpc.KeepaliveParams(keepalive.ServerParameters{}),
@@ -199,7 +197,8 @@ func main() {
 			grpc.StreamServerInterceptor(server.HeaderStreamInterceptor),
 		),
 	)
-	defer srv.GracefulStop()
+
+	go handleQuit(stop, srv)
 
 	if cfg.Environment == "DEVELOPMENT" {
 		reflection.Register(srv)
@@ -212,4 +211,6 @@ func main() {
 	if err := srv.Serve(lis); err != nil {
 		log.Panicf("Failed to serve: %v", err)
 	}
+
+	log.Println("Ending lifecycle")
 }

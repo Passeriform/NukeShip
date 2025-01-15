@@ -85,8 +85,10 @@ type WailsApp struct {
 }
 
 func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
+	cCtx := client.UnwrapContext(ctx)
+
 	conn, err := grpc.NewClient(
-		client.GetServerHost(ctx)+":"+client.GetServerPort(ctx),
+		cCtx.ServerHost+":"+cCtx.ServerPort,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
 	)
@@ -98,6 +100,29 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 	c := pb.NewRoomServiceClient(conn)
 
 	return c, nil
+}
+
+func handleStateChange(ut pb.ServerMessage, app *WailsApp) {
+	switch ut {
+	case pb.ServerMessage_OPPONENT_JOINED:
+		app.dispatchStateChange(AppState_ROOM_FILLED)
+	case pb.ServerMessage_OPPONENT_READY:
+		if app.state == AppState_AWAITING_READY {
+			app.dispatchStateChange(AppState_AWAITING_GAME_START)
+		}
+
+		app.opponentReady = true
+	case pb.ServerMessage_GAME_STARTED:
+		app.dispatchStateChange(AppState_IN_GAME)
+	case pb.ServerMessage_OPPONENT_REVERTED_READY:
+		app.dispatchStateChange(AppState_AWAITING_READY)
+	case pb.ServerMessage_OPPONENT_LEFT:
+		if app.state == AppState_IN_GAME {
+			app.dispatchStateChange(AppState_RECOVERY)
+		} else {
+			app.dispatchStateChange(AppState_AWAITING_OPPONENT)
+		}
+	}
 }
 
 // TODO: Add reconnection logic to recover streaming messages.
@@ -131,26 +156,7 @@ func connect(ctx context.Context, app *WailsApp) {
 			return
 		}
 
-		switch update.GetType() {
-		case pb.ServerMessage_OPPONENT_JOINED:
-			app.dispatchStateChange(AppState_ROOM_FILLED)
-		case pb.ServerMessage_OPPONENT_READY:
-			if app.state == AppState_AWAITING_READY {
-				app.dispatchStateChange(AppState_AWAITING_GAME_START)
-			}
-
-			app.opponentReady = true
-		case pb.ServerMessage_GAME_STARTED:
-			app.dispatchStateChange(AppState_IN_GAME)
-		case pb.ServerMessage_OPPONENT_REVERTED_READY:
-			app.dispatchStateChange(AppState_AWAITING_READY)
-		case pb.ServerMessage_OPPONENT_LEFT:
-			if app.state == AppState_IN_GAME {
-				app.dispatchStateChange(AppState_RECOVERY)
-			} else {
-				app.dispatchStateChange(AppState_AWAITING_OPPONENT)
-			}
-		}
+		handleStateChange(update.GetType(), app)
 	}
 }
 
@@ -193,6 +199,7 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
 	defer cancel()
 
+	// TODO: Use error codes middleware to handle RPC errors properly.
 	resp, err := app.Client.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
 	if err != nil {
 		log.Printf("Could not update ready state: %v", err)
@@ -206,15 +213,17 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 
 	log.Printf("Updated ready state: %t", ready)
 
-	if ready {
-		if app.opponentReady {
-			app.dispatchStateChange(AppState_AWAITING_GAME_START)
-		} else {
-			app.dispatchStateChange(AppState_AWAITING_READY)
-		}
-	} else {
+	if !ready {
 		app.dispatchStateChange(AppState_ROOM_FILLED)
+		return resp.GetStatus() == pb.ResponseStatus_OK, nil
 	}
+
+	if app.opponentReady {
+		app.dispatchStateChange(AppState_AWAITING_GAME_START)
+		return resp.GetStatus() == pb.ResponseStatus_OK, nil
+	}
+
+	app.dispatchStateChange(AppState_AWAITING_READY)
 
 	return resp.GetStatus() == pb.ResponseStatus_OK, nil
 }

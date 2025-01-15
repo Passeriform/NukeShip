@@ -39,20 +39,17 @@ func NewContext(sHost, sPort string) context.Context {
 	})
 }
 
-func GetClientID(ctx context.Context) string {
-	return ctx.Value(contextPropertyKey{}).(Context).ClientID
-}
+func UnwrapContext(ctx context.Context) Context {
+	c, ok := ctx.Value(contextPropertyKey{}).(Context)
+	if !ok {
+		log.Panicf("Error occurred while fetching context from wrapper")
+	}
 
-func GetServerHost(ctx context.Context) string {
-	return ctx.Value(contextPropertyKey{}).(Context).ServerHost
-}
-
-func GetServerPort(ctx context.Context) string {
-	return ctx.Value(contextPropertyKey{}).(Context).ServerPort
+	return c
 }
 
 func withClientMetaData(ctx context.Context) context.Context {
-	clientID := GetClientID(ctx)
+	clientID := UnwrapContext(ctx).ClientID
 
 	meta := metadata.New(map[string]string{"client-id": clientID})
 
