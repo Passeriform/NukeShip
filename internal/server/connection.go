@@ -5,40 +5,43 @@ import (
 )
 
 //nolint:gochecknoglobals // Holding a global map for connections against wrapping struct.
-var ConnectionMap = map[string]*Connection{}
+var connectionMap = map[string]*Connection{}
 
 type Connection struct {
-	Room    *string
+	Room    *Room
 	MsgChan chan *pb.MessageStreamResponse
 	ID      string
 	Ready   bool
-	Joined  bool
 }
 
-func NewConnection(connectionID string) (*Connection, bool) {
-	connection, ok := ConnectionMap[connectionID]
+func NewConnection(connID string) (*Connection, bool) {
+	conn, ok := connectionMap[connID]
 
 	if ok {
-		return connection, false
+		return conn, false
 	}
 
-	connection = &Connection{
+	conn = &Connection{
 		Room:    nil,
 		MsgChan: make(chan *pb.MessageStreamResponse),
-		ID:      connectionID,
+		ID:      connID,
 		Ready:   false,
-		Joined:  false,
 	}
 
-	ConnectionMap[connectionID] = connection
+	connectionMap[connID] = conn
 
-	return connection, true
+	return conn, true
 }
 
-func RemoveConnection(connectionID string) {
-	if ConnectionMap[connectionID].Room != nil {
-		delete(RoomMap[*ConnectionMap[connectionID].Room].Clients, connectionID)
+func GetConnection(connID string) *Connection {
+	conn := connectionMap[connID]
+	return conn
+}
+
+func RemoveConnection(connID string) {
+	if connectionMap[connID].Room != nil {
+		delete(connectionMap[connID].Room.Clients, connID)
 	}
 
-	delete(ConnectionMap, connectionID)
+	delete(connectionMap, connID)
 }

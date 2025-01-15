@@ -8,15 +8,16 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/caarlos0/env/v11"
-	"github.com/necmettindev/randomstring"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
+	"github.com/caarlos0/env/v11"
+	"github.com/necmettindev/randomstring"
+
+	"passeriform.com/nukeship/internal/game"
 	"passeriform.com/nukeship/internal/pb"
 	"passeriform.com/nukeship/internal/server"
 )
@@ -58,7 +59,7 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 	roomID := in.GetRoomId()
 
-	client, _ := server.NewConnection(clientID)
+	client := server.GetConnection(clientID)
 	room := server.GetRoom(roomID)
 
 	if room == nil {
@@ -67,11 +68,49 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 
 	room.AddConnection(client)
 
-	for _, client := range room.Clients {
+	for ID, client := range room.Clients {
+		if ID == clientID {
+			continue
+		}
 		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_JOINED}
 	}
 
 	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_OK}, nil
+}
+
+func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.UpdateReadyResponse, error) {
+	clientID, _ := server.ExtractClientIDMetadata(ctx)
+	ready := in.GetReady()
+
+	client := server.GetConnection(clientID)
+
+	if client.Room == nil {
+		return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_NO_ROOM_JOINED_YET}, nil
+	}
+
+	client.Ready = ready
+
+	startGameFlag := true
+
+	for ID, client := range client.Room.Clients {
+		startGameFlag = startGameFlag && client.Ready
+
+		if ID == clientID {
+			continue
+		}
+
+		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_READY}
+	}
+
+	if startGameFlag {
+		client.Room.GameRunning = true
+
+		go game.NewGame()
+
+		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_GAME_STARTED}
+	}
+
+	return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_OK}, nil
 }
 
 func (srv *Server) SubscribeMessages(

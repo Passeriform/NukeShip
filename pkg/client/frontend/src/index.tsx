@@ -1,9 +1,9 @@
 /* @refresh reload */
-import { render } from "solid-js/web"
 import "@thisbeyond/solid-select/style.css"
-import "./index.css"
-import "./assets/stylesheets/dropdown-overrides.css"
+import { render } from "solid-js/web"
 import App from "./App"
+import "./assets/stylesheets/dropdown-overrides.css"
+import "./index.css"
 
 const root = document.getElementById("root")
 

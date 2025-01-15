@@ -13,11 +13,13 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 )
 
-//go:embed frontend/dist
-var assets embed.FS
+var (
+	//go:embed frontend/dist
+	assets embed.FS
 
-//go:embed frontend/src/assets/radioactive.svg
-var icon []byte
+	//go:embed frontend/src/assets/radioactive.svg
+	icon []byte
+)
 
 func RunApp(ctx context.Context) {
 	app := newWailsApp(ctx)
@@ -40,8 +42,8 @@ func RunApp(ctx context.Context) {
 			go connect(ctx, app)
 		},
 		WindowStartState:                 options.Fullscreen,
-		Bind:                             []interface{}{app},
-		EnumBind:                         []interface{}{AppStates, Events},
+		Bind:                             []any{app},
+		EnumBind:                         []any{appStates, events},
 		EnableDefaultContextMenu:         false,
 		EnableFraudulentWebsiteDetection: false,
 		Mac: &mac.Options{
@@ -56,7 +58,6 @@ func RunApp(ctx context.Context) {
 			ProgramName: "NukeShip",
 		},
 	})
-
 	if err != nil {
 		log.Panicf("Error occurred while running GUI app: %v", err)
 	}

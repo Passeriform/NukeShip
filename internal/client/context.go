@@ -5,8 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/necmettindev/randomstring"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/necmettindev/randomstring"
 )
 
 const (
@@ -27,7 +28,6 @@ func NewContext(sHost, sPort string) context.Context {
 		DisableNumeric:   true,
 		DisableLowercase: true,
 	})
-
 	if err != nil {
 		log.Panicf("Error occurred while creating client id: %v", err)
 	}

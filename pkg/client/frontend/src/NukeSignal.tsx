@@ -1,6 +1,7 @@
 import { VoidComponent } from "solid-js"
 
 // TODO: Add cloud video as mask for signal.
+// TODO: Add periodic flickering animation for signal.
 
 const NukeSignal: VoidComponent = () => {
     return (

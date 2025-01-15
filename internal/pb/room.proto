@@ -5,6 +5,7 @@ option go_package = "passeriform.com/nukeship/pb";
 enum ResponseStatus {
     OK = 0;
     ROOM_NOT_FOUND = 1;
+    NO_ROOM_JOINED_YET = 2;
 }
 
 enum ServerMessage {
@@ -18,6 +19,7 @@ enum ServerMessage {
 service RoomService {
     rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse);
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
+    rpc UpdateReady (UpdateReadyRequest) returns (UpdateReadyResponse);
     rpc SubscribeMessages (SubscribeMessagesRequest) returns (stream MessageStreamResponse);
 }
 
@@ -35,9 +37,17 @@ message CreateRoomResponse {
 }
 
 message JoinRoomRequest {
-    string room_id = 2;
+    string room_id = 1;
 }
 
 message JoinRoomResponse {
+    ResponseStatus status = 1;
+}
+
+message UpdateReadyRequest {
+    bool ready = 1;
+}
+
+message UpdateReadyResponse {
     ResponseStatus status = 1;
 }

@@ -8,11 +8,11 @@ import (
 	"io"
 	"log"
 
-	"github.com/jxskiss/mcli"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+
+	"github.com/jxskiss/mcli"
 
 	"passeriform.com/nukeship/internal/client"
 	"passeriform.com/nukeship/internal/pb"

@@ -41,6 +41,7 @@
         "iface",
         "importas",
         "Ints",
+        "ireturn",
         "isatty",
         "jchv",
         "jxskiss",
@@ -71,6 +72,8 @@
         "rivo",
         "samber",
         "solidjs",
+        "stdlib",
+        "stylecheck",
         "tagalign",
         "tenv",
         "testifylint",
@@ -119,7 +122,8 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "[go]": {
-        "editor.defaultFormatter": "golang.go"
+        "editor.defaultFormatter": "golang.go",
+        "editor.insertSpaces": false
     },
     "prettier.tabWidth": 4,
     "editor.detectIndentation": false,

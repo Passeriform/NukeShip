@@ -1,6 +1,6 @@
+import { Route, Router } from "@solidjs/router"
 import { VoidComponent } from "solid-js"
 import { Toaster } from "solid-toast"
-import { Route, Router } from "@solidjs/router"
 import Landing from "./Landing"
 import WaitingRoom from "./WaitingRoom"
 

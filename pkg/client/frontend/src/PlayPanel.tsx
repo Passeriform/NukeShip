@@ -1,9 +1,11 @@
-import { VoidComponent, createSignal } from "solid-js"
-import { Select } from "@thisbeyond/solid-select"
-import Button from "./Button"
-import { CreateRoom, JoinRoom } from "../wailsjs/go/main/WailsApp"
 import { useNavigate } from "@solidjs/router"
+import { Select } from "@thisbeyond/solid-select"
+import { VoidComponent, createSignal } from "solid-js"
 import toast from "solid-toast"
+import { CreateRoom, JoinRoom } from "../wailsjs/go/main/WailsApp"
+import Button from "./Button"
+
+// TODO: Get GAME_TYPE and MAX_ROOM_CODE_LENGTH from go app instead
 
 const MAX_ROOM_CODE_LENGTH = 5
 
@@ -16,6 +18,8 @@ type GAME_TYPE = (typeof GAME_TYPE)[keyof typeof GAME_TYPE]
 
 const gameOptions = Object.values(GAME_TYPE)
 
+const promisifyValue = <T,>(value: T) => (value ? Promise.resolve(value) : Promise.reject())
+
 const PlayPanel: VoidComponent = () => {
     const [gameMode, setGameMode] = createSignal<GAME_TYPE>(GAME_TYPE.REGULAR)
     const [roomCode, setRoomCode] = createSignal("")
@@ -24,7 +28,7 @@ const PlayPanel: VoidComponent = () => {
 
     const createRoom = async () => {
         const code = await toast.promise(
-            CreateRoom().then((value) => (value ? Promise.resolve(value) : Promise.reject())),
+            CreateRoom().then(promisifyValue),
             {
                 loading: `Creating a new room.`,
                 error: `Cannot create the room.`,
@@ -62,7 +66,7 @@ const PlayPanel: VoidComponent = () => {
         }
 
         const joined = await toast.promise(
-            JoinRoom(roomCode()).then((value) => (value ? Promise.resolve(value) : Promise.reject())),
+            JoinRoom(roomCode()).then(promisifyValue),
             {
                 loading: `Joining room ${roomCode()}.`,
                 error: `Cannot join room ${roomCode()}. Room doesn't exist.`,

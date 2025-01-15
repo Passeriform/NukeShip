@@ -59,10 +59,19 @@ linters-settings:
       - google\.golang\.org/grpc/keepalive\.ClientParameters
       - google\.golang\.org/grpc/keepalive\.EnforcementPolicy
       - google\.golang\.org/grpc/keepalive\.ServerParameters
+      - github\.com/wailsapp/wails/v2/pkg/options\.App
+      - github\.com/wailsapp/wails/v2/pkg/options/mac\.Options
+      - github\.com/wailsapp/wails/v2/pkg/options/linux\.Options
+      - github\.com/wailsapp/wails/v2/pkg/options/linux\.Options
+      - github\.com/necmettindev/randomstring\.GenerationOptions
   gci:
+    custom-order: true
+    no-inline-comments: true
+    no-prefix-comments: true
     sections:
       - standard
       - prefix(google.golang.org/grpc)
+      - prefix(github.com/wailsapp/wails)
       - default
       - prefix(passeriform.com/nukeship)
   gocognit:
@@ -111,10 +120,12 @@ linters-settings:
       - unused
   importas:
     no-extra-aliases: true
-  mnd:
-    ignored-files:
-      # TODO: Enable after implementing argument parsing
-      - local\.go
+  ireturn:
+    allow:
+      - empty
+      - error
+      - pb.RoomServiceClient
+      - stdlib
   nestif:
     min-complexity: 3
   nilnil:
@@ -131,9 +142,6 @@ linters-settings:
       - name: add-constant
         arguments:
           - allowInts: "0,1"
-      - name: context-as-argument
-        arguments:
-          - allowTypesBefore: "passeriform.com/nukeship/internal/pb.RoomServiceClient"
       - name: confusing-results
         disabled: true
       - name: line-length-limit
