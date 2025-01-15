@@ -1,11 +1,9 @@
 import { Route, Router } from "@solidjs/router"
-import { createEffect, createSignal, on, VoidComponent } from "solid-js"
+import { VoidComponent, createEffect, createSignal, on } from "solid-js"
 import toast, { Toaster } from "solid-toast"
-import Landing from "./Landing"
-import WaitingRoom from "./WaitingRoom"
-import useConnection from "./useConnection"
-
-// TODO: Move components into pages, components and hooks directories.
+import useConnection from "@hooks/useConnection"
+import Landing from "@pages/Landing"
+import WaitingRoom from "@pages/WaitingRoom"
 
 const App: VoidComponent = () => {
     const { connected } = useConnection()

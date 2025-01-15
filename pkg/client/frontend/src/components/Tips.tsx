@@ -1,6 +1,6 @@
 import { VoidComponent } from "solid-js"
-import { main } from "../wailsjs/go/models"
-import useGameState from "./useGameState"
+import useGameState from "@hooks/useGameState"
+import { main } from "@wails/go/models"
 
 // TODO: Add random tips about the game in this component.
 

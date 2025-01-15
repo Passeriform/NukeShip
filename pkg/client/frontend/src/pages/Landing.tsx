@@ -1,9 +1,9 @@
 import { VoidComponent } from "solid-js"
-import { Quit } from "../wailsjs/runtime/runtime"
-import NavButton from "./NavButton"
-import NukeSignal from "./NukeSignal"
-import PlayPanel from "./PlayPanel"
-import Splash from "./Splash"
+import NavButton from "@components/NavButton"
+import NukeSignal from "@components/NukeSignal"
+import PlayPanel from "@components/PlayPanel"
+import Splash from "@components/Splash"
+import { Quit } from "@wails/runtime/runtime"
 
 const Landing: VoidComponent = () => {
     return (

@@ -1,7 +1,7 @@
 import { createResource, onCleanup, onMount } from "solid-js"
-import { GetConnectionState } from "../wailsjs/go/main/WailsApp"
-import { main } from "../wailsjs/go/models"
-import { EventsOff, EventsOn } from "../wailsjs/runtime/runtime"
+import { GetConnectionState } from "@wails/go/main/WailsApp"
+import { main } from "@wails/go/models"
+import { EventsOff, EventsOn } from "@wails/runtime/runtime"
 
 const useConnection = () => {
     const [connected, { mutate }] = createResource(GetConnectionState)

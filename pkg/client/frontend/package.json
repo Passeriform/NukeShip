@@ -21,6 +21,7 @@
     },
     "devDependencies": {
         "@pyncz/tailwind-mask-image": "^2.0.0",
+        "@trivago/prettier-plugin-sort-imports": "^5.2.1",
         "@types/node": "^22.10.5",
         "@xpd/tailwind-3dtransforms": "^1.0.3",
         "autoprefixer": "^10.4.20",

@@ -1,14 +1,14 @@
 import { useNavigate, useParams } from "@solidjs/router"
-import { createEffect, Show, VoidComponent } from "solid-js"
-import waitingRoomVideo from "./assets/waiting_room.mp4"
-import NavButton from "./NavButton"
-import Tips from "./Tips"
-import VideoBackground from "./VideoBackground"
-import useGameState from "./useGameState"
-import { main } from "../wailsjs/go/models"
+import { Show, VoidComponent, createEffect } from "solid-js"
 import { Grid } from "solid-spinner"
-import { LeaveRoom, UpdateReady } from "../wailsjs/go/main/WailsApp"
-import Button from "./Button"
+import waitingRoomVideo from "@assets/waiting_room.mp4"
+import Button from "@components/Button"
+import NavButton from "@components/NavButton"
+import Tips from "@components/Tips"
+import VideoBackground from "@components/VideoBackground"
+import useGameState from "@hooks/useGameState"
+import { LeaveRoom, UpdateReady } from "@wails/go/main/WailsApp"
+import { main } from "@wails/go/models"
 
 // TODO: Disable all controls when server is disconnected.
 

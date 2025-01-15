@@ -103,7 +103,6 @@ linters-settings:
   govet:
     enable-all: true
   grouper:
-    # TODO: Recheck what this does
     const-require-single-const: true
     const-require-grouping: false
     import-require-single-import: true

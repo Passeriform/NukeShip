@@ -1,7 +1,7 @@
 import { createResource, onCleanup, onMount } from "solid-js"
-import { GetAppState } from "../wailsjs/go/main/WailsApp"
-import { main } from "../wailsjs/go/models"
-import { EventsOff, EventsOn } from "../wailsjs/runtime/runtime"
+import { GetAppState } from "@wails/go/main/WailsApp"
+import { main } from "@wails/go/models"
+import { EventsOff, EventsOn } from "@wails/runtime/runtime"
 
 const useGameState = () => {
     const [gameState, { mutate }] = createResource(GetAppState)
