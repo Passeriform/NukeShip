@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	UniqueIDLength = 5
+	ConnectionIDLength = 5
 )
 
 //nolint:gochecknoglobals // Holding a global map for rooms against wrapping struct.
@@ -21,7 +21,7 @@ type Room struct {
 
 func NewRoom() (*Room, bool) {
 	roomID, err := randomstring.GenerateString(randomstring.GenerationOptions{
-		Length:           UniqueIDLength,
+		Length:           ConnectionIDLength,
 		DisableNumeric:   true,
 		DisableLowercase: true,
 	})

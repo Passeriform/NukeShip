@@ -4,6 +4,9 @@
 FROM golang:latest AS builder
 LABEL maintainer="Utkarsh Bhardwaj (Passeriform) <bhardwajutkarsh.ub@gmail.com>"
 
+ARG ENVIRONMENT=PRODUCTION
+ARG PORT=50051
+
 WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
@@ -34,7 +37,7 @@ LABEL maintainer="Utkarsh Bhardwaj (Passeriform) <bhardwajutkarsh.ub@gmail.com>"
 
 WORKDIR /app
 COPY --from=builder /artifact/server ./
-ENV ENVIRONMENT PRODUCTION
-ENV PORT 8080
-EXPOSE 8080
+ENV ENVIRONMENT ${ENVIRONMENT}
+ENV PORT ${PORT}
+EXPOSE ${PORT}
 CMD ["./server"]
