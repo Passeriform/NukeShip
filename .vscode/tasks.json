@@ -2,15 +2,6 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "options": {
-        "env": {
-            "ENVIRONMENT": "PRODUCTION",
-            "PORT": "50051",
-            "SERVER_PORT": "50051",
-            "HOST": "127.0.0.1",
-            "SERVER_HOST": "127.0.0.1",
-        }
-    },
     "tasks": [
         {
             "label": "[Protobuf] Refresh",
@@ -33,7 +24,11 @@
             "label": "[App] Build Client",
             "type": "shell",
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
+                "cwd": "${workspaceFolder}/pkg/client",
+                "env": {
+                    "SERVER_HOST": "https://nukeship.passeriform.com",
+                    "SERVER_PORT": "50051"
+                }
             },
             "command": "wails",
             "args": [
@@ -56,7 +51,11 @@
                 "dev"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
+                "cwd": "${workspaceFolder}/pkg/client",
+                "env": {
+                    "SERVER_HOST": "https://nukeship.passeriform.com",
+                    "SERVER_PORT": "50051"
+                }
             },
             "dependsOrder": "sequence",
             "dependsOn": [
@@ -65,7 +64,7 @@
             "problemMatcher": [],
             "runOptions": {
                 "instanceLimit": 2
-            }
+            },
         },
         {
             "label": "[Server] [Local] Run Server",
@@ -99,8 +98,7 @@
                 },
                 "files": [
                     "docker-compose.yml"
-                ],
-                "envFile": ".env"
+                ]
             },
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -121,7 +119,11 @@
                 "createRoom"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
+                "cwd": "${workspaceFolder}/pkg/client",
+                "env": {
+                    "SERVER_HOST": "https://nukeship.passeriform.com",
+                    "SERVER_PORT": "50051"
+                }
             }
         },
         {
@@ -140,7 +142,11 @@
                 "-code=${input:roomCode}"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
+                "cwd": "${workspaceFolder}/pkg/client",
+                "env": {
+                    "SERVER_HOST": "https://nukeship.passeriform.com",
+                    "SERVER_PORT": "50051"
+                }
             }
         }
     ],

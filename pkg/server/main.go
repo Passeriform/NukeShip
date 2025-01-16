@@ -22,8 +22,7 @@ import (
 )
 
 type serverConfig struct {
-	Port        string `env:"PORT"        envDefault:"50051"`
-	Environment string `env:"ENVIRONMENT" envDefault:"PRODUCTION"`
+	Port string `env:"PORT"        envDefault:"50051"`
 }
 
 type Server struct {
@@ -200,9 +199,8 @@ func main() {
 
 	go handleQuit(stop, srv)
 
-	if cfg.Environment == "DEVELOPMENT" {
-		reflection.Register(srv)
-	}
+	log.Println("Enabling reflection for gRPC server.")
+	reflection.Register(srv)
 
 	log.Printf("Started server on port: %v", cfg.Port)
 
@@ -211,6 +209,4 @@ func main() {
 	if err := srv.Serve(lis); err != nil {
 		log.Panicf("Failed to serve: %v", err)
 	}
-
-	log.Println("Ending lifecycle")
 }

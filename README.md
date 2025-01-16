@@ -4,6 +4,7 @@
 ![Issues](https://img.shields.io/github/issues/Passeriform/NukeShip)
 ![Stars](https://img.shields.io/github/stars/Passeriform/NukeShip)
 ![Forks](https://img.shields.io/github/forks/Passeriform/NukeShip)
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?name=nukeship&repository=Passeriform%2FNukeShip&branch=master&instance_type=free)
 
 <div align="center">
   <img src="./pkg/client/frontend/src/assets/radioactive.svg" alt="Radioactive Icon" width="150"/>

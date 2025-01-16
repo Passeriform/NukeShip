@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	UniqueIDLength = 5
+	RoomIDLength int = 5
 )
 
 type contextPropertyKey struct{}
@@ -24,7 +24,7 @@ type Context struct {
 
 func NewContext(sHost, sPort string) context.Context {
 	clientID, err := randomstring.GenerateString(randomstring.GenerationOptions{
-		Length:           UniqueIDLength,
+		Length:           RoomIDLength,
 		DisableNumeric:   true,
 		DisableLowercase: true,
 	})

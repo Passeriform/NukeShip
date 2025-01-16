@@ -2,8 +2,10 @@ services:
     server:
         build:
             context: .
-            dockerfile: server.Dockerfile
-        environment:
-            ENVIRONMENT: ${ENVIRONMENT:-PRODUCTION}
+            dockerfile: Dockerfile
+            args:
+                ENVIRONMENT: ${ENVIRONMENT:-PRODUCTION}
+                PORT: ${PORT:-50051}
+        image: passeriformub/nukeship:latest
         ports:
-            - ${PORT:-80}:8080
+            - 50051:${PORT:-50051}

@@ -25,7 +25,9 @@
                 "cli"
             ],
             "env": {
-                "GOPATH": "${workspaceFolder}"
+                "GOPATH": "${workspaceFolder}",
+                "SERVER_HOST": "https://nukeship.passeriform.com",
+                "SERVER_PORT": "50051"
             },
             "args": [
                 "createRoom"

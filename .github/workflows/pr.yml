@@ -1,0 +1,29 @@
+name: PR
+on:
+    pull_request:
+        branches:
+            - "*"
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: ./go.mod
+
+            - name: Install dependencies
+              run: go mod tidy
+
+            - name: Run tests
+              run: go test ./...
+
+            - name: Lint code
+              uses: golangci/golangci-lint-action@v6
+              with:
+                  version: latest
