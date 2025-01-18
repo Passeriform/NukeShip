@@ -11,6 +11,10 @@ const App: VoidComponent = () => {
 
     createEffect(
         on(connected, () => {
+            if (connected() === undefined) {
+                return
+            }
+
             if (connected()) {
                 if (disconnectedToastId()) {
                     toast.dismiss(disconnectedToastId())
