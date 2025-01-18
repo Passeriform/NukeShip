@@ -22,7 +22,7 @@ import (
 )
 
 type serverConfig struct {
-	Port string `env:"PORT"        envDefault:"50051"`
+	Port string `env:"PORT" envDefault:"50051"`
 }
 
 type Server struct {
@@ -102,7 +102,8 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 
 	client.Ready = ready
 
-	startGameFlag := true
+	// TODO: Parameterize this check for siege mode.
+	startGameFlag := len(room.Clients) == 2
 
 	for ID, conn := range room.Clients {
 		startGameFlag = startGameFlag && conn.Ready
