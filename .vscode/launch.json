@@ -26,7 +26,7 @@
             ],
             "env": {
                 "GOPATH": "${workspaceFolder}",
-                "SERVER_HOST": "https://nukeship.passeriform.com",
+                "SERVER_HOST": "localhost",
                 "SERVER_PORT": "50051"
             },
             "args": [

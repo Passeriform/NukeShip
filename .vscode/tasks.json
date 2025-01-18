@@ -26,8 +26,8 @@
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
-                    "SERVER_HOST": "https://nukeship.passeriform.com",
-                    "SERVER_PORT": "50051"
+                    "SERVER_HOST": "${input:serverHost}",
+                    "SERVER_PORT": "${input:serverPort}"
                 }
             },
             "command": "wails",
@@ -53,8 +53,8 @@
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
-                    "SERVER_HOST": "https://nukeship.passeriform.com",
-                    "SERVER_PORT": "50051"
+                    "SERVER_HOST": "${input:serverHost}",
+                    "SERVER_PORT": "${input:serverPort}"
                 }
             },
             "dependsOrder": "sequence",
@@ -64,7 +64,7 @@
             "problemMatcher": [],
             "runOptions": {
                 "instanceLimit": 2
-            },
+            }
         },
         {
             "label": "[Server] [Local] Run Server",
@@ -121,8 +121,8 @@
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
-                    "SERVER_HOST": "https://nukeship.passeriform.com",
-                    "SERVER_PORT": "50051"
+                    "SERVER_HOST": "${input:serverHost}",
+                    "SERVER_PORT": "${input:serverPort}"
                 }
             }
         },
@@ -144,8 +144,8 @@
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
-                    "SERVER_HOST": "https://nukeship.passeriform.com",
-                    "SERVER_PORT": "50051"
+                    "SERVER_HOST": "${input:serverHost}",
+                    "SERVER_PORT": "${input:serverPort}"
                 }
             }
         }
@@ -155,6 +155,36 @@
             "id": "roomCode",
             "description": "Room code to join",
             "type": "promptString"
+        },
+        {
+            "id": "enableTls",
+            "description": "Enable TLS",
+            "type": "pickString",
+            "options": [
+                "true",
+                "false"
+            ],
+            "default": "false"
+        },
+        {
+            "id": "serverHost",
+            "description": "Server Host",
+            "type": "pickString",
+            "options": [
+                "localhost",
+                "crazy-dania-passeriform-2c88993e.koyeb.app"
+            ],
+            "default": "localhost"
+        },
+        {
+            "id": "serverPort",
+            "description": "Server Port",
+            "type": "pickString",
+            "options": [
+                "50051",
+                "443"
+            ],
+            "default": "50051"
         }
     ]
 }

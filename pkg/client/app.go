@@ -4,12 +4,13 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"log"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -89,7 +90,8 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 
 	conn, err := grpc.NewClient(
 		cCtx.ServerHost+":"+cCtx.ServerPort,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		// TODO: This TLS configuration is only for prototyping. Replace with proper 2-way TLS configuration.
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
 	)
 	if err != nil {

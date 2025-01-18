@@ -32,6 +32,8 @@ func NewContext(sHost, sPort string) context.Context {
 		log.Panicf("Error occurred while creating client id: %v", err)
 	}
 
+	log.Printf("Creating RPC context for %v:%v", sHost, sPort)
+
 	return context.WithValue(context.Background(), contextPropertyKey{}, Context{
 		ClientID:   clientID,
 		ServerHost: sHost,
