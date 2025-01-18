@@ -21,6 +21,23 @@
             }
         },
         {
+            "label": "Ping Hosted gRPC server",
+            "type": "shell",
+            "command": "grpcurl",
+            "args": [
+                "-proto",
+                "room.proto",
+                "-H",
+                "client-id: abcde",
+                "${input:serverAddress}",
+                "RoomService/CreateRoom",
+            ],
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}/internal/pb"
+            }
+        },
+        {
             "label": "[App] Build Client",
             "type": "shell",
             "options": {
@@ -185,6 +202,17 @@
                 "443"
             ],
             "default": "50051"
+        },
+        {
+            "id": "serverAddress",
+            "description": "Server Address",
+            "type": "pickString",
+            "options": [
+                "nukeship.passeriform.com:443",
+                "crazy-dania-passeriform-2c88993e.koyeb.app:443",
+                "localhost:50051"
+            ],
+            "default": "crazy-dania-passeriform-2c88993e.koyeb.app:443"
         }
     ]
 }
