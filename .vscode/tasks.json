@@ -44,7 +44,8 @@
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
                     "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}"
+                    "SERVER_PORT": "${input:serverPort}",
+                    "ENABLE_TLS": "${input:enableTls}"
                 }
             },
             "command": "wails",
@@ -71,7 +72,8 @@
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
                     "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}"
+                    "SERVER_PORT": "${input:serverPort}",
+                    "ENABLE_TLS": "${input:enableTls}"
                 }
             },
             "dependsOrder": "sequence",
@@ -139,7 +141,8 @@
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
                     "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}"
+                    "SERVER_PORT": "${input:serverPort}",
+                    "ENABLE_TLS": "${input:enableTls}"
                 }
             }
         },
@@ -162,7 +165,8 @@
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
                     "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}"
+                    "SERVER_PORT": "${input:serverPort}",
+                    "ENABLE_TLS": "${input:enableTls}"
                 }
             }
         }

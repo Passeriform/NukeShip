@@ -19,10 +19,11 @@ type contextPropertyKey struct{}
 type Context struct {
 	ClientID   string
 	ServerHost string
-	ServerPort string
+	ServerPort int
+	EnableTls  bool
 }
 
-func NewContext(sHost, sPort string) context.Context {
+func NewContext(sHost string, sPort int, enableTls bool) context.Context {
 	clientID, err := randomstring.GenerateString(randomstring.GenerationOptions{
 		Length:           RoomIDLength,
 		DisableNumeric:   true,
@@ -38,6 +39,7 @@ func NewContext(sHost, sPort string) context.Context {
 		ClientID:   clientID,
 		ServerHost: sHost,
 		ServerPort: sPort,
+		EnableTls:  enableTls,
 	})
 }
 
