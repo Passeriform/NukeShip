@@ -1,3 +1,5 @@
+github.com/Gurpartap/statemachine-go v0.0.0-20190708030151-b27cddb816c4 h1:vXHfHPQWZJdbr5CeTdsL9SwQKH+tM9brrSdmGYQbMEc=
+github.com/Gurpartap/statemachine-go v0.0.0-20190708030151-b27cddb816c4/go.mod h1:EoZCl/DeoRmBl0pH6YGBXefkF71UX2jjdvFFnZvLgD4=
 github.com/MakeNowJust/heredoc/v2 v2.0.1 h1:rlCHh70XXXv7toz95ajQWOWQnN4WNLt0TdpZYIR/J6A=
 github.com/MakeNowJust/heredoc/v2 v2.0.1/go.mod h1:6/2Abh5s+hc3g9nbWLe9ObDIOhaRrqsyY9MWy+4JdRM=
 github.com/bep/debounce v1.2.1 h1:v67fRdBA9UQu2NhLFXrSg0Brw7CexQekrBwDMM8bzeY=

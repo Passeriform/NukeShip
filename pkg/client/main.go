@@ -11,7 +11,7 @@ import (
 type clientConfig struct {
 	ServerHost string `env:"SERVER_HOST" envDefault:"localhost"`
 	ServerPort int    `env:"SERVER_PORT" envDefault:"50051"`
-	EnableTls  bool   `env:"ENABLE_TLS" envDefault:"true"`
+	EnableTLS  bool   `env:"ENABLE_TLS"  envDefault:"true"`
 }
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 		log.Panicf("Could not parse environment variables: %v", err)
 	}
 
-	clientContext := client.NewContext(cfg.ServerHost, cfg.ServerPort, cfg.EnableTls)
+	clientContext := client.NewContext(cfg.ServerHost, cfg.ServerPort, cfg.EnableTLS)
 
 	RunApp(clientContext)
 }

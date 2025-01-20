@@ -46,6 +46,8 @@ linters-settings:
     exclude-functions:
       - encoding/json.Marshal
       - encoding/json.MarshalIndent
+      # FIXME: Broken interface check if module and package are named different.
+      - (github.com/Gurpartap/statemachine-go.statemachine.Machine).Fire
   errchkjson:
     check-error-free-encoding: true
     report-no-exported: true

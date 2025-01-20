@@ -11,6 +11,11 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"github.com/Gurpartap/statemachine-go"
+
+	"passeriform.com/nukeship/internal/client"
 )
 
 var (
@@ -37,7 +42,14 @@ func RunApp(ctx context.Context) {
 			}
 
 			app.Client = c
-			app.setAppCtx(wCtx)
+
+			app.stateMachine = client.NewStateFSM(func(t statemachine.Transition) {
+				runtime.EventsEmit(wCtx, string(Event_STATE_CHANGE_KEY), parseAppState(t.To()))
+			})
+
+			app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
+				runtime.EventsEmit(wCtx, string(Event_SRV_CONN_CHANGE_KEY), t.To() == client.Connected)
+			})
 
 			go connect(ctx, app)
 		},

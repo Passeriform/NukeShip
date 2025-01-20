@@ -15,13 +15,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
-
 	"passeriform.com/nukeship/internal/client"
 	"passeriform.com/nukeship/internal/pb"
 )
-
-// TODO: Handle state management using custom FSM that uses struct tags.
 
 const (
 	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
@@ -78,13 +74,34 @@ type (
 
 type WailsApp struct {
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
-	appCtx context.Context
-	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
-	grpcCtx       context.Context
-	Client        pb.RoomServiceClient
-	state         AppState
-	connected     bool
-	opponentReady bool
+	grpcCtx      context.Context
+	Client       pb.RoomServiceClient
+	stateMachine *client.StateFSM
+	connMachine  *client.ConnectionFSM
+}
+
+// TODO: Added for temporary compatibility. Remove on migration to wails3.
+func parseAppState(str string) AppState {
+	switch str {
+	case "INIT":
+		return AppState_INIT
+	case "AWAITING_OPPONENT":
+		return AppState_AWAITING_OPPONENT
+	case "ROOM_FILLED":
+		return AppState_ROOM_FILLED
+	case "AWAITING_READY":
+		return AppState_AWAITING_READY
+	case "AWAITING_GAME_START":
+		return AppState_AWAITING_GAME_START
+	case "IN_GAME":
+		return AppState_IN_GAME
+	case "RECOVERY":
+		return AppState_RECOVERY
+	}
+
+	log.Panicf("Unable to parse value into AppState: %v", str)
+
+	return AppState_INIT
 }
 
 func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
@@ -92,7 +109,7 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 
 	var creds credentials.TransportCredentials
 
-	if cCtx.EnableTls {
+	if cCtx.EnableTLS {
 		// TODO: This TLS configuration is only for prototyping. Replace with proper 2-way TLS configuration.
 		creds = credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})
 	} else {
@@ -114,34 +131,11 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 	return c, nil
 }
 
-func handleStateChange(ut pb.ServerMessage, app *WailsApp) {
-	switch ut {
-	case pb.ServerMessage_OPPONENT_JOINED:
-		app.dispatchStateChange(AppState_ROOM_FILLED)
-	case pb.ServerMessage_OPPONENT_READY:
-		if app.state == AppState_AWAITING_READY {
-			app.dispatchStateChange(AppState_AWAITING_GAME_START)
-		}
-
-		app.opponentReady = true
-	case pb.ServerMessage_GAME_STARTED:
-		app.dispatchStateChange(AppState_IN_GAME)
-	case pb.ServerMessage_OPPONENT_REVERTED_READY:
-		app.dispatchStateChange(AppState_AWAITING_READY)
-	case pb.ServerMessage_OPPONENT_LEFT:
-		if app.state == AppState_IN_GAME {
-			app.dispatchStateChange(AppState_RECOVERY)
-		} else {
-			app.dispatchStateChange(AppState_AWAITING_OPPONENT)
-		}
-	}
-}
-
 // TODO: Add reconnection logic to recover streaming messages.
 
 func connect(ctx context.Context, app *WailsApp) {
 	defer func() {
-		app.dispatchServerConnectionChange(false)
+		app.connMachine.Fire(client.Disconnected)
 	}()
 
 	streamCtx, cancel := client.NewStreamContext(ctx)
@@ -153,8 +147,7 @@ func connect(ctx context.Context, app *WailsApp) {
 		return
 	}
 
-	app.dispatchServerConnectionChange(true)
-	app.dispatchStateChange(AppState_INIT)
+	app.connMachine.Fire(client.Connected)
 
 	for {
 		update, err := streamClient.Recv()
@@ -168,43 +161,27 @@ func connect(ctx context.Context, app *WailsApp) {
 			return
 		}
 
-		handleStateChange(update.GetType(), app)
+		app.stateMachine.Fire(update.GetType().String())
 	}
 }
 
 func newWailsApp(grpcCtx context.Context) *WailsApp {
-	return &WailsApp{
-		connected:     false,
-		opponentReady: false,
-		state:         AppState_INIT,
-		Client:        nil,
-		appCtx:        nil,
-		grpcCtx:       grpcCtx,
+	app := &WailsApp{
+		grpcCtx:      grpcCtx,
+		Client:       nil,
+		stateMachine: nil,
+		connMachine:  nil,
 	}
-}
 
-func (app *WailsApp) setAppCtx(appCtx context.Context) {
-	app.appCtx = appCtx
-}
-
-func (app *WailsApp) dispatchStateChange(state AppState) {
-	runtime.EventsEmit(app.appCtx, string(Event_STATE_CHANGE_KEY), state)
-
-	app.state = state
-}
-
-func (app *WailsApp) dispatchServerConnectionChange(connected bool) {
-	runtime.EventsEmit(app.appCtx, string(Event_SRV_CONN_CHANGE_KEY), connected)
-
-	app.connected = connected
+	return app
 }
 
 func (app *WailsApp) GetAppState() AppState {
-	return app.state
+	return AppState(app.stateMachine.GetState())
 }
 
 func (app *WailsApp) GetConnectionState() bool {
-	return app.connected
+	return app.connMachine.GetState() == client.Connected
 }
 
 func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
@@ -226,16 +203,11 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	log.Printf("Updated ready state: %t", ready)
 
 	if !ready {
-		app.dispatchStateChange(AppState_ROOM_FILLED)
+		app.stateMachine.Fire(string(AppState_ROOM_FILLED))
 		return resp.GetStatus() == pb.ResponseStatus_OK, nil
 	}
 
-	if app.opponentReady {
-		app.dispatchStateChange(AppState_AWAITING_GAME_START)
-		return resp.GetStatus() == pb.ResponseStatus_OK, nil
-	}
-
-	app.dispatchStateChange(AppState_AWAITING_READY)
+	app.stateMachine.Fire(client.ClientMessage_SELF_READY)
 
 	return resp.GetStatus() == pb.ResponseStatus_OK, nil
 }
@@ -252,7 +224,7 @@ func (app *WailsApp) CreateRoom() (string, error) {
 
 	log.Printf("Room created: %s", resp.GetRoomId())
 
-	app.dispatchStateChange(AppState_AWAITING_OPPONENT)
+	app.stateMachine.Fire(client.ClientMessage_SELF_JOINED)
 
 	return resp.GetRoomId(), nil
 }
@@ -269,7 +241,7 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 
 	log.Printf("Room joined status: %s", resp.GetStatus().String())
 
-	app.dispatchStateChange(AppState_ROOM_FILLED)
+	app.stateMachine.Fire(client.ClientMessage_SELF_JOINED)
 
 	return resp.GetStatus() == pb.ResponseStatus_OK
 }
@@ -286,7 +258,7 @@ func (app *WailsApp) LeaveRoom() bool {
 
 	log.Printf("Room left status: %s", resp.GetStatus().String())
 
-	app.dispatchStateChange(AppState_INIT)
+	app.stateMachine.Fire(string(AppState_INIT))
 
 	return resp.GetStatus() == pb.ResponseStatus_OK
 }
