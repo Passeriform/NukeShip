@@ -39,6 +39,8 @@ func (*Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.Cre
 
 	client.Room = room
 
+	log.Printf("Created new room: %v", room.ID)
+
 	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_OK, RoomId: room.ID}, nil
 }
 
@@ -64,6 +66,8 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_JOINED}
 	}
 
+	log.Printf("Client joined room: %v", room.ID)
+
 	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_OK}, nil
 }
 
@@ -83,6 +87,8 @@ func (*Server) LeaveRoom(ctx context.Context, _ *pb.LeaveRoomRequest) (*pb.Leave
 	for _, client := range room.Clients {
 		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_LEFT}
 	}
+
+	log.Printf("Client left room: %v", room.ID)
 
 	return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_OK}, nil
 }
@@ -128,6 +134,8 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_GAME_STARTED}
 		}
 	}
+
+	log.Printf("Client set ready state to: %t", ready)
 
 	return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_OK}, nil
 }
