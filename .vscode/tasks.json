@@ -21,7 +21,7 @@
             }
         },
         {
-            "label": "Ping Hosted gRPC server",
+            "label": "[Sanity] Ping Hosted gRPC server",
             "type": "shell",
             "command": "grpcurl",
             "args": [
@@ -38,8 +38,22 @@
             }
         },
         {
+            "label": "[App] Post Debug Cleanup",
+            "type": "process",
+            "hide": true,
+            "command": [
+                "${command:workbench.action.tasks.terminate}",
+                "${command:workbench.action.acceptSelectedQuickOpenItem}",
+            ],
+        },
+        {
             "label": "[App] Build Client",
             "type": "shell",
+            "command": "wails",
+            "args": [
+                "build",
+                "-clean"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client",
                 "env": {
@@ -48,11 +62,6 @@
                     "ENABLE_TLS": "${input:enableTls}"
                 }
             },
-            "command": "wails",
-            "args": [
-                "build",
-                "-clean"
-            ],
             "dependsOrder": "sequence",
             "dependsOn": [
                 "[Protobuf] Refresh"
@@ -76,14 +85,54 @@
                     "ENABLE_TLS": "${input:enableTls}"
                 }
             },
+            "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
                 "[Protobuf] Refresh"
             ],
-            "problemMatcher": [],
+            "problemMatcher": [
+                {
+                    "owner": "custom",
+                    "pattern": {
+                        "regexp": "__________________"
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".*",
+                        "endsPattern": "To develop in the browser and call your bound Go methods from Javascript, navigate to: *"
+                    }
+                }
+            ],
             "runOptions": {
                 "instanceLimit": 2
             }
+        },
+        {
+            "label": "[App] Run Debugger",
+            "type": "shell",
+            "command": "./dlv.ps1",
+            "hide": true,
+            "options": {
+                "cwd": "${workspaceFolder}/.vscode"
+            },
+            "isBackground": true,
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[App] Run Client"
+            ],
+            "problemMatcher": [
+                {
+                    "owner": "custom",
+                    "pattern": {
+                        "regexp": "__________________"
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".*",
+                        "endsPattern": "API server listening at: *"
+                    }
+                }
+            ],
         },
         {
             "label": "[Server] [Local] Run Server",
@@ -99,6 +148,7 @@
             "options": {
                 "cwd": "${workspaceFolder}/pkg/server"
             },
+            "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
                 "[Protobuf] Refresh"
@@ -121,7 +171,8 @@
             },
             "options": {
                 "cwd": "${workspaceFolder}"
-            }
+            },
+            "isBackground": true,
         },
         {
             "label": "[Cli] [Local] Run Native Client - Create Room",
@@ -144,7 +195,8 @@
                     "SERVER_PORT": "${input:serverPort}",
                     "ENABLE_TLS": "${input:enableTls}"
                 }
-            }
+            },
+            "isBackground": true,
         },
         {
             "label": "[Cli] [Local] Run Native Client - Join Room",
@@ -168,7 +220,8 @@
                     "SERVER_PORT": "${input:serverPort}",
                     "ENABLE_TLS": "${input:enableTls}"
                 }
-            }
+            },
+            "isBackground": true,
         }
     ],
     "inputs": [

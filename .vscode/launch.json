@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run Server",
+            "name": "Debug Server",
             "type": "go",
             "request": "launch",
             "mode": "auto",
@@ -15,7 +15,7 @@
             }
         },
         {
-            "name": "Run Native Client",
+            "name": "Debug Native Client",
             "type": "go",
             "request": "launch",
             "mode": "auto",
@@ -34,12 +34,14 @@
             ]
         },
         {
-            "name": "Run App Client",
+            "name": "Debug App Client",
             "type": "go",
-            "request": "launch",
-            "mode": "exec",
-            "program": "${workspaceFolder}/pkg/client/build/bin/NukeShip.exe",
-            "preLaunchTask": "[App] Build Client",
+            "request": "attach",
+            "mode": "remote",
+            "preLaunchTask": "[App] Run Debugger",
+            "remotePath": "${workspaceFolder}",
+            "port": 65115,
+            "host": "127.0.0.1",
         }
     ]
 }
