@@ -2,8 +2,8 @@ import { useNavigate } from "@solidjs/router"
 import { Select } from "@thisbeyond/solid-select"
 import { VoidComponent, createSignal } from "solid-js"
 import toast from "solid-toast"
+import { CreateRoom, JoinRoom } from "@bindings/pkg/client/wailsroomservice"
 import Button from "@components/Button"
-import { CreateRoom, JoinRoom } from "@wails/go/main/WailsApp"
 
 // TODO: Get GAME_TYPE and MAX_ROOM_CODE_LENGTH from go app instead
 

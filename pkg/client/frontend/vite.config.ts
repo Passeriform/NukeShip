@@ -11,10 +11,10 @@ export default defineConfig({
         alias: {
             "@animations": path.resolve(__dirname, "./src/animations"),
             "@assets": path.resolve(__dirname, "./src/assets"),
+            "@bindings": path.resolve(__dirname, "./bindings/passeriform.com/nukeship"),
             "@components": path.resolve(__dirname, "./src/components"),
             "@hooks": path.resolve(__dirname, "./src/hooks"),
             "@pages": path.resolve(__dirname, "./src/pages"),
-            "@wails": path.resolve(__dirname, "./wailsjs"),
         },
     },
 })
