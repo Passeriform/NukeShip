@@ -61,10 +61,15 @@ linters-settings:
       - google\.golang\.org/grpc/keepalive\.ClientParameters
       - google\.golang\.org/grpc/keepalive\.EnforcementPolicy
       - google\.golang\.org/grpc/keepalive\.ServerParameters
-      - github\.com/wailsapp/wails/v2/pkg/options\.App
-      - github\.com/wailsapp/wails/v2/pkg/options/mac\.Options
-      - github\.com/wailsapp/wails/v2/pkg/options/linux\.Options
-      - github\.com/wailsapp/wails/v2/pkg/options/linux\.Options
+      - github\.com/wailsapp/wails/v3/pkg/application\.Options
+      - github\.com/wailsapp/wails/v3/pkg/application\.LinuxOptions
+      - github\.com/wailsapp/wails/v3/pkg/application\.MacOptions
+      - github\.com/wailsapp/wails/v3/pkg/application\.WindowsOptions
+      - github\.com/wailsapp/wails/v3/pkg/application\.AssetOptions
+      - github\.com/wailsapp/wails/v3/pkg/application\.WebviewWindowOptions
+      - github\.com/wailsapp/wails/v3/pkg/application\.LinuxWindow
+      - github\.com/wailsapp/wails/v3/pkg/application\.MacWindow
+      - github\.com/wailsapp/wails/v3/pkg/application\.WindowsWindow
       - github\.com/necmettindev/randomstring\.GenerationOptions
   gci:
     custom-order: true
