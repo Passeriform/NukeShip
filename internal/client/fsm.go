@@ -6,26 +6,18 @@ import (
 	"passeriform.com/nukeship/internal/pb"
 )
 
-const (
-	Init              string = "INIT"
-	AwaitingOpponent  string = "AWAITING_OPPONENT"
-	RoomFilled        string = "ROOM_FILLED"
-	AwaitingReady     string = "AWAITING_READY"
-	AwaitingGameStart string = "AWAITING_GAME_START"
-	InGame            string = "IN_GAME"
-	Recovery          string = "RECOVERY"
-
-	Connected    string = "CONNECTED"
-	Disconnected string = "DISCONNECTED"
-
-	ClientMessage_SELF_JOINED  string = "SELF_JOINED"
-	ClientMessage_SELF_READY   string = "SELF_READY"
-	ClientMessage_CONNECTED    string = "CONNECTED"
-	ClientMessage_DISCONNECTED string = "DISCONNECTED"
+//go:generate go run github.com/abice/go-enum -f=$GOFILE --mustparse --values --output-suffix _generated
+type (
+	// ENUM(SELF_JOINED, SELF_LEFT, SELF_READY, SELF_REVERTED_READY, CONNECTED, DISCONNECTED)
+	ClientMessage string
+	// ENUM(INIT, AWAITING_OPPONENT, ROOM_FILLED, AWAITING_READY, AWAITING_GAME_START, IN_GAME, RECOVERY)
+	RoomState string
+	// ENUM(CONNECTED, DISCONNECTED)
+	ConnectionState string
 )
 
 type (
-	StateFSM struct {
+	RoomStateFSM struct {
 		statemachine.Machine
 		opponentReady bool
 	}
@@ -35,43 +27,45 @@ type (
 	}
 )
 
-func NewStateFSM(notify func(t statemachine.Transition)) *StateFSM {
-	fsm := &StateFSM{
+func NewRoomStateFSM(notify func(t statemachine.Transition)) *RoomStateFSM {
+	fsm := &RoomStateFSM{
 		opponentReady: false,
 		Machine:       nil,
 	}
 
 	fsm.Machine = statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
 		machine.States(
-			Init,
-			AwaitingOpponent,
-			RoomFilled,
-			AwaitingReady,
-			AwaitingGameStart,
-			InGame,
-			Recovery,
+			RoomStateINIT.String(),
+			RoomStateAWAITINGOPPONENT.String(),
+			RoomStateROOMFILLED.String(),
+			RoomStateAWAITINGREADY.String(),
+			RoomStateAWAITINGGAMESTART.String(),
+			RoomStateINGAME.String(),
+			RoomStateRECOVERY.String(),
 		)
 
-		machine.InitialState(Init)
+		machine.InitialState(RoomStateINIT.String())
 
-		machine.AfterTransition().Any().Do(notify).Label("Notification")
+		machine.AfterTransition().Any().Do(notify)
 
-		machine.Event(ClientMessage_SELF_JOINED).Transition().From(Init).To(AwaitingOpponent)
-		machine.Event(pb.ServerMessage_OPPONENT_JOINED.String()).Transition().From(AwaitingOpponent).To(RoomFilled)
-		machine.Event(ClientMessage_SELF_READY).Choice(&fsm.opponentReady).Label("selfReady").OnTrue(func(e statemachine.EventBuilder) {
-			e.Transition().From(AwaitingReady).To(AwaitingGameStart)
+		machine.Event(ClientMessageSELFJOINED.String()).Transition().From(RoomStateINIT.String()).To(RoomStateAWAITINGOPPONENT.String())
+		machine.Event(pb.ServerMessage_OPPONENT_JOINED.String()).Transition().From(RoomStateAWAITINGOPPONENT.String()).To(RoomStateROOMFILLED.String())
+		machine.Event(ClientMessageSELFREADY.String()).Choice(&fsm.opponentReady).OnTrue(func(e statemachine.EventBuilder) {
+			e.Transition().From(RoomStateAWAITINGREADY.String()).To(RoomStateAWAITINGGAMESTART.String())
 		}).OnFalse(func(e statemachine.EventBuilder) {
-			e.Transition().From(RoomFilled).To(AwaitingReady)
+			e.Transition().From(RoomStateROOMFILLED.String()).To(RoomStateAWAITINGREADY.String())
 		})
-		machine.Event(pb.ServerMessage_OPPONENT_READY.String()).Choice(&fsm.opponentReady).Label("opponentReady").OnTrue(func(e statemachine.EventBuilder) {
-			e.Transition().From(AwaitingReady).To(AwaitingGameStart)
+		machine.Event(pb.ServerMessage_OPPONENT_READY.String()).Choice(&fsm.opponentReady).OnTrue(func(e statemachine.EventBuilder) {
+			e.Transition().From(RoomStateAWAITINGREADY.String()).To(RoomStateAWAITINGGAMESTART.String())
 		}).OnFalse(func(_ statemachine.EventBuilder) {
 			fsm.opponentReady = true
 		})
-		machine.Event(pb.ServerMessage_GAME_STARTED.String()).Transition().FromAny().To(InGame)
-		machine.Event(pb.ServerMessage_OPPONENT_REVERTED_READY.String()).Transition().From(AwaitingGameStart).To(AwaitingReady)
-		machine.Event(pb.ServerMessage_OPPONENT_LEFT.String()).Transition().From(RoomFilled, AwaitingReady, AwaitingGameStart).To(AwaitingOpponent)
-		machine.Event(pb.ServerMessage_OPPONENT_LEFT.String()).Transition().From(InGame).To(Recovery)
+		machine.Event(pb.ServerMessage_GAME_STARTED.String()).Transition().FromAny().To(RoomStateINGAME.String())
+		machine.Event(ClientMessageSELFLEFT.String()).Transition().From(RoomStateAWAITINGOPPONENT.String(), RoomStateROOMFILLED.String(), RoomStateAWAITINGREADY.String(), RoomStateAWAITINGGAMESTART.String(), RoomStateINGAME.String()).To(RoomStateINIT.String())
+		machine.Event(ClientMessageSELFREVERTEDREADY.String()).Transition().From(RoomStateAWAITINGREADY.String(), RoomStateAWAITINGGAMESTART.String()).To(RoomStateROOMFILLED.String())
+		machine.Event(pb.ServerMessage_OPPONENT_REVERTED_READY.String()).Transition().From(RoomStateAWAITINGGAMESTART.String()).To(RoomStateAWAITINGREADY.String())
+		machine.Event(pb.ServerMessage_OPPONENT_LEFT.String()).Transition().From(RoomStateROOMFILLED.String(), RoomStateAWAITINGREADY.String(), RoomStateAWAITINGGAMESTART.String()).To(RoomStateAWAITINGOPPONENT.String())
+		machine.Event(pb.ServerMessage_OPPONENT_LEFT.String()).Transition().From(RoomStateINGAME.String()).To(RoomStateRECOVERY.String())
 	})
 
 	return fsm
@@ -80,14 +74,14 @@ func NewStateFSM(notify func(t statemachine.Transition)) *StateFSM {
 func NewConnectionFSM(notify func(t statemachine.Transition)) *ConnectionFSM {
 	return &ConnectionFSM{
 		Machine: statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
-			machine.States(Connected, Disconnected)
+			machine.States(ConnectionStateCONNECTED.String(), ClientMessageDISCONNECTED.String())
 
-			machine.InitialState(Connected)
+			machine.InitialState(ConnectionStateCONNECTED.String())
 
-			machine.AfterTransition().Any().Do(notify).Label("Notification")
+			machine.AfterTransition().Any().Do(notify)
 
-			machine.Event(ClientMessage_CONNECTED).Transition().From(Disconnected).To(Connected)
-			machine.Event(ClientMessage_DISCONNECTED).Transition().From(Connected).To(Disconnected)
+			machine.Event(ClientMessageCONNECTED.String()).Transition().From(ConnectionStateDISCONNECTED.String()).To(ConnectionStateCONNECTED.String())
+			machine.Event(ClientMessageDISCONNECTED.String()).Transition().From(ConnectionStateCONNECTED.String()).To(ClientMessageDISCONNECTED.String())
 		}),
 	}
 }

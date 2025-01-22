@@ -21,6 +21,18 @@
             }
         },
         {
+            "label": "[Generate] Generate Go Code",
+            "type": "shell",
+            "command": "go",
+            "args": [
+                "generate",
+            ],
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
             "label": "[Sanity] Ping Hosted gRPC server",
             "type": "shell",
             "command": "grpcurl",
@@ -64,7 +76,8 @@
             },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[Protobuf] Refresh"
+                "[Protobuf] Refresh",
+                "[Generate] Generate Go Code"
             ],
             "problemMatcher": [
                 "$go"
@@ -88,7 +101,8 @@
             "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[Protobuf] Refresh"
+                "[Protobuf] Refresh",
+                "[Generate] Generate Go Code"
             ],
             "problemMatcher": [
                 {
@@ -151,7 +165,8 @@
             "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[Protobuf] Refresh"
+                "[Protobuf] Refresh",
+                "[Generate] Generate Go Code"
             ]
         },
         {

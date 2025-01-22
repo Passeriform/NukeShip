@@ -13,3 +13,7 @@
 
 # Go workspace file
 go.work
+
+# Generated files
+*_generated.go
+*.pb.go

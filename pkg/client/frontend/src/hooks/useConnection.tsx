@@ -7,13 +7,13 @@ const useConnection = () => {
     const [connected, { mutate }] = createResource(GetConnectionState)
 
     onMount(() => {
-        EventsOn(main.WailsEvent.SERVER_CONNECTION_CHANGE, (connected) => {
+        EventsOn(main.Event.SERVER_CONNECTION_CHANGE, (connected) => {
             mutate(connected)
         })
     })
 
     onCleanup(() => {
-        EventsOff(main.WailsEvent.SERVER_CONNECTION_CHANGE)
+        EventsOff(main.Event.SERVER_CONNECTION_CHANGE)
     })
 
     return { connected }

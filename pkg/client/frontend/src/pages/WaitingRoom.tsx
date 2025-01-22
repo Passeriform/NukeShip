@@ -8,18 +8,18 @@ import Tips from "@components/Tips"
 import VideoBackground from "@components/VideoBackground"
 import useGameState from "@hooks/useGameState"
 import { LeaveRoom, UpdateReady } from "@wails/go/main/WailsApp"
-import { main } from "@wails/go/models"
+import { client } from "@wails/go/models"
 
 // TODO: Disable all controls when server is disconnected.
 
 const messageMapping = {
-    [main.AppState.AWAITING_OPPONENT]: "Waiting for an opponent to join...",
-    [main.AppState.ROOM_FILLED]: "The playground is set!",
-    [main.AppState.AWAITING_READY]: "Waiting for your opponent to get ready...",
-    [main.AppState.AWAITING_GAME_START]: "Let the show begin!",
-} satisfies Partial<Record<main.AppState, string>>
+    [client.RoomState.AWAITING_OPPONENT]: "Waiting for an opponent to join...",
+    [client.RoomState.ROOM_FILLED]: "The playground is set!",
+    [client.RoomState.AWAITING_READY]: "Waiting for your opponent to get ready...",
+    [client.RoomState.AWAITING_GAME_START]: "Let the show begin!",
+} satisfies Partial<Record<client.RoomState, string>>
 
-const getMessageString = (state: main.AppState | undefined) =>
+const getMessageString = (state: client.RoomState | undefined) =>
     messageMapping[state as keyof typeof messageMapping] || ""
 
 const WaitingRoom: VoidComponent = () => {
@@ -28,12 +28,12 @@ const WaitingRoom: VoidComponent = () => {
     const { gameState } = useGameState()
 
     const showLoader = () =>
-        [main.AppState.AWAITING_OPPONENT, main.AppState.AWAITING_READY, main.AppState].includes(
-            gameState() as main.AppState,
+        [client.RoomState.AWAITING_OPPONENT, client.RoomState.AWAITING_READY, client.RoomState].includes(
+            gameState() as client.RoomState,
         )
     const showReadyButton = () =>
-        [main.AppState.ROOM_FILLED, main.AppState.AWAITING_READY].includes(gameState() as main.AppState)
-    const isReady = () => gameState() === main.AppState.AWAITING_READY
+        [client.RoomState.ROOM_FILLED, client.RoomState.AWAITING_READY].includes(gameState() as client.RoomState)
+    const isReady = () => gameState() === client.RoomState.AWAITING_READY
 
     const goBack = () => {
         LeaveRoom()
@@ -41,7 +41,7 @@ const WaitingRoom: VoidComponent = () => {
     }
 
     createEffect(() => {
-        if (gameState() == main.AppState.IN_GAME) {
+        if (gameState() == client.RoomState.IN_GAME) {
             navigate(`/game/${code}`)
         }
     })

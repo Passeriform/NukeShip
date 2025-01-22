@@ -7,13 +7,13 @@ const useGameState = () => {
     const [gameState, { mutate }] = createResource(GetAppState)
 
     onMount(() => {
-        EventsOn(main.WailsEvent.STATE_CHANGE, (state) => {
+        EventsOn(main.Event.STATE_CHANGE, (state) => {
             mutate(state)
         })
     })
 
     onCleanup(() => {
-        EventsOff(main.WailsEvent.STATE_CHANGE)
+        EventsOff(main.Event.STATE_CHANGE)
     })
 
     return { gameState }

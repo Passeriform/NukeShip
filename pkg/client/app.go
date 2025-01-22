@@ -20,88 +20,20 @@ import (
 )
 
 const (
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	AppState_INIT AppState = "INIT"
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	AppState_AWAITING_OPPONENT AppState = "AWAITING_OPPONENT"
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	AppState_ROOM_FILLED AppState = "ROOM_FILLED"
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	AppState_AWAITING_READY AppState = "AWAITING_READY"
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	AppState_AWAITING_GAME_START AppState = "AWAITING_GAME_START"
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	AppState_IN_GAME AppState = "IN_GAME"
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	AppState_RECOVERY AppState = "RECOVERY"
-
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	Event_STATE_CHANGE_KEY WailsEvent = "app:stateChange"
-	//nolint:revive,stylecheck // Using underscores in accordance with generated code.
-	Event_SRV_CONN_CHANGE_KEY WailsEvent = "app:serverConnectionChange"
-)
-
-var (
-	//nolint:gochecknoglobals // Creating enum mapping for typescript generation.
-	appStates = []struct {
-		Value  AppState
-		TSName string
-	}{
-		{AppState_INIT, "INIT"},
-		{AppState_AWAITING_OPPONENT, "AWAITING_OPPONENT"},
-		{AppState_ROOM_FILLED, "ROOM_FILLED"},
-		{AppState_AWAITING_READY, "AWAITING_READY"},
-		{AppState_AWAITING_GAME_START, "AWAITING_GAME_START"},
-		{AppState_IN_GAME, "IN_GAME"},
-		{AppState_RECOVERY, "RECOVERY"},
-	}
-
-	//nolint:gochecknoglobals // Creating enum mapping for typescript generation.
-	events = []struct {
-		Value  WailsEvent
-		TSName string
-	}{
-		{Event_STATE_CHANGE_KEY, "STATE_CHANGE"},
-		{Event_SRV_CONN_CHANGE_KEY, "SERVER_CONNECTION_CHANGE"},
-	}
+	StateChangeEvent            Event = "srv:stateChange"
+	ServerConnectionChangeEvent Event = "srv:serverConnectionChange"
 )
 
 type (
-	AppState string
-
-	WailsEvent string
+	Event string
 )
 
 type WailsApp struct {
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
 	grpcCtx      context.Context
 	Client       pb.RoomServiceClient
-	stateMachine *client.StateFSM
+	stateMachine *client.RoomStateFSM
 	connMachine  *client.ConnectionFSM
-}
-
-// TODO: Added for temporary compatibility. Remove on migration to wails3.
-func parseAppState(str string) AppState {
-	switch str {
-	case "INIT":
-		return AppState_INIT
-	case "AWAITING_OPPONENT":
-		return AppState_AWAITING_OPPONENT
-	case "ROOM_FILLED":
-		return AppState_ROOM_FILLED
-	case "AWAITING_READY":
-		return AppState_AWAITING_READY
-	case "AWAITING_GAME_START":
-		return AppState_AWAITING_GAME_START
-	case "IN_GAME":
-		return AppState_IN_GAME
-	case "RECOVERY":
-		return AppState_RECOVERY
-	}
-
-	log.Panicf("Unable to parse value into AppState: %v", str)
-
-	return AppState_INIT
 }
 
 func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
@@ -133,9 +65,9 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 
 // TODO: Add reconnection logic to recover streaming messages.
 
-func connect(ctx context.Context, app *WailsApp) {
+func (app *WailsApp) connect(ctx context.Context) {
 	defer func() {
-		app.connMachine.Fire(client.Disconnected)
+		app.connMachine.Fire(client.ClientMessageDISCONNECTED.String())
 	}()
 
 	streamCtx, cancel := client.NewStreamContext(ctx)
@@ -147,7 +79,7 @@ func connect(ctx context.Context, app *WailsApp) {
 		return
 	}
 
-	app.connMachine.Fire(client.Connected)
+	app.connMachine.Fire(client.ClientMessageCONNECTED.String())
 
 	for {
 		update, err := streamClient.Recv()
@@ -176,12 +108,12 @@ func newWailsApp(grpcCtx context.Context) *WailsApp {
 	return app
 }
 
-func (app *WailsApp) GetAppState() AppState {
-	return AppState(app.stateMachine.GetState())
+func (app *WailsApp) GetAppState() client.RoomState {
+	return client.MustParseRoomState(app.stateMachine.GetState())
 }
 
 func (app *WailsApp) GetConnectionState() bool {
-	return app.connMachine.GetState() == client.Connected
+	return app.connMachine.GetState() == client.ConnectionStateCONNECTED.String()
 }
 
 func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
@@ -203,11 +135,11 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	log.Printf("Updated ready state: %t", ready)
 
 	if !ready {
-		app.stateMachine.Fire(string(AppState_ROOM_FILLED))
+		app.stateMachine.Fire(client.ClientMessageSELFREVERTEDREADY.String())
 		return resp.GetStatus() == pb.ResponseStatus_OK, nil
 	}
 
-	app.stateMachine.Fire(client.ClientMessage_SELF_READY)
+	app.stateMachine.Fire(client.ClientMessageSELFREADY.String())
 
 	return resp.GetStatus() == pb.ResponseStatus_OK, nil
 }
@@ -224,7 +156,7 @@ func (app *WailsApp) CreateRoom() (string, error) {
 
 	log.Printf("Room created: %s", resp.GetRoomId())
 
-	app.stateMachine.Fire(client.ClientMessage_SELF_JOINED)
+	app.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
 
 	return resp.GetRoomId(), nil
 }
@@ -241,7 +173,7 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 
 	log.Printf("Room joined status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(client.ClientMessage_SELF_JOINED)
+	app.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
 
 	return resp.GetStatus() == pb.ResponseStatus_OK
 }
@@ -258,7 +190,7 @@ func (app *WailsApp) LeaveRoom() bool {
 
 	log.Printf("Room left status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(string(AppState_INIT))
+	app.stateMachine.Fire(client.ClientMessageSELFLEFT.String())
 
 	return resp.GetStatus() == pb.ResponseStatus_OK
 }

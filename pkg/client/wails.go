@@ -26,6 +26,29 @@ var (
 	icon []byte
 )
 
+var (
+	appStatesMapping = []struct {
+		Value  client.RoomState
+		TSName string
+	}{
+		{client.RoomStateINIT, "INIT"},
+		{client.RoomStateAWAITINGOPPONENT, "AWAITING_OPPONENT"},
+		{client.RoomStateROOMFILLED, "ROOM_FILLED"},
+		{client.RoomStateAWAITINGREADY, "AWAITING_READY"},
+		{client.RoomStateAWAITINGGAMESTART, "AWAITING_GAME_START"},
+		{client.RoomStateINGAME, "IN_GAME"},
+		{client.RoomStateRECOVERY, "RECOVERY"},
+	}
+
+	eventsMapping = []struct {
+		Value  Event
+		TSName string
+	}{
+		{StateChangeEvent, "STATE_CHANGE"},
+		{ServerConnectionChangeEvent, "SERVER_CONNECTION_CHANGE"},
+	}
+)
+
 func RunApp(ctx context.Context) {
 	app := newWailsApp(ctx)
 
@@ -43,19 +66,19 @@ func RunApp(ctx context.Context) {
 
 			app.Client = c
 
-			app.stateMachine = client.NewStateFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, string(Event_STATE_CHANGE_KEY), parseAppState(t.To()))
+			app.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
+				runtime.EventsEmit(wCtx, string(StateChangeEvent), client.MustParseRoomState(t.To()))
 			})
 
 			app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, string(Event_SRV_CONN_CHANGE_KEY), t.To() == client.Connected)
+				runtime.EventsEmit(wCtx, string(ServerConnectionChangeEvent), t.To() == client.ConnectionStateCONNECTED.String())
 			})
 
-			go connect(ctx, app)
+			go app.connect(ctx)
 		},
 		WindowStartState:                 options.Fullscreen,
 		Bind:                             []any{app},
-		EnumBind:                         []any{appStates, events},
+		EnumBind:                         []any{appStatesMapping, eventsMapping},
 		EnableDefaultContextMenu:         false,
 		EnableFraudulentWebsiteDetection: false,
 		Mac: &mac.Options{
