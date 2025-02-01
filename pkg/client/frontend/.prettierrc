@@ -11,7 +11,11 @@
     "bracketSameLine": false,
     "arrowParens": "always",
     "printWidth": 120,
-    "importOrder": ["<THIRD_PARTY_MODULES>", "^@(animations|assets|components|hooks|pages|wails).*$", "^[./].*$"],
+    "importOrder": [
+        "<THIRD_PARTY_MODULES>",
+        "^@(animations|assets|components|constants|game|hooks|pages|wails).*$",
+        "^[./].*$"
+    ],
     "importOrderSortSpecifiers": true,
     "importOrderGroupNamespaceSpecifiers": true
 }

@@ -1,0 +1,90 @@
+import * as three from "three"
+
+const DEPTH_OFFSET = 4
+const LATERAL_OFFSET = 2
+const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
+const NODE_GEOMETRY = new three.SphereGeometry(0.1, 64, 64)
+const NODE_MESHES = COLORS.map((color) => new three.MeshLambertMaterial({ color })).map(
+    (material) => new three.Mesh(NODE_GEOMETRY, material),
+)
+const CONNECTOR_MATERIALS = COLORS.map((color) => new three.LineBasicMaterial({ color }))
+
+export type FSNode = {
+    label: string
+    children: FSNode[]
+}
+
+const splitChildrenEvenly = (itemCount: number) => {
+    if (itemCount === 1) {
+        return [[0, 0]] as const
+    } else if (itemCount === 2) {
+        return [
+            [-1, -1],
+            [1, 1],
+        ] as const
+    } else if (itemCount <= 4) {
+        return [
+            [-1, -1],
+            [-1, 1],
+            [1, -1],
+            [1, 1],
+        ] as const
+    } else if (itemCount <= 9) {
+        return [
+            [-1, -1],
+            [-1, 1],
+            [1, -1],
+            [1, 1],
+            [-1, 0],
+            [0, -1],
+            [0, 1],
+            [1, 0],
+            [0, 0],
+        ] as const
+    } else {
+        return [[0, 0]] as const
+    }
+}
+
+const updateChildrenWorldPositions = (children: three.Object3D[], depth: number) => {
+    const positions = splitChildrenEvenly(children.length)
+
+    children.forEach((node, idx) =>
+        node.position.set(
+            (positions[idx][0] * LATERAL_OFFSET) / depth,
+            (positions[idx][1] * LATERAL_OFFSET) / depth,
+            DEPTH_OFFSET / depth,
+        ),
+    )
+}
+
+export const generateObjectTree = (node: FSNode, depth = 1, colorSeed = 0) => {
+    // Node mesh
+    const nodeMesh = NODE_MESHES[(colorSeed + depth - 1) % COLORS.length].clone()
+
+    // Children meshes
+    const childrenGroup = new three.Group()
+    const childrenMeshes = node.children.map((node): three.Group => generateObjectTree(node, depth + 1, colorSeed))
+
+    if (childrenMeshes.length) {
+        updateChildrenWorldPositions(childrenMeshes, depth)
+        childrenGroup.add(...childrenMeshes)
+    }
+
+    // Connector meshes
+    const connectorGroup = new three.Group()
+    const connectorMeshes = childrenMeshes.map((node) => {
+        const connectorGeometry = new three.BufferGeometry().setFromPoints([nodeMesh.position, node.position])
+        const line = new three.Line(connectorGeometry, CONNECTOR_MATERIALS[(colorSeed + depth - 1) % COLORS.length])
+        return line
+    })
+    if (connectorMeshes.length) {
+        connectorGroup.add(...connectorMeshes)
+    }
+
+    // Parent group
+    const parent = new three.Group()
+    parent.add(nodeMesh, childrenGroup, connectorGroup)
+
+    return parent
+}

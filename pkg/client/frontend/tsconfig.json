@@ -5,6 +5,8 @@
             "@animations/*": ["./src/animations/*"],
             "@assets/*": ["./src/assets/*"],
             "@components/*": ["./src/components/*"],
+            "@constants/*": ["./src/constants/*"],
+            "@game/*": ["./src/game/*"],
             "@hooks/*": ["./src/hooks/*"],
             "@pages/*": ["./src/pages/*"],
             "@wails/*": ["./wailsjs/*"]
