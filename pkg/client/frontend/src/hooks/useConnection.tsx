@@ -4,12 +4,10 @@ import { main } from "@wails/go/models"
 import { EventsOff, EventsOn } from "@wails/runtime/runtime"
 
 const useConnection = () => {
-    const [connected, { mutate }] = createResource(GetConnectionState)
+    const [connected, { refetch }] = createResource(GetConnectionState)
 
     onMount(() => {
-        EventsOn(main.Event.SERVER_CONNECTION_CHANGE, (connected) => {
-            mutate(connected)
-        })
+        EventsOn(main.Event.SERVER_CONNECTION_CHANGE, refetch)
     })
 
     onCleanup(() => {

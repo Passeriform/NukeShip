@@ -4,12 +4,10 @@ import { main } from "@wails/go/models"
 import { EventsOff, EventsOn } from "@wails/runtime/runtime"
 
 const useGameState = () => {
-    const [gameState, { mutate }] = createResource(GetAppState)
+    const [gameState, { refetch }] = createResource(GetAppState)
 
     onMount(() => {
-        EventsOn(main.Event.STATE_CHANGE, (state) => {
-            mutate(state)
-        })
+        EventsOn(main.Event.STATE_CHANGE, refetch)
     })
 
     onCleanup(() => {
