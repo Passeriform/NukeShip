@@ -1,5 +1,5 @@
 import { useParams } from "@solidjs/router"
-import { Show, Switch, VoidComponent, createEffect, createResource, createSignal, onCleanup, onMount } from "solid-js"
+import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
@@ -7,8 +7,9 @@ import Button from "@components/Button"
 import { ExampleFS } from "@constants/sample"
 import { FOCUS_STATICS, STATICS } from "@constants/statics"
 import { FOCUS_TYPE, VIEW_TYPE } from "@constants/types"
-import { createCameraResource } from "@game/camera"
-import { createSceneResource } from "@game/scene"
+import { createCamera } from "@game/camera"
+import { createLighting } from "@game/lighting"
+import { createScene } from "@game/scene"
 import { generateObjectTree } from "@game/tree"
 import { tweenObject } from "@game/tween"
 
@@ -17,17 +18,17 @@ import { tweenObject } from "@game/tween"
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
-    const [sceneResource] = createResource(createSceneResource)
-    const [cameraResource] = createResource(createCameraResource)
+    const { scene, renderer, cleanup: sceneCleanup } = createScene()
+    const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
+    const { camera, tweenGroup, cleanup: cameraCleanup } = createCamera()
 
-    const [selfFsTreeResource] = createResource(() => generateObjectTree(ExampleFS, 1, 2))
-    const [opponentFsTreeResource] = createResource(() => generateObjectTree(ExampleFS, 1, 1))
+    const selfFsTree = generateObjectTree(ExampleFS, 1, 2)
+    const opponentFsTree = generateObjectTree(ExampleFS, 1, 1)
 
     const [view, setView] = createSignal<VIEW_TYPE>(VIEW_TYPE.ELEVATION)
     const [focus, setFocus] = createSignal<FOCUS_TYPE>(FOCUS_TYPE.NONE)
 
     createEffect(() => {
-        const { camera, tweenGroup } = cameraResource()!
         tweenGroup.removeAll()
         tweenGroup.add(
             tweenObject(camera, {
@@ -38,22 +39,18 @@ const GameBoard: VoidComponent = () => {
     })
 
     createEffect(() => {
-        const { scene } = sceneResource()!
-        selfFsTreeResource()!.position.copy(STATICS.SELF.position)
-        selfFsTreeResource()!.quaternion.copy(STATICS.SELF.rotation)
-        scene.add(selfFsTreeResource()!)
+        selfFsTree.position.copy(STATICS.SELF.position)
+        selfFsTree.quaternion.copy(STATICS.SELF.rotation)
+        scene.add(selfFsTree)
     })
 
     createEffect(() => {
-        const { scene } = sceneResource()!
-        opponentFsTreeResource()!.position.copy(STATICS.OPPONENT.position)
-        opponentFsTreeResource()!.quaternion.copy(STATICS.OPPONENT.rotation)
-        scene.add(opponentFsTreeResource()!)
+        opponentFsTree.position.copy(STATICS.OPPONENT.position)
+        opponentFsTree.quaternion.copy(STATICS.OPPONENT.rotation)
+        scene.add(opponentFsTree)
     })
 
     const draw = (time: number = 0) => {
-        const { scene, renderer } = sceneResource()!
-        const { camera, tweenGroup } = cameraResource()!
         tweenGroup.update(time)
         renderer.render(scene, camera)
     }
@@ -67,9 +64,6 @@ const GameBoard: VoidComponent = () => {
             toast.error(`WebGL is not available ${WebGL.getWebGL2ErrorMessage()}`, { duration: -1 })
             return
         }
-
-        const { scene, renderer, directionalLight, ambientLight } = sceneResource()!
-        const { camera } = cameraResource()!
 
         // Renderer
         renderer.setAnimationLoop(draw)
@@ -90,15 +84,16 @@ const GameBoard: VoidComponent = () => {
 
     onCleanup(() => {
         // TODO: Cleanup material and meshes inside fsTree
-        selfFsTreeResource()!.clear()
-        opponentFsTreeResource()!.clear()
-        cameraResource()!.cleanup()
-        sceneResource()!.cleanup()
+        selfFsTree.clear()
+        opponentFsTree.clear()
+        lightingCleanup()
+        cameraCleanup()
+        sceneCleanup()
     })
 
     return (
         <>
-            {sceneResource()!.renderer.domElement}
+            {renderer.domElement}
             <section class="absolute bottom-8 flex flex-row justify-evenly gap-8">
                 <Switch>
                     <Match when={focus() === FOCUS_TYPE.NONE}>
