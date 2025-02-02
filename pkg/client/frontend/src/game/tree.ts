@@ -9,6 +9,9 @@ import {
     SphereGeometry,
 } from "three"
 
+export const CHILDREN_GROUP_NAME = "children"
+export const CONNECTOR_GROUP_NAME = "connectors"
+
 const DEPTH_OFFSET = 4
 const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
@@ -73,6 +76,7 @@ export const generateObjectTree = (node: FSNode, depth = 1, colorSeed = 0) => {
 
     // Children meshes
     const childrenGroup = new Group()
+    childrenGroup.name = CHILDREN_GROUP_NAME
     const childrenMeshes = node.children.map((node): Group => generateObjectTree(node, depth + 1, colorSeed))
 
     if (childrenMeshes.length) {
@@ -82,6 +86,7 @@ export const generateObjectTree = (node: FSNode, depth = 1, colorSeed = 0) => {
 
     // Connector meshes
     const connectorGroup = new Group()
+    connectorGroup.name = CONNECTOR_GROUP_NAME
     const connectorMeshes = childrenMeshes.map((node) => {
         const connectorGeometry = new BufferGeometry().setFromPoints([nodeMesh.position, node.position])
         const line = new Line(connectorGeometry, CONNECTOR_MATERIALS[(colorSeed + depth - 1) % COLORS.length])
