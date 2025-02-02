@@ -1,4 +1,4 @@
-import * as three from "three"
+import { Quaternion, Vector3 } from "three"
 
 export const FOCUS_TYPE = {
     NONE: "NONE",
@@ -16,6 +16,6 @@ export const VIEW_TYPE = {
 export type VIEW_TYPE = (typeof VIEW_TYPE)[keyof typeof VIEW_TYPE]
 
 export type PositionRotationData = {
-    position: three.Vector3
-    rotation: three.Quaternion
+    position: Vector3
+    rotation: Quaternion
 }

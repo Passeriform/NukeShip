@@ -1,13 +1,22 @@
-import * as three from "three"
+import {
+    BufferGeometry,
+    Group,
+    Line,
+    LineBasicMaterial,
+    Mesh,
+    MeshLambertMaterial,
+    Object3D,
+    SphereGeometry,
+} from "three"
 
 const DEPTH_OFFSET = 4
 const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
-const NODE_GEOMETRY = new three.SphereGeometry(0.1, 64, 64)
-const NODE_MESHES = COLORS.map((color) => new three.MeshLambertMaterial({ color })).map(
-    (material) => new three.Mesh(NODE_GEOMETRY, material),
+const NODE_GEOMETRY = new SphereGeometry(0.1, 64, 64)
+const NODE_MESHES = COLORS.map((color) => new MeshLambertMaterial({ color })).map(
+    (material) => new Mesh(NODE_GEOMETRY, material),
 )
-const CONNECTOR_MATERIALS = COLORS.map((color) => new three.LineBasicMaterial({ color }))
+const CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color }))
 
 export type FSNode = {
     label: string
@@ -46,7 +55,7 @@ const splitChildrenEvenly = (itemCount: number) => {
     }
 }
 
-const updateChildrenWorldPositions = (children: three.Object3D[], depth: number) => {
+const updateChildrenWorldPositions = (children: Object3D[], depth: number) => {
     const positions = splitChildrenEvenly(children.length)
 
     children.forEach((node, idx) =>
@@ -63,8 +72,8 @@ export const generateObjectTree = (node: FSNode, depth = 1, colorSeed = 0) => {
     const nodeMesh = NODE_MESHES[(colorSeed + depth - 1) % COLORS.length].clone()
 
     // Children meshes
-    const childrenGroup = new three.Group()
-    const childrenMeshes = node.children.map((node): three.Group => generateObjectTree(node, depth + 1, colorSeed))
+    const childrenGroup = new Group()
+    const childrenMeshes = node.children.map((node): Group => generateObjectTree(node, depth + 1, colorSeed))
 
     if (childrenMeshes.length) {
         updateChildrenWorldPositions(childrenMeshes, depth)
@@ -72,10 +81,10 @@ export const generateObjectTree = (node: FSNode, depth = 1, colorSeed = 0) => {
     }
 
     // Connector meshes
-    const connectorGroup = new three.Group()
+    const connectorGroup = new Group()
     const connectorMeshes = childrenMeshes.map((node) => {
-        const connectorGeometry = new three.BufferGeometry().setFromPoints([nodeMesh.position, node.position])
-        const line = new three.Line(connectorGeometry, CONNECTOR_MATERIALS[(colorSeed + depth - 1) % COLORS.length])
+        const connectorGeometry = new BufferGeometry().setFromPoints([nodeMesh.position, node.position])
+        const line = new Line(connectorGeometry, CONNECTOR_MATERIALS[(colorSeed + depth - 1) % COLORS.length])
         return line
     })
     if (connectorMeshes.length) {
@@ -83,7 +92,7 @@ export const generateObjectTree = (node: FSNode, depth = 1, colorSeed = 0) => {
     }
 
     // Parent group
-    const parent = new three.Group()
+    const parent = new Group()
     parent.add(nodeMesh, childrenGroup, connectorGroup)
 
     return parent
