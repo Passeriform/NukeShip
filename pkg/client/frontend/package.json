@@ -29,7 +29,7 @@
         "@types/three": "^0.172.0",
         "@xpd/tailwind-3dtransforms": "^1.0.3",
         "autoprefixer": "^10.4.20",
-        "postcss": "^8.4.49",
+        "postcss": "^8.5.0",
         "prettier": "^3.4.2",
         "prettier-plugin-tailwindcss": "^0.6.9",
         "tailwind-clip-path": "^1.0.0",
