@@ -7,7 +7,7 @@ import Button from "@components/Button"
 import { ExampleFS } from "@constants/sample"
 import { FOCUS_STATICS, STATICS } from "@constants/statics"
 import { FOCUS_TYPE, VIEW_TYPE } from "@constants/types"
-import { createCamera } from "@game/camera"
+import { CAMERA_TYPE, createCamera } from "@game/camera"
 import { createLighting } from "@game/lighting"
 import { createScene } from "@game/scene"
 import { generateObjectTree } from "@game/tree"
@@ -20,7 +20,7 @@ const GameBoard: VoidComponent = () => {
 
     const { scene, renderer, cleanup: sceneCleanup } = createScene()
     const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
-    const { camera, tweenGroup, cleanup: cameraCleanup } = createCamera()
+    const { camera, tweenGroup, resize: cameraResize, cleanup: cameraCleanup } = createCamera(CAMERA_TYPE.PERSPECTIVE)
 
     const selfFsTree = generateObjectTree(ExampleFS, 1, 2)
     const opponentFsTree = generateObjectTree(ExampleFS, 1, 1)
@@ -76,8 +76,7 @@ const GameBoard: VoidComponent = () => {
 
         // Resize handler
         window.addEventListener("resize", () => {
-            camera.aspect = window.innerWidth / window.innerHeight
-            camera.updateProjectionMatrix()
+            cameraResize()
             renderer.setSize(window.innerWidth, window.innerHeight)
         })
     })
