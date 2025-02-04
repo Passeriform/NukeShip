@@ -15,7 +15,7 @@ export const VIEW_TYPE = {
 
 export type VIEW_TYPE = (typeof VIEW_TYPE)[keyof typeof VIEW_TYPE]
 
-export type PositionRotationData = {
+export type TweenTransform = {
     position: Vector3
     rotation: Quaternion
 }
