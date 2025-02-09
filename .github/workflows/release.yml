@@ -35,28 +35,39 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                build:
-                    - platform: linux/amd64
+                include:
+                    - name: NukeShip
                       os: ubuntu-latest
-                      name: NukeShip
-                    - platform: windows/amd64
+                      platform: linux/amd64
+                    - name: NukeShip.exe
                       os: windows-latest
-                      name: NukeShip.exe
-                    - platform: darwin/universal
+                      platform: windows/amd64
+                    - name: nukeship
                       os: macos-latest
-                      name: NukeShip
-        runs-on: ${{ matrix.build.os }}
+                      platform: darwin/universal
+        runs-on: ${{ matrix.os }}
+        permissions:
+            contents: read
+            pull-requests: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: ./go.mod
+
+            # - name: Refresh protobuf definitions
 
             - name: Generate code
               run: go generate ./...
 
             - name: Create binary
-              uses: dAppServer/wails-build-action@main
+              uses: passeriform/wails-build-action@main
               with:
                   app-working-directory: ${{ github.workspace }}/pkg/client
                   build-obfuscate: true
-                  build-name: ${{ matrix.build.name }}
-                  build-platform: ${{ matrix.build.platform }}
+                  build-name: ${{ matrix.name }}
+                  build-platform: ${{ matrix.platform }}
+                  macos-artifact-name: "NukeShip"
