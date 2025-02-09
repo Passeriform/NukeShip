@@ -1,6 +1,6 @@
-import { FSNode } from "@game/tree"
+import { TreeRawData } from "@game/tree"
 
-export const ExampleFS: FSNode = {
+export const ExampleFS: TreeRawData = {
     label: "C:",
     children: [
         {

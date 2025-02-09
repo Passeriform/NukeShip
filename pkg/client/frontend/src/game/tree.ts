@@ -30,9 +30,7 @@ const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
 
 export class Tree extends Object3D {
-    private static NODE_GEOMETRY = new SphereGeometry(0.1, 64, 64)
     private static NODE_MATERIALS = COLORS.map((color) => new MeshLambertMaterial({ color, transparent: true }))
-    private static NODE_MESHES = Tree.NODE_MATERIALS.map((material) => new Mesh(Tree.NODE_GEOMETRY, material))
     private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
 
     private levels: Mesh[][]
@@ -78,7 +76,9 @@ export class Tree extends Object3D {
 
     private generateRenderNodes = (node: TreeRawData, depth: number, colorSeed: number) => {
         // Node mesh
-        const nodeMesh = Tree.NODE_MESHES[(colorSeed + depth - 1) % COLORS.length].clone()
+        const nodeGeometry = new SphereGeometry(0.1, 64, 64)
+        // const nodeGeometry = new BoxGeometry(2 / depth, 2 / depth, 2 / depth)
+        const nodeMesh = new Mesh(nodeGeometry, Tree.NODE_MATERIALS[(colorSeed + depth - 1) % COLORS.length])
 
         // Add levels
         if (this.levels.length < depth) {
