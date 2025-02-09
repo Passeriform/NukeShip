@@ -5,6 +5,7 @@ import toast from "solid-toast"
 import { Matrix4, Quaternion, Vector3 } from "three"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
+import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_CAMERA_OFFSET, PLAN_CAMERA_NODE_DISTANCE, STATICS, Y_AXIS } from "@constants/statics"
 import { FOCUS_TYPE, VIEW_TYPE } from "@constants/types"
@@ -183,6 +184,7 @@ const GameBoard: VoidComponent = () => {
                     <Button class="p-8" text="-" onClick={moveBackward} />
                 </Show>
             </section>
+            <NavButton class="pointer-events-none cursor-default" position="right" text={code} />
         </>
     )
 }
