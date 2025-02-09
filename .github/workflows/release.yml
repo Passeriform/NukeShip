@@ -1,10 +1,11 @@
 name: Release
 on:
-    release:
-        types: [published]
+    push:
+        tags:
+            - "*"
 
 jobs:
-    release:
+    release-server:
         runs-on: ubuntu-latest
 
         steps:
@@ -29,3 +30,28 @@ jobs:
               run: |
                   docker push passeriformub/nukeship:${{ github.ref_name }}
                   docker push passeriformub/nukeship:latest
+
+    release-binaries:
+        strategy:
+            fail-fast: false
+            matrix:
+                build:
+                    - platform: linux/amd64
+                      os: ubuntu-latest
+                      name: NukeShip
+                    - platform: windows/amd64
+                      os: windows-latest
+                      name: NukeShip.exe
+                    - platform: darwin/universal
+                      os: macos-latest
+                      name: NukeShip
+        runs-on: ${{ matrix.build.os }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Create binary
+              uses: dAppServer/wails-build-action@v2.2
+              with:
+                  build-name: ${{ matrix.build.name }}
+                  build-platform: ${{ matrix.build.platform }}
