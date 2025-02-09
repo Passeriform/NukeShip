@@ -50,8 +50,13 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: Generate code
+              run: go generate ./...
+
             - name: Create binary
-              uses: dAppServer/wails-build-action@v2.2
+              uses: dAppServer/wails-build-action@main
               with:
+                  app-working-directory: ${{ github.workspace }}/pkg/client
+                  build-obfuscate: true
                   build-name: ${{ matrix.build.name }}
                   build-platform: ${{ matrix.build.platform }}

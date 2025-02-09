@@ -5,9 +5,10 @@ on:
             - "*"
 
 jobs:
-    build:
+    build-server:
         runs-on: ubuntu-latest
 
+        # TODO: Add binaries for PRs and upload artifact.
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -27,3 +28,33 @@ jobs:
               uses: golangci/golangci-lint-action@v6
               with:
                   version: latest
+
+    build-binaries:
+        strategy:
+            fail-fast: false
+            matrix:
+                build:
+                    - platform: linux/amd64
+                      os: ubuntu-latest
+                      name: NukeShip
+                    - platform: windows/amd64
+                      os: windows-latest
+                      name: NukeShip.exe
+                    - platform: darwin/universal
+                      os: macos-latest
+                      name: NukeShip
+        runs-on: ${{ matrix.build.os }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Generate code
+              run: go generate ./...
+
+            - name: Create binary
+              uses: dAppServer/wails-build-action@main
+              with:
+                  app-working-directory: ${{ github.workspace }}/pkg/client
+                  build-obfuscate: true
+                  build-name: ${{ matrix.build.name }}
+                  build-platform: ${{ matrix.build.platform }}
