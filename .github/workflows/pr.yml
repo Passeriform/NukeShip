@@ -9,7 +9,6 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
-            pull-requests: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -45,7 +44,6 @@ jobs:
         runs-on: ubuntu-latest
         permissions:
             contents: read
-            pull-requests: write
         env:
             OUT_PATH: ${{ github.workspace }}/pkg/server/bin/Server
         steps:
@@ -91,7 +89,6 @@ jobs:
         runs-on: ${{ matrix.os }}
         permissions:
             contents: read
-            pull-requests: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -109,7 +106,7 @@ jobs:
             - name: Build binary
               uses: passeriform/wails-build-action@main
               with:
-                  app-working-directory: ${{ github.workspace }}/pkg/client
+                  app-working-directory: pkg/client
                   build-obfuscate: true
                   build-name: ${{ matrix.name }}
                   build-platform: ${{ matrix.platform }}

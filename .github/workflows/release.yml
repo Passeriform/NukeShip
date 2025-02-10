@@ -7,7 +7,6 @@ on:
 jobs:
     release-server:
         runs-on: ubuntu-latest
-
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -47,8 +46,7 @@ jobs:
                       platform: darwin/universal
         runs-on: ${{ matrix.os }}
         permissions:
-            contents: read
-            pull-requests: write
+            contents: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -66,7 +64,7 @@ jobs:
             - name: Create binary
               uses: passeriform/wails-build-action@main
               with:
-                  app-working-directory: ${{ github.workspace }}/pkg/client
+                  app-working-directory: pkg/client
                   build-obfuscate: true
                   build-name: ${{ matrix.name }}
                   build-platform: ${{ matrix.platform }}
