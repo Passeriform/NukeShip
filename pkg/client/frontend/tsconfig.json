@@ -4,12 +4,12 @@
         "paths": {
             "@animations/*": ["./src/animations/*"],
             "@assets/*": ["./src/assets/*"],
+            "@bindings/*": ["./bindings/passeriform.com/nukeship/*"],
             "@components/*": ["./src/components/*"],
             "@constants/*": ["./src/constants/*"],
             "@game/*": ["./src/game/*"],
             "@hooks/*": ["./src/hooks/*"],
-            "@pages/*": ["./src/pages/*"],
-            "@wails/*": ["./wailsjs/*"]
+            "@pages/*": ["./src/pages/*"]
         },
         "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
         "target": "ESNext",

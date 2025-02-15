@@ -1,7 +1,7 @@
+import { Events } from "@wailsio/runtime"
 import { createResource, onCleanup, onMount } from "solid-js"
-import { GetConnectionState } from "@wails/go/main/WailsApp"
-import { main } from "@wails/go/models"
-import { EventsOff, EventsOn } from "@wails/runtime/runtime"
+import { Event } from "@bindings/pkg/client/models"
+import { GetConnectionState } from "@bindings/pkg/client/wailsroomservice"
 
 const useConnection = () => {
     const [connected, { refetch }] = createResource(GetConnectionState)
@@ -11,7 +11,7 @@ const useConnection = () => {
     })
 
     onCleanup(() => {
-        EventsOff(main.Event.SERVER_CONNECTION_CHANGE)
+        Events.Off(Event.EventSrvServerConnectionChange)
     })
 
     return { connected }

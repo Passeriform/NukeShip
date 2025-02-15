@@ -7,93 +7,81 @@ import (
 	"embed"
 	"log"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/linux"
-	"github.com/wailsapp/wails/v2/pkg/options/mac"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"github.com/Gurpartap/statemachine-go"
-
-	"passeriform.com/nukeship/internal/client"
+	"github.com/leaanthony/u"
 )
 
 var (
-	//go:embed frontend/dist
+	//go:embed all:frontend/dist
 	assets embed.FS
 
 	//go:embed frontend/src/assets/radioactive.svg
 	icon []byte
 )
 
-var (
-	appStatesMapping = []struct {
-		Value  client.RoomState
-		TSName string
-	}{
-		{client.RoomStateINIT, "INIT"},
-		{client.RoomStateAWAITINGOPPONENT, "AWAITING_OPPONENT"},
-		{client.RoomStateROOMFILLED, "ROOM_FILLED"},
-		{client.RoomStateAWAITINGREADY, "AWAITING_READY"},
-		{client.RoomStateAWAITINGGAMESTART, "AWAITING_GAME_START"},
-		{client.RoomStateINGAME, "IN_GAME"},
-		{client.RoomStateRECOVERY, "RECOVERY"},
-	}
-
-	eventsMapping = []struct {
-		Value  Event
-		TSName string
-	}{
-		{StateChangeEvent, "STATE_CHANGE"},
-		{ServerConnectionChangeEvent, "SERVER_CONNECTION_CHANGE"},
-	}
-)
-
 func RunApp(ctx context.Context) {
-	app := newWailsApp(ctx)
+	roomService := NewWailsRoomService(ctx)
 
-	err := wails.Run(&options.App{
-		Title:         "NukeShip",
-		DisableResize: true,
-		Fullscreen:    true,
-		Frameless:     true,
-		Assets:        assets,
-		OnStartup: func(wCtx context.Context) {
-			c, err := newClient(ctx)
-			if err != nil {
-				log.Panicf("Cannot create new grpc client: %v", err)
-			}
-
-			app.Client = c
-
-			app.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, string(StateChangeEvent), client.MustParseRoomState(t.To()))
-			})
-
-			app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, string(ServerConnectionChangeEvent), t.To() == client.ConnectionStateCONNECTED.String())
-			})
-
-			go app.connect(ctx)
+	app := application.New(application.Options{
+		Name:        "NukeShip",
+		Description: "A cyberpunk twist on battleships.",
+		Icon:        icon,
+		Mac: application.MacOptions{
+			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
-		WindowStartState:                 options.Fullscreen,
-		Bind:                             []any{app},
-		EnumBind:                         []any{appStatesMapping, eventsMapping},
-		EnableDefaultContextMenu:         false,
-		EnableFraudulentWebsiteDetection: false,
-		Mac: &mac.Options{
-			About: &mac.AboutInfo{
-				Title:   "NukeShip",
-				Message: "© 2024 Passeriform",
-				Icon:    icon,
+		Services: []application.Service{
+			application.NewService(roomService),
+		},
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
+		},
+		// Flags: ,
+		// PanicHandler: ,
+		// OnShutdown: ,
+		// ShouldQuit: ,
+		// FileAssociations: [".skin"],
+		// SingleInstance: &application.SingleInstanceOptions{
+		// 	UniqueID: "com.passeriform.nukeship",
+		// 	ExitCode: 0,
+		// },
+	})
+
+	app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+		Name:             "NukeShip",
+		Title:            "NukeShip",
+		URL:              "/",
+		BackgroundColour: application.NewRGB(27, 38, 54),
+		DisableResize:    true,
+		Frameless:        true,
+		StartState:       application.WindowStateFullscreen,
+		BackgroundType:   application.BackgroundTypeTranslucent,
+		Mac: application.MacWindow{
+			Backdrop:                        application.MacBackdropTranslucent,
+			TitleBar:                        application.MacTitleBarHiddenInset,
+			InvisibleTitleBarHeight:         0,
+			EnableFraudulentWebsiteWarnings: true,
+			WebviewPreferences: application.MacWebviewPreferences{
+				TabFocusesLinks:        u.True,
+				TextInteractionEnabled: application.Enabled,
+				FullscreenEnabled:      application.Enabled,
 			},
 		},
-		Linux: &linux.Options{
-			Icon:        icon,
-			ProgramName: "NukeShip",
+		Windows: application.WindowsWindow{
+			BackdropType: application.Acrylic,
 		},
+		Linux: application.LinuxWindow{
+			Icon: icon,
+		},
+		DefaultContextMenuDisabled: true,
+		// DevToolsEnabled: ,
+		// OpenInspectorOnStartup: ,
 	})
+
+	roomService.setEmitter(app.EmitEvent)
+
+	err := app.Run()
 	if err != nil {
-		log.Panicf("Error occurred while running GUI app: %v", err)
+		log.Panicf("Error occurred while running the app: %v", err)
 	}
 }

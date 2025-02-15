@@ -50,7 +50,7 @@ Ensure you have the following installed on your system:
 2. Install Wails:
 
     ```bash
-    go install github.com/wailsapp/wails/v2/cmd/wails@latest
+    go install github.com/wailsapp/wails/v3/cmd/wails@latest
     ```
 
 3. Generate protobuf bindings:
@@ -63,7 +63,7 @@ Ensure you have the following installed on your system:
 4. Build the project:
 
     ```bash
-    wails build -clean
+    wails3 build
     ```
 
 5. Run the game:

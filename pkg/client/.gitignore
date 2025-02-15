@@ -1,2 +1,10 @@
-# Wails build
-build/bin
+# Wails build assets
+.task
+bin
+
+# Build artifacts
+build/linux/appimage/build
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+
+# Frontend bindings
+frontend/bindings

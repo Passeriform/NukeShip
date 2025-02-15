@@ -15,23 +15,26 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
+	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"github.com/Gurpartap/statemachine-go"
+
 	"passeriform.com/nukeship/internal/client"
 	"passeriform.com/nukeship/internal/pb"
 )
 
-const (
-	StateChangeEvent            Event = "srv:stateChange"
-	ServerConnectionChangeEvent Event = "srv:serverConnectionChange"
-)
+//go:generate go run github.com/abice/go-enum -f=$GOFILE --mustparse --values --output-suffix _generated
 
 type (
+	// ENUM(srv:RoomStateChange, srv:ServerConnectionChange)
 	Event string
 )
 
-type WailsApp struct {
+type WailsRoomService struct {
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
 	grpcCtx      context.Context
 	Client       pb.RoomServiceClient
+	emit         func(name string, data ...any)
 	stateMachine *client.RoomStateFSM
 	connMachine  *client.ConnectionFSM
 }
@@ -55,6 +58,7 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 	)
 	if err != nil {
 		log.Printf("Could not connect: %v", err)
+
 		return nil, err
 	}
 
@@ -65,132 +69,171 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 
 // TODO: Add reconnection logic to recover streaming messages.
 
-func (app *WailsApp) connect(ctx context.Context) {
+func (srv *WailsRoomService) connect(ctx context.Context) {
 	defer func() {
-		app.connMachine.Fire(client.ClientMessageDISCONNECTED.String())
+		srv.connMachine.Fire(client.ClientMessageDISCONNECTED.String())
 	}()
 
 	streamCtx, cancel := client.NewStreamContext(ctx)
 	defer cancel()
 
-	streamClient, err := app.Client.SubscribeMessages(streamCtx, &pb.SubscribeMessagesRequest{})
+	streamClient, err := srv.Client.SubscribeMessages(streamCtx, &pb.SubscribeMessagesRequest{})
 	if err != nil {
 		log.Printf("Subscription to server messages failed: %v", err)
+
 		return
 	}
 
-	app.connMachine.Fire(client.ClientMessageCONNECTED.String())
+	srv.connMachine.Fire(client.ClientMessageCONNECTED.String())
 
 	for {
 		update, err := streamClient.Recv()
 		if errors.Is(err, io.EOF) {
 			log.Println("Stopped receiving updates from server.")
+
 			return
 		}
 
 		if err != nil {
 			log.Printf("Received error frame: %v", err)
+
 			return
 		}
 
-		app.stateMachine.Fire(update.GetType().String())
+		srv.stateMachine.Fire(update.GetType().String())
 	}
 }
 
-func newWailsApp(grpcCtx context.Context) *WailsApp {
-	app := &WailsApp{
+func NewWailsRoomService(grpcCtx context.Context) *WailsRoomService {
+	return &WailsRoomService{
 		grpcCtx:      grpcCtx,
 		Client:       nil,
+		emit:         nil,
 		stateMachine: nil,
 		connMachine:  nil,
 	}
-
-	return app
 }
 
-func (app *WailsApp) GetAppState() client.RoomState {
-	return client.MustParseRoomState(app.stateMachine.GetState())
+func (srv *WailsRoomService) setEmitter(emit func(name string, data ...any)) {
+	srv.emit = emit
 }
 
-func (app *WailsApp) GetConnectionState() bool {
-	return app.connMachine.GetState() == client.ConnectionStateCONNECTED.String()
+func (srv *WailsRoomService) OnStartup(_ context.Context, _ application.ServiceOptions) error {
+	c, err := newClient(srv.grpcCtx)
+	if err != nil {
+		log.Panicf("Cannot create new grpc client: %v", err)
+
+		return err
+	}
+
+	srv.Client = c
+
+	srv.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
+		srv.emit(EventSrvRoomStateChange.String(), client.MustParseRoomState(t.To()))
+	})
+
+	srv.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
+		srv.emit(string(EventSrvServerConnectionChange), t.To() == client.ConnectionStateCONNECTED.String())
+	})
+
+	go srv.connect(srv.grpcCtx)
+
+	return nil
 }
 
-func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+func (srv *WailsRoomService) GetAllEvents() []Event {
+	return EventValues()
+}
+
+func (srv *WailsRoomService) GetRoomState() client.RoomState {
+	return client.MustParseRoomState(srv.stateMachine.GetState())
+}
+
+func (srv *WailsRoomService) GetConnectionState() bool {
+	return srv.connMachine.GetState() == client.ConnectionStateCONNECTED.String()
+}
+
+func (srv *WailsRoomService) UpdateReady(ready bool) (bool, error) {
+	unaryCtx, cancel := client.NewUnaryContext(srv.grpcCtx)
 	defer cancel()
 
 	// TODO: Use error codes middleware to handle RPC errors properly.
-	resp, err := app.Client.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
+	resp, err := srv.Client.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
 	if err != nil {
 		log.Printf("Could not update ready state: %v", err)
+
 		return false, err
 	}
 
 	if resp.GetStatus() == pb.ResponseStatus_NO_ROOM_JOINED_YET {
 		log.Printf("Unable to ready as the room is invalid")
+
 		return false, nil
 	}
 
 	log.Printf("Updated ready state: %t", ready)
 
 	if !ready {
-		app.stateMachine.Fire(client.ClientMessageSELFREVERTEDREADY.String())
+		srv.stateMachine.Fire(client.ClientMessageSELFREVERTEDREADY.String())
+
 		return resp.GetStatus() == pb.ResponseStatus_OK, nil
 	}
 
-	app.stateMachine.Fire(client.ClientMessageSELFREADY.String())
+	srv.stateMachine.Fire(client.ClientMessageSELFREADY.String())
 
 	return resp.GetStatus() == pb.ResponseStatus_OK, nil
 }
 
-func (app *WailsApp) CreateRoom() (string, error) {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+func (srv *WailsRoomService) CreateRoom() (string, error) {
+	unaryCtx, cancel := client.NewUnaryContext(srv.grpcCtx)
 	defer cancel()
 
-	resp, err := app.Client.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
+	resp, err := srv.Client.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
 	if err != nil {
 		log.Printf("Could not create room: %v", err)
+
 		return "", err
 	}
 
 	log.Printf("Room created: %s", resp.GetRoomId())
 
-	app.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
+	srv.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
 
 	return resp.GetRoomId(), nil
 }
 
-func (app *WailsApp) JoinRoom(roomCode string) bool {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+func (srv *WailsRoomService) JoinRoom(roomCode string) bool {
+	unaryCtx, cancel := client.NewUnaryContext(srv.grpcCtx)
 	defer cancel()
 
-	resp, err := app.Client.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
+	resp, err := srv.Client.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
 	if err != nil {
 		log.Printf("Could not join room with id %v: %v", roomCode, err)
+
 		return false
 	}
 
 	log.Printf("Room joined status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
+	srv.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
 
 	return resp.GetStatus() == pb.ResponseStatus_OK
 }
 
-func (app *WailsApp) LeaveRoom() bool {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+func (srv *WailsRoomService) LeaveRoom() bool {
+	unaryCtx, cancel := client.NewUnaryContext(srv.grpcCtx)
 	defer cancel()
 
-	resp, err := app.Client.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
+	resp, err := srv.Client.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
 	if err != nil {
 		log.Printf("Could not leave room: %v", err)
+
 		return false
 	}
 
 	log.Printf("Room left status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(client.ClientMessageSELFLEFT.String())
+	srv.stateMachine.Fire(client.ClientMessageSELFLEFT.String())
 
 	return resp.GetStatus() == pb.ResponseStatus_OK
 }

@@ -1,7 +1,8 @@
+import { Events } from "@wailsio/runtime"
 import { createResource, onCleanup, onMount } from "solid-js"
-import { GetAppState } from "@wails/go/main/WailsApp"
-import { main } from "@wails/go/models"
-import { EventsOff, EventsOn } from "@wails/runtime/runtime"
+import { RoomState } from "@bindings/internal/client"
+import { Event } from "@bindings/pkg/client/models"
+import { GetRoomState } from "@bindings/pkg/client/wailsroomservice"
 
 const useGameState = () => {
     const [gameState, { refetch }] = createResource(GetAppState)
@@ -11,7 +12,7 @@ const useGameState = () => {
     })
 
     onCleanup(() => {
-        EventsOff(main.Event.STATE_CHANGE)
+        Events.Off(Event.EventSrvRoomStateChange)
     })
 
     return { gameState }

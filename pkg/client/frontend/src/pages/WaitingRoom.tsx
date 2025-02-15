@@ -2,25 +2,24 @@ import { useNavigate, useParams } from "@solidjs/router"
 import { Show, VoidComponent, createEffect } from "solid-js"
 import { Grid } from "solid-spinner"
 import waitingRoomVideo from "@assets/waiting_room.mp4"
+import { RoomState } from "@bindings/internal/client"
+import { LeaveRoom, UpdateReady } from "@bindings/pkg/client/wailsroomservice"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
 import Tips from "@components/Tips"
 import VideoBackground from "@components/VideoBackground"
 import useGameState from "@hooks/useGameState"
-import { LeaveRoom, UpdateReady } from "@wails/go/main/WailsApp"
-import { client } from "@wails/go/models"
 
 // TODO: Disable all controls when server is disconnected.
 
 const messageMapping = {
-    [client.RoomState.AWAITING_OPPONENT]: "Waiting for an opponent to join...",
-    [client.RoomState.ROOM_FILLED]: "The playground is set!",
-    [client.RoomState.AWAITING_READY]: "Waiting for your opponent to get ready...",
-    [client.RoomState.AWAITING_GAME_START]: "Let the show begin!",
-} satisfies Partial<Record<client.RoomState, string>>
+    [RoomState.RoomStateAWAITINGOPPONENT]: "Waiting for an opponent to join...",
+    [RoomState.RoomStateROOMFILLED]: "The playground is set!",
+    [RoomState.RoomStateAWAITINGREADY]: "Waiting for your opponent to get ready...",
+    [RoomState.RoomStateAWAITINGGAMESTART]: "Let the show begin!",
+} satisfies Partial<Record<RoomState, string>>
 
-const getMessageString = (state: client.RoomState | undefined) =>
-    messageMapping[state as keyof typeof messageMapping] || ""
+const getMessageString = (state: RoomState | undefined) => messageMapping[state as keyof typeof messageMapping] || ""
 
 const WaitingRoom: VoidComponent = () => {
     const { code } = useParams()
@@ -28,12 +27,12 @@ const WaitingRoom: VoidComponent = () => {
     const { gameState } = useGameState()
 
     const showLoader = () =>
-        [client.RoomState.AWAITING_OPPONENT, client.RoomState.AWAITING_READY, client.RoomState].includes(
-            gameState() as client.RoomState,
+        [RoomState.RoomStateAWAITINGOPPONENT, RoomState.RoomStateAWAITINGREADY, RoomState].includes(
+            gameState() as RoomState,
         )
     const showReadyButton = () =>
-        [client.RoomState.ROOM_FILLED, client.RoomState.AWAITING_READY].includes(gameState() as client.RoomState)
-    const isReady = () => gameState() === client.RoomState.AWAITING_READY
+        [RoomState.RoomStateROOMFILLED, RoomState.RoomStateAWAITINGREADY].includes(gameState() as RoomState)
+    const isReady = () => gameState() === RoomState.RoomStateAWAITINGREADY
 
     const goBack = () => {
         LeaveRoom()
@@ -41,7 +40,7 @@ const WaitingRoom: VoidComponent = () => {
     }
 
     createEffect(() => {
-        if (gameState() == client.RoomState.IN_GAME) {
+        if (gameState() == RoomState.RoomStateINGAME) {
             navigate(`/game/${code}`)
         }
     })
