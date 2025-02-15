@@ -5,9 +5,10 @@ on:
             - "*"
 
 jobs:
-    build:
+    sanity:
         runs-on: ubuntu-latest
-
+        permissions:
+            contents: read
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -20,6 +21,17 @@ jobs:
             - name: Install dependencies
               run: go mod tidy
 
+            - name: Shim frontend
+              working-directory: pkg/client/frontend
+              run: |
+                  mkdir -p dist
+                  touch -f dist/ignore
+
+            # - name: Refresh protobuf definitions
+
+            - name: Generate code
+              run: go generate ./...
+
             - name: Run tests
               run: go test ./...
 
@@ -27,3 +39,75 @@ jobs:
               uses: golangci/golangci-lint-action@v6
               with:
                   version: latest
+
+    build-server:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        env:
+            OUT_PATH: ${{ github.workspace }}/pkg/server/bin/Server
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: ./go.mod
+
+            # - name: Refresh protobuf definitions
+
+            - name: Generate code
+              run: go generate ./...
+
+            - name: Build server
+              working-directory: pkg/server
+              run: go build -o ${{ env.OUT_PATH }}
+
+            - name: Upload server
+              uses: actions/upload-artifact@v4
+              with:
+                  name: Server
+                  path: ${{ env.OUT_PATH }}
+                  if-no-files-found: error
+                  overwrite: true
+
+    build-binaries:
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - name: NukeShip
+                      os: ubuntu-latest
+                      platform: linux/amd64
+                    - name: NukeShip.exe
+                      os: windows-latest
+                      platform: windows/amd64
+                    - name: nukeship
+                      os: macos-latest
+                      platform: darwin/universal
+        runs-on: ${{ matrix.os }}
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: ./go.mod
+
+            # - name: Refresh protobuf definitions
+
+            - name: Generate code
+              run: go generate ./...
+
+            - name: Build binary
+              uses: passeriform/wails-build-action@main
+              with:
+                  app-working-directory: pkg/client
+                  build-obfuscate: true
+                  build-name: ${{ matrix.name }}
+                  build-platform: ${{ matrix.platform }}
+                  macos-artifact-name: "NukeShip"
