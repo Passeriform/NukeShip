@@ -8,3 +8,4 @@ build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 
 # Frontend bindings
 frontend/bindings
+wailsjs

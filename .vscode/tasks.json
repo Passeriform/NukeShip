@@ -34,6 +34,20 @@
             }
         },
         {
+            "label": "[Generation] Generate Wails Bindings",
+            "type": "shell",
+            "command": "wails3",
+            "args": [
+                "generate",
+                "bindings",
+                "-ts",
+            ],
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
             "label": "[Sanity] Ping Hosted gRPC server",
             "type": "shell",
             "command": "grpcurl",

@@ -6,6 +6,8 @@
             "@assets/*": ["./src/assets/*"],
             "@bindings/*": ["./bindings/passeriform.com/nukeship/*"],
             "@components/*": ["./src/components/*"],
+            "@constants/*": ["./src/constants/*"],
+            "@game/*": ["./src/game/*"],
             "@hooks/*": ["./src/hooks/*"],
             "@pages/*": ["./src/pages/*"]
         },

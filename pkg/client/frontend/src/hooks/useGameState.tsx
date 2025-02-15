@@ -5,12 +5,10 @@ import { Event } from "@bindings/pkg/client/models"
 import { GetRoomState } from "@bindings/pkg/client/wailsroomservice"
 
 const useGameState = () => {
-    const [gameState, { mutate }] = createResource(GetRoomState)
+    const [gameState, { refetch }] = createResource(GetAppState)
 
     onMount(() => {
-        Events.On(Event.EventSrvRoomStateChange, (state: RoomState) => {
-            mutate(state)
-        })
+        EventsOn(main.Event.STATE_CHANGE, refetch)
     })
 
     onCleanup(() => {

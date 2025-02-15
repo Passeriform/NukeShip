@@ -5,9 +5,12 @@ on:
             - master
 
 jobs:
-    build:
+    build-server:
         runs-on: ubuntu-latest
-
+        permissions:
+            contents: read
+        env:
+            OUT_PATH: ${{ github.workspace }}/pkg/server/bin/Server
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -17,12 +20,11 @@ jobs:
               with:
                   go-version-file: ./go.mod
 
-            - name: Install dependencies
-              run: go mod tidy
+            # - name: Refresh protobuf definitions
 
-            - name: Set up Docker Compose
-              uses: docker/setup-buildx-action@v3
+            - name: Generate code
+              run: go generate ./...
 
-            - name: Build and Run Server
-              run: |
-                  docker compose up --build --force-recreate --remove-orphans -d server
+            - name: Build server
+              working-directory: pkg/server
+              run: go build -o ${{ env.OUT_PATH }}

@@ -24,7 +24,6 @@ import (
 )
 
 //go:generate go run github.com/abice/go-enum -f=$GOFILE --mustparse --values --output-suffix _generated
-
 type (
 	// ENUM(srv:RoomStateChange, srv:ServerConnectionChange)
 	Event string
@@ -122,7 +121,6 @@ func (srv *WailsRoomService) OnStartup(_ context.Context, _ application.ServiceO
 	c, err := newClient(srv.grpcCtx)
 	if err != nil {
 		log.Panicf("Cannot create new grpc client: %v", err)
-
 		return err
 	}
 
@@ -133,7 +131,7 @@ func (srv *WailsRoomService) OnStartup(_ context.Context, _ application.ServiceO
 	})
 
 	srv.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
-		srv.emit(string(EventSrvServerConnectionChange), t.To() == client.ConnectionStateCONNECTED.String())
+		srv.emit(EventSrvServerConnectionChange.String(), t.To() == client.ConnectionStateCONNECTED.String())
 	})
 
 	go srv.connect(srv.grpcCtx)

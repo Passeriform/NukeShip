@@ -2,6 +2,7 @@ import { Route, Router } from "@solidjs/router"
 import { VoidComponent, createEffect, createSignal, on } from "solid-js"
 import toast, { Toaster } from "solid-toast"
 import useConnection from "@hooks/useConnection"
+import GameBoard from "@pages/GameBoard"
 import Landing from "@pages/Landing"
 import WaitingRoom from "@pages/WaitingRoom"
 
@@ -37,6 +38,7 @@ const App: VoidComponent = () => {
             <Router url="/">
                 <Route path="/" component={() => <Landing />} />
                 <Route path="/room/:code" component={() => <WaitingRoom />} />
+                <Route path="/game/:code" component={() => <GameBoard />} />
             </Router>
             <Toaster
                 toastOptions={{

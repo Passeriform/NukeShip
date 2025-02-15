@@ -17,7 +17,13 @@ Line of action
         ☐ Benchmark performance for room and connection against direct data storage instead of using pointers
 
 Ideas
+    Text Prompts
+        ☐ A backdoor was installed. (Show infected area)
     Special powers
+        ☐ DDoS
+            ☐ Attacks spreads from root node and consumes almost all power from your own mainframe's nodes
+            ☐ Show like an orbital laser directly hitting the node
+
         ☐ Infestation
             ☐ [Alerts] the opponent about the occurrence
             ☐ Requires [Health Scan] to be detected
@@ -63,3 +69,13 @@ Ideas
 
         ☐ Data Bleed
             ☐ Reduced shield recharge rate
+
+        ☐ Upkeep nodes
+            ☐ Remove all health regeneration from the node and distribute it to parent, siblings and children
+
+        ☐ Health scan
+            ☐ BFS check for any backdoors or poisoned nodes
+
+        ☐ Deep scan
+            ☐ Ability to decide the scan path (greedy DFS)
+            ☐ Show live DFS with glow on the lines connecting the nodes
