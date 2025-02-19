@@ -27,8 +27,8 @@ type (
 	}
 )
 
-func NewRoomStateFSM(notify func(t statemachine.Transition)) *RoomStateFSM {
-	fsm := &RoomStateFSM{
+func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
+	fsm := RoomStateFSM{
 		opponentReady: false,
 		Machine:       nil,
 	}
@@ -71,8 +71,8 @@ func NewRoomStateFSM(notify func(t statemachine.Transition)) *RoomStateFSM {
 	return fsm
 }
 
-func NewConnectionFSM(notify func(t statemachine.Transition)) *ConnectionFSM {
-	return &ConnectionFSM{
+func NewConnectionFSM(notify func(t statemachine.Transition)) ConnectionFSM {
+	return ConnectionFSM{
 		Machine: statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
 			machine.States(ConnectionStateConnected.String(), LocalEventDisconnected.String())
 

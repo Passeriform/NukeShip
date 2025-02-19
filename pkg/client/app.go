@@ -32,8 +32,8 @@ type WailsApp struct {
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
 	grpcCtx      context.Context
 	Client       pb.RoomServiceClient
-	stateMachine *client.RoomStateFSM
-	connMachine  *client.ConnectionFSM
+	connMachine  client.ConnectionFSM
+	stateMachine client.RoomStateFSM
 }
 
 func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
@@ -99,10 +99,8 @@ func (app *WailsApp) connect(ctx context.Context) {
 
 func newWailsApp(grpcCtx context.Context) *WailsApp {
 	app := &WailsApp{
-		grpcCtx:      grpcCtx,
-		Client:       nil,
-		stateMachine: nil,
-		connMachine:  nil,
+		grpcCtx: grpcCtx,
+		Client:  nil,
 	}
 
 	return app
