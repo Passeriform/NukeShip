@@ -4,6 +4,8 @@ import (
 	"log"
 
 	"github.com/necmettindev/randomstring"
+
+	"passeriform.com/nukeship/internal/game"
 )
 
 const (
@@ -14,9 +16,9 @@ const (
 var roomMap = map[string]*Room{}
 
 type Room struct {
-	Clients     map[string]*Connection
-	ID          string
-	GameRunning bool
+	Clients map[string]*Connection
+	Game    game.Game
+	ID      string
 }
 
 func NewRoom() (*Room, bool) {
@@ -36,9 +38,8 @@ func NewRoom() (*Room, bool) {
 	}
 
 	room = &Room{
-		GameRunning: false,
-		ID:          roomID,
-		Clients:     map[string]*Connection{},
+		ID:      roomID,
+		Clients: map[string]*Connection{},
 	}
 
 	roomMap[roomID] = room

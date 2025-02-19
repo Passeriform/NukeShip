@@ -126,9 +126,7 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 	}
 
 	if startGameFlag {
-		room.GameRunning = true
-
-		go game.NewGame()
+		room.Game = game.NewGame()
 
 		for _, c := range room.Clients {
 			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_GameStarted}
