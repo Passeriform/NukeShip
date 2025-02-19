@@ -8,11 +8,11 @@ import (
 
 //go:generate go run github.com/abice/go-enum -f=$GOFILE --mustparse --values --output-suffix _generated
 type (
-	// ENUM(SELF_JOINED, SELF_LEFT, SELF_READY, SELF_REVERTED_READY, CONNECTED, DISCONNECTED)
-	ClientMessage string
-	// ENUM(INIT, AWAITING_OPPONENT, ROOM_FILLED, AWAITING_READY, AWAITING_GAME_START, IN_GAME, RECOVERY)
+	// ENUM(SelfJoined, SelfLeft, SelfReady, SelfRevertedReady, Connected, Disconnected)
+	LocalEvent string
+	// ENUM(Init, AwaitingOpponent, RoomFilled, AwaitingReady, AwaitingGameStart, InGame, Recovery)
 	RoomState string
-	// ENUM(CONNECTED, DISCONNECTED)
+	// ENUM(Connected, Disconnected)
 	ConnectionState string
 )
 
@@ -35,37 +35,37 @@ func NewRoomStateFSM(notify func(t statemachine.Transition)) *RoomStateFSM {
 
 	fsm.Machine = statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
 		machine.States(
-			RoomStateINIT.String(),
-			RoomStateAWAITINGOPPONENT.String(),
-			RoomStateROOMFILLED.String(),
-			RoomStateAWAITINGREADY.String(),
-			RoomStateAWAITINGGAMESTART.String(),
-			RoomStateINGAME.String(),
-			RoomStateRECOVERY.String(),
+			RoomStateInit.String(),
+			RoomStateAwaitingOpponent.String(),
+			RoomStateRoomFilled.String(),
+			RoomStateAwaitingReady.String(),
+			RoomStateAwaitingGameStart.String(),
+			RoomStateInGame.String(),
+			RoomStateRecovery.String(),
 		)
 
-		machine.InitialState(RoomStateINIT.String())
+		machine.InitialState(RoomStateInit.String())
 
 		machine.AfterTransition().Any().Do(notify)
 
-		machine.Event(ClientMessageSELFJOINED.String()).Transition().From(RoomStateINIT.String()).To(RoomStateAWAITINGOPPONENT.String())
-		machine.Event(pb.ServerMessage_OPPONENT_JOINED.String()).Transition().From(RoomStateAWAITINGOPPONENT.String()).To(RoomStateROOMFILLED.String())
-		machine.Event(ClientMessageSELFREADY.String()).Choice(&fsm.opponentReady).OnTrue(func(e statemachine.EventBuilder) {
-			e.Transition().From(RoomStateAWAITINGREADY.String()).To(RoomStateAWAITINGGAMESTART.String())
+		machine.Event(LocalEventSelfJoined.String()).Transition().From(RoomStateInit.String()).To(RoomStateAwaitingOpponent.String())
+		machine.Event(pb.RoomServiceEvent_OpponentJoined.String()).Transition().From(RoomStateAwaitingOpponent.String()).To(RoomStateRoomFilled.String())
+		machine.Event(LocalEventSelfReady.String()).Choice(&fsm.opponentReady).OnTrue(func(e statemachine.EventBuilder) {
+			e.Transition().From(RoomStateAwaitingReady.String()).To(RoomStateAwaitingGameStart.String())
 		}).OnFalse(func(e statemachine.EventBuilder) {
-			e.Transition().From(RoomStateROOMFILLED.String()).To(RoomStateAWAITINGREADY.String())
+			e.Transition().From(RoomStateRoomFilled.String()).To(RoomStateAwaitingReady.String())
 		})
-		machine.Event(pb.ServerMessage_OPPONENT_READY.String()).Choice(&fsm.opponentReady).OnTrue(func(e statemachine.EventBuilder) {
-			e.Transition().From(RoomStateAWAITINGREADY.String()).To(RoomStateAWAITINGGAMESTART.String())
+		machine.Event(pb.RoomServiceEvent_OpponentReady.String()).Choice(&fsm.opponentReady).OnTrue(func(e statemachine.EventBuilder) {
+			e.Transition().From(RoomStateAwaitingReady.String()).To(RoomStateAwaitingGameStart.String())
 		}).OnFalse(func(_ statemachine.EventBuilder) {
 			fsm.opponentReady = true
 		})
-		machine.Event(pb.ServerMessage_GAME_STARTED.String()).Transition().FromAny().To(RoomStateINGAME.String())
-		machine.Event(ClientMessageSELFLEFT.String()).Transition().From(RoomStateAWAITINGOPPONENT.String(), RoomStateROOMFILLED.String(), RoomStateAWAITINGREADY.String(), RoomStateAWAITINGGAMESTART.String(), RoomStateINGAME.String()).To(RoomStateINIT.String())
-		machine.Event(ClientMessageSELFREVERTEDREADY.String()).Transition().From(RoomStateAWAITINGREADY.String(), RoomStateAWAITINGGAMESTART.String()).To(RoomStateROOMFILLED.String())
-		machine.Event(pb.ServerMessage_OPPONENT_REVERTED_READY.String()).Transition().From(RoomStateAWAITINGGAMESTART.String()).To(RoomStateAWAITINGREADY.String())
-		machine.Event(pb.ServerMessage_OPPONENT_LEFT.String()).Transition().From(RoomStateROOMFILLED.String(), RoomStateAWAITINGREADY.String(), RoomStateAWAITINGGAMESTART.String()).To(RoomStateAWAITINGOPPONENT.String())
-		machine.Event(pb.ServerMessage_OPPONENT_LEFT.String()).Transition().From(RoomStateINGAME.String()).To(RoomStateRECOVERY.String())
+		machine.Event(pb.RoomServiceEvent_GameStarted.String()).Transition().FromAny().To(RoomStateInGame.String())
+		machine.Event(LocalEventSelfLeft.String()).Transition().From(RoomStateAwaitingOpponent.String(), RoomStateRoomFilled.String(), RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String(), RoomStateInGame.String()).To(RoomStateInit.String())
+		machine.Event(LocalEventSelfRevertedReady.String()).Transition().From(RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String()).To(RoomStateRoomFilled.String())
+		machine.Event(pb.RoomServiceEvent_OpponentRevertedReady.String()).Transition().From(RoomStateAwaitingGameStart.String()).To(RoomStateAwaitingReady.String())
+		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).Transition().From(RoomStateRoomFilled.String(), RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String()).To(RoomStateAwaitingOpponent.String())
+		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).Transition().From(RoomStateInGame.String()).To(RoomStateRecovery.String())
 	})
 
 	return fsm
@@ -74,14 +74,14 @@ func NewRoomStateFSM(notify func(t statemachine.Transition)) *RoomStateFSM {
 func NewConnectionFSM(notify func(t statemachine.Transition)) *ConnectionFSM {
 	return &ConnectionFSM{
 		Machine: statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
-			machine.States(ConnectionStateCONNECTED.String(), ClientMessageDISCONNECTED.String())
+			machine.States(ConnectionStateConnected.String(), LocalEventDisconnected.String())
 
-			machine.InitialState(ConnectionStateCONNECTED.String())
+			machine.InitialState(ConnectionStateConnected.String())
 
 			machine.AfterTransition().Any().Do(notify)
 
-			machine.Event(ClientMessageCONNECTED.String()).Transition().From(ConnectionStateDISCONNECTED.String()).To(ConnectionStateCONNECTED.String())
-			machine.Event(ClientMessageDISCONNECTED.String()).Transition().From(ConnectionStateCONNECTED.String()).To(ClientMessageDISCONNECTED.String())
+			machine.Event(LocalEventConnected.String()).Transition().From(ConnectionStateDisconnected.String()).To(ConnectionStateConnected.String())
+			machine.Event(LocalEventDisconnected.String()).Transition().From(ConnectionStateConnected.String()).To(LocalEventDisconnected.String())
 		}),
 	}
 }

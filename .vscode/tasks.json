@@ -13,7 +13,7 @@
                 "--go-grpc_out=.",
                 "--go-grpc_opt=paths=source_relative",
                 "--proto_path=.",
-                "./room.proto"
+                "./*.proto"
             ],
             "problemMatcher": [],
             "options": {
@@ -39,7 +39,7 @@
             "command": "grpcurl",
             "args": [
                 "-proto",
-                "room.proto",
+                "*.proto",
                 "-H",
                 "client-id: abcde",
                 "${input:serverAddress}",

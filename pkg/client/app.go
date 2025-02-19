@@ -67,7 +67,7 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 
 func (app *WailsApp) connect(ctx context.Context) {
 	defer func() {
-		app.connMachine.Fire(client.ClientMessageDISCONNECTED.String())
+		app.connMachine.Fire(client.LocalEventDisconnected.String())
 	}()
 
 	streamCtx, cancel := client.NewStreamContext(ctx)
@@ -79,7 +79,7 @@ func (app *WailsApp) connect(ctx context.Context) {
 		return
 	}
 
-	app.connMachine.Fire(client.ClientMessageCONNECTED.String())
+	app.connMachine.Fire(client.LocalEventConnected.String())
 
 	for {
 		update, err := streamClient.Recv()
@@ -113,7 +113,7 @@ func (app *WailsApp) GetAppState() client.RoomState {
 }
 
 func (app *WailsApp) GetConnectionState() bool {
-	return app.connMachine.GetState() == client.ConnectionStateCONNECTED.String()
+	return app.connMachine.GetState() == client.ConnectionStateConnected.String()
 }
 
 func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
@@ -127,7 +127,7 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 		return false, err
 	}
 
-	if resp.GetStatus() == pb.ResponseStatus_NO_ROOM_JOINED_YET {
+	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
 		log.Printf("Unable to ready as the room is invalid")
 		return false, nil
 	}
@@ -135,13 +135,13 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	log.Printf("Updated ready state: %t", ready)
 
 	if !ready {
-		app.stateMachine.Fire(client.ClientMessageSELFREVERTEDREADY.String())
-		return resp.GetStatus() == pb.ResponseStatus_OK, nil
+		app.stateMachine.Fire(client.LocalEventSelfRevertedReady.String())
+		return resp.GetStatus() == pb.ResponseStatus_Ok, nil
 	}
 
-	app.stateMachine.Fire(client.ClientMessageSELFREADY.String())
+	app.stateMachine.Fire(client.LocalEventSelfReady.String())
 
-	return resp.GetStatus() == pb.ResponseStatus_OK, nil
+	return resp.GetStatus() == pb.ResponseStatus_Ok, nil
 }
 
 func (app *WailsApp) CreateRoom() (string, error) {
@@ -156,7 +156,7 @@ func (app *WailsApp) CreateRoom() (string, error) {
 
 	log.Printf("Room created: %s", resp.GetRoomId())
 
-	app.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
+	app.stateMachine.Fire(client.LocalEventSelfJoined.String())
 
 	return resp.GetRoomId(), nil
 }
@@ -173,9 +173,9 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 
 	log.Printf("Room joined status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(client.ClientMessageSELFJOINED.String())
+	app.stateMachine.Fire(client.LocalEventSelfJoined.String())
 
-	return resp.GetStatus() == pb.ResponseStatus_OK
+	return resp.GetStatus() == pb.ResponseStatus_Ok
 }
 
 func (app *WailsApp) LeaveRoom() bool {
@@ -190,7 +190,7 @@ func (app *WailsApp) LeaveRoom() bool {
 
 	log.Printf("Room left status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(client.ClientMessageSELFLEFT.String())
+	app.stateMachine.Fire(client.LocalEventSelfLeft.String())
 
-	return resp.GetStatus() == pb.ResponseStatus_OK
+	return resp.GetStatus() == pb.ResponseStatus_Ok
 }

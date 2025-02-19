@@ -57,7 +57,7 @@ Ensure you have the following installed on your system:
 
     ```bash
     cd ./internal/pb
-    protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./room.proto"
+    protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./*.proto"
     ```
 
 4. Build the project:

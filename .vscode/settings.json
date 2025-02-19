@@ -52,6 +52,7 @@
         "INGAME",
         "Ints",
         "ireturn",
+        "irongut",
         "isatty",
         "jchv",
         "jxskiss",
@@ -83,6 +84,8 @@
         "pyncz",
         "randomstring",
         "renderable",
+        "replacebody",
+        "replacename",
         "rivo",
         "ROOMFILLED",
         "samber",
@@ -152,6 +155,11 @@
     "[yaml]": {
         "editor.defaultFormatter": "redhat.vscode-yaml",
         "editor.tabSize": 2
+    },
+    "protoc": {
+        "options": [
+            "--proto_path=${workspaceRoot}/internal/pb"
+        ]
     },
     "prettier.tabWidth": 4,
     "editor.detectIndentation": false,

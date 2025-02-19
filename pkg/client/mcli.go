@@ -34,7 +34,7 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 	return c, nil
 }
 
-func connect(ctx context.Context, rsc pb.RoomServiceClient, handler func(pb.ServerMessage), done chan<- bool) {
+func connect(ctx context.Context, rsc pb.RoomServiceClient, handler func(pb.RoomServiceEvent), done chan<- bool) {
 	defer func() {
 		done <- true
 	}()
@@ -90,7 +90,7 @@ func joinRoom(ctx context.Context, rsc pb.RoomServiceClient, roomCode string) {
 	log.Printf("Room joined: %s", room.GetStatus().String())
 }
 
-func RunApp(ctx context.Context, handler func(pb.ServerMessage)) {
+func RunApp(ctx context.Context, handler func(pb.RoomServiceEvent)) {
 	done := make(chan bool)
 
 	mcli.Add("createRoom", func() {

@@ -101,7 +101,7 @@ linters-settings:
     scope: all
     capital: true
     exclude:
-      - "^ENUM"
+      - "^\\s+ENUM"
   gofumpt:
     extra-rules: true
   govet:

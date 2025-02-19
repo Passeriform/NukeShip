@@ -41,7 +41,7 @@ func (*Server) CreateRoom(ctx context.Context, _ *pb.CreateRoomRequest) (*pb.Cre
 
 	log.Printf("Created new room: %v", room.ID)
 
-	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_OK, RoomId: room.ID}, nil
+	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_Ok, RoomId: room.ID}, nil
 }
 
 func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRoomResponse, error) {
@@ -52,7 +52,7 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 	room := server.GetRoom(roomID)
 
 	if room == nil {
-		return &pb.JoinRoomResponse{Status: pb.ResponseStatus_ROOM_NOT_FOUND}, nil
+		return &pb.JoinRoomResponse{Status: pb.ResponseStatus_RoomNotFound}, nil
 	}
 
 	room.AddConnection(client)
@@ -63,12 +63,12 @@ func (*Server) JoinRoom(ctx context.Context, in *pb.JoinRoomRequest) (*pb.JoinRo
 		if ID == clientID {
 			continue
 		}
-		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_JOINED}
+		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentJoined}
 	}
 
 	log.Printf("Client joined room: %v", room.ID)
 
-	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_OK}, nil
+	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_Ok}, nil
 }
 
 func (*Server) LeaveRoom(ctx context.Context, _ *pb.LeaveRoomRequest) (*pb.LeaveRoomResponse, error) {
@@ -77,7 +77,7 @@ func (*Server) LeaveRoom(ctx context.Context, _ *pb.LeaveRoomRequest) (*pb.Leave
 	client := server.GetConnection(clientID)
 
 	if client.Room == nil {
-		return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_NO_ROOM_JOINED_YET}, nil
+		return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_NoRoomJoinedYet}, nil
 	}
 
 	room := client.Room
@@ -85,12 +85,12 @@ func (*Server) LeaveRoom(ctx context.Context, _ *pb.LeaveRoomRequest) (*pb.Leave
 	room.RemoveConnection(client.ID)
 
 	for _, client := range room.Clients {
-		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_LEFT}
+		client.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentLeft}
 	}
 
 	log.Printf("Client left room: %v", room.ID)
 
-	return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_OK}, nil
+	return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_Ok}, nil
 }
 
 //nolint:gocognit,revive // TODO: Split and remodel using FSM.
@@ -101,7 +101,7 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 	client := server.GetConnection(clientID)
 
 	if client.Room == nil {
-		return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_NO_ROOM_JOINED_YET}, nil
+		return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_NoRoomJoinedYet}, nil
 	}
 
 	room := client.Room
@@ -119,9 +119,9 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 		}
 
 		if ready {
-			conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_READY}
+			conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentReady}
 		} else {
-			conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_OPPONENT_REVERTED_READY}
+			conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentRevertedReady}
 		}
 	}
 
@@ -131,13 +131,13 @@ func (*Server) UpdateReady(ctx context.Context, in *pb.UpdateReadyRequest) (*pb.
 		go game.NewGame()
 
 		for _, c := range room.Clients {
-			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.ServerMessage_GAME_STARTED}
+			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_GameStarted}
 		}
 	}
 
 	log.Printf("Client set ready state to: %t", ready)
 
-	return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_OK}, nil
+	return &pb.UpdateReadyResponse{Status: pb.ResponseStatus_Ok}, nil
 }
 
 func (srv *Server) SubscribeMessages(

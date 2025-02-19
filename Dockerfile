@@ -24,7 +24,7 @@ RUN protoc \
     --go-grpc_out=. \
     --go-grpc_opt=paths=source_relative \
     --proto_path=. \
-    ./room.proto
+    ./*.proto
 
 WORKDIR /build
 ENV GOOS=linux GOARCH=amd64 CGO_ENABLED=0

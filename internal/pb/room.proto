@@ -2,18 +2,14 @@ syntax = "proto3";
 
 option go_package = "passeriform.com/nukeship/pb";
 
-enum ResponseStatus {
-    OK = 0;
-    ROOM_NOT_FOUND = 1;
-    NO_ROOM_JOINED_YET = 2;
-}
+import "common.proto";
 
-enum ServerMessage {
-    OPPONENT_JOINED = 0;
-    OPPONENT_READY = 1;
-    GAME_STARTED = 2;
-    OPPONENT_LEFT = 3;
-    OPPONENT_REVERTED_READY = 4;
+enum RoomServiceEvent {
+    OpponentJoined = 0;
+    OpponentReady = 1;
+    GameStarted = 2;
+    OpponentLeft = 3;
+    OpponentRevertedReady = 4;
 }
 
 service RoomService {
@@ -27,7 +23,7 @@ service RoomService {
 message SubscribeMessagesRequest { }
 
 message MessageStreamResponse {
-    ServerMessage type = 1;
+    RoomServiceEvent type = 1;
 }
 
 message CreateRoomRequest { }

@@ -31,13 +31,13 @@ var (
 		Value  client.RoomState
 		TSName string
 	}{
-		{client.RoomStateINIT, "INIT"},
-		{client.RoomStateAWAITINGOPPONENT, "AWAITING_OPPONENT"},
-		{client.RoomStateROOMFILLED, "ROOM_FILLED"},
-		{client.RoomStateAWAITINGREADY, "AWAITING_READY"},
-		{client.RoomStateAWAITINGGAMESTART, "AWAITING_GAME_START"},
-		{client.RoomStateINGAME, "IN_GAME"},
-		{client.RoomStateRECOVERY, "RECOVERY"},
+		{client.RoomStateInit, "INIT"},
+		{client.RoomStateAwaitingOpponent, "AWAITING_OPPONENT"},
+		{client.RoomStateRoomFilled, "ROOM_FILLED"},
+		{client.RoomStateAwaitingReady, "AWAITING_READY"},
+		{client.RoomStateAwaitingGameStart, "AWAITING_GAME_START"},
+		{client.RoomStateInGame, "IN_GAME"},
+		{client.RoomStateRecovery, "RECOVERY"},
 	}
 
 	eventsMapping = []struct {
@@ -67,11 +67,11 @@ func RunApp(ctx context.Context) {
 			app.Client = c
 
 			app.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, string(StateChangeEvent), client.MustParseRoomState(t.To()))
+				runtime.EventsEmit(wCtx, StateChangeEvent.String(), client.MustParseRoomState(t.To()))
 			})
 
 			app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, string(ServerConnectionChangeEvent), t.To() == client.ConnectionStateCONNECTED.String())
+				runtime.EventsEmit(wCtx, ServerConnectionChangeEvent.String(), t.To() == client.ConnectionStateConnected.String())
 			})
 
 			go app.connect(ctx)
