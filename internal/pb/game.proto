@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option go_package = "passeriform.com/nukeship/pb";
+
+import "common.proto";
+
+enum Visibility {
+    Obscured = 0;
+    Inferred = 1;
+    Probed = 2;
+    Visible = 3;
+    VisibleSentinel = 4;
+}
+
+message FsTreeNode {
+    string label = 1;
+    repeated FsTreeNode children = 2;
+    int32 childrenCount = 3;
+    int32 nestedCount = 4;
+    bool sentinel = 5;
+    int32 power = 6;
+    int32 shield = 7;
+    int32 rechargeRate = 8;
+    Visibility visibility = 9;
+}
+
+message FsTree {
+    FsTreeNode top = 1;
+}

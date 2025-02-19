@@ -1,74 +1,67 @@
 package game
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
+
+	"passeriform.com/nukeship/internal/pb"
 )
 
 const (
 	DefaultPower        = 20
 	DefaultShield       = 20
 	DefaultRechargeRate = 2
-	TabIndentSize       = 4
 	InitialDepth        = 0
 )
 
+var DefaultTreeGenIgnores = []string{
+	"$Recycle.Bin",
+	"$RECYCLE.BIN",
+	"System Volume Information",
+	".git",
+}
+
 // TODO: Add power and shield modifier probabilities.
 // TODO: Add power and shield modifier types.
-type PopulationOptions struct {
-	Ignore []string
-	Depth  int
-	Width  int
-}
-
-type FsTreeNode struct {
-	Label         string        `json:"label"`
-	Children      []*FsTreeNode `json:"children"`
-	ChildrenCount int           `json:"childrenCount"`
-	NestedCount   int           `json:"nestedCount"`
-	Sentinel      bool          `json:"sentinel"`
-	Power         int           `json:"power"`
-	Shield        int           `json:"shield"`
-	RechargeRate  int           `json:"rechargeRate"`
-}
-
-type FsTree struct {
-	Top *FsTreeNode `json:"top"`
-}
-
-func (node *FsTreeNode) countChildren() (int, int) {
-	surfaceCount := len(node.Children)
-	nestedCount := len(node.Children)
-
-	for _, child := range node.Children {
-		_, nc := child.countChildren()
-		nestedCount += nc
-	}
-
-	return surfaceCount, nestedCount
+type TreeGenOptions struct {
+	Ignore          []string
+	VisibilityDepth int
+	Depth           int
+	Width           int
 }
 
 //nolint:gocognit,revive // Alternative to resolving cognitive complexity creates needless clone methods
-func populateTreeInternal(root string, opts PopulationOptions, depth int) []*FsTreeNode {
+func generateTree(root string, opts TreeGenOptions, depth int) []*pb.FsTreeNode {
 	// If error occurs while reading directory, return the node as leaf.
 	entries, err := os.ReadDir(root)
 	if err != nil {
-		// TODO: Add OnError parameter to PopulateOptions to change behavior on encountering error.
+		// TODO: Add OnError parameter to TreeGenOptions to change behavior on encountering error.
 		log.Printf("Unable to read directory, using a default named node: %v", err)
-		return []*FsTreeNode{NewFsTreeNode(filepath.Base(root))}
+
+		visibility := pb.Visibility_VisibleSentinel
+
+		if depth > opts.VisibilityDepth {
+			visibility = pb.Visibility_Obscured
+		}
+
+		return []*pb.FsTreeNode{NewFsTreeNode(filepath.Base(root), visibility)}
 	}
 
-	var nodes []*FsTreeNode
+	var nodes []*pb.FsTreeNode
+
+	visibility := pb.Visibility_VisibleSentinel
+
+	if depth+1 > opts.VisibilityDepth {
+		visibility = pb.Visibility_Obscured
+	}
 
 	for _, entry := range entries[:min(len(entries), opts.Width)] {
 		// Populate symlinks.
 		if (entry.Type() & os.ModeSymlink) == os.ModeSymlink {
 			// NOTE[Needs ideation]: Do something with symlinks.
-			nodes = append(nodes, NewFsTreeNode(entry.Name()))
+			nodes = append(nodes, NewFsTreeNode(entry.Name(), visibility))
 			continue
 		}
 
@@ -81,19 +74,18 @@ func populateTreeInternal(root string, opts PopulationOptions, depth int) []*FsT
 
 			// Include the directory as a leaf node, if maximum depth reached.
 			if depth == opts.Depth {
-				nodes = append(nodes, NewFsTreeNode(entry.Name()))
+				nodes = append(nodes, NewFsTreeNode(entry.Name(), visibility))
 				continue
 			}
 
 			// Recursively populate the directory.
-			children := populateTreeInternal(filepath.Join(root, entry.Name()), opts, depth+1)
-
-			nodes = append(nodes, NewFsTreeNode(entry.Name()).WithChildren(children))
+			children := generateTree(filepath.Join(root, entry.Name()), opts, depth+1)
+			nodes = append(nodes, NewFsTreeNode(entry.Name(), visibility).WithChildren(children))
 		}
 
 		// Populate regular files.
 		if entry.Type().IsRegular() {
-			nodes = append(nodes, NewFsTreeNode(entry.Name()))
+			nodes = append(nodes, NewFsTreeNode(entry.Name(), visibility))
 			continue
 		}
 	}
@@ -101,40 +93,22 @@ func populateTreeInternal(root string, opts PopulationOptions, depth int) []*FsT
 	return nodes
 }
 
-func NewFsTreeNode(label string) *FsTreeNode {
-	return &FsTreeNode{
-		Label:        label,
-		Power:        DefaultPower,
-		Shield:       DefaultShield,
-		RechargeRate: DefaultRechargeRate,
+func NewFsTreeNode(label string, visibility pb.Visibility) *pb.FsTreeNode {
+	return &pb.FsTreeNode{
+		Label:         label,
+		Children:      []*pb.FsTreeNode{},
+		ChildrenCount: 0,
+		NestedCount:   0,
+		Sentinel:      false,
+		Power:         DefaultPower,
+		Shield:        DefaultShield,
+		RechargeRate:  DefaultRechargeRate,
+		Visibility:    visibility,
 	}
 }
 
-func (node *FsTreeNode) WithChildren(children []*FsTreeNode) *FsTreeNode {
-	node.Children = children
+func NewFsTree(root string, opts TreeGenOptions) pb.FsTree {
+	nodes := generateTree(root, opts, InitialDepth)
 
-	node.ChildrenCount, node.NestedCount = node.countChildren()
-
-	return node
-}
-
-func PopulateTree(root string, opts PopulationOptions) FsTree {
-	nodes := populateTreeInternal(root, opts, InitialDepth)
-
-	return FsTree{Top: NewFsTreeNode(filepath.Base(root)).WithChildren(nodes)}
-}
-
-func (tree *FsTree) Strength() int {
-	return tree.Top.NestedCount
-}
-
-func (tree *FsTree) ToJSON(prettyPrint bool) []byte {
-	if prettyPrint {
-		jb, _ := json.MarshalIndent(tree, "", strings.Repeat(" ", TabIndentSize))
-		return jb
-	}
-
-	jb, _ := json.Marshal(tree)
-
-	return jb
+	return pb.FsTree{Top: NewFsTreeNode(filepath.Base(root), pb.Visibility_VisibleSentinel).WithChildren(nodes)}
 }
