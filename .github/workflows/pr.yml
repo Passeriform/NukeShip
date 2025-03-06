@@ -30,7 +30,7 @@ jobs:
             # - name: Refresh protobuf definitions
 
             - name: Generate code
-              run: go generate ./...
+              run: go generate -x ./...
 
             - name: Run tests
               run: go test ./...
@@ -58,7 +58,7 @@ jobs:
             # - name: Refresh protobuf definitions
 
             - name: Generate code
-              run: go generate ./...
+              run: go generate -x ./...
 
             - name: Build server
               working-directory: pkg/server
@@ -101,7 +101,7 @@ jobs:
             # - name: Refresh protobuf definitions
 
             - name: Generate code
-              run: go generate ./...
+              run: go generate -x ./...
 
             - name: Build binary
               uses: passeriform/wails-build-action@main

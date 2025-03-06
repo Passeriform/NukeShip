@@ -23,7 +23,7 @@ jobs:
             # - name: Refresh protobuf definitions
 
             - name: Generate code
-              run: go generate ./...
+              run: go generate -x ./...
 
             - name: Build server
               working-directory: pkg/server
