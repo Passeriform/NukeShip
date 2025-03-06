@@ -167,6 +167,22 @@ func (srv *Server) SubscribeMessages(
 	}
 }
 
+func (*Server) AddPlayer(ctx context.Context, in *pb.AddPlayerRequest) (*pb.AddPlayerResponse, error) {
+	clientID, _ := server.ExtractClientIDMetadata(ctx)
+	client := server.GetConnection(clientID)
+	tree := in.GetTree()
+
+	if client.Room == nil {
+		return &pb.AddPlayerResponse{Status: pb.ResponseStatus_NoRoomJoinedYet}, nil
+	}
+
+	room := client.Room
+
+	room.Game.AddPlayerState(clientID, tree)
+
+	return &pb.AddPlayerResponse{Status: pb.ResponseStatus_Ok}, nil
+}
+
 func handleQuit(cancel context.CancelFunc, srv *grpc.Server) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)

@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"passeriform.com/nukeship/internal/client"
+	"passeriform.com/nukeship/internal/game"
 	"passeriform.com/nukeship/internal/pb"
 )
 
@@ -36,6 +37,7 @@ type WailsApp struct {
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
 	configCtx    context.Context
 	RoomClient   pb.RoomServiceClient
+	GameClient   pb.GameServiceClient
 	connMachine  client.ConnectionFSM
 	stateMachine client.RoomStateFSM
 }
@@ -66,17 +68,42 @@ func (app *WailsApp) initGrpcClients() {
 		log.Printf("Could not connect: %v", err)
 	}
 
-	app.RoomClient = pb.NewRoomServiceClient(conn)
+	app.RoomClient, app.GameClient = pb.NewRoomServiceClient(conn), pb.NewGameServiceClient(conn)
 }
 
 func (app *WailsApp) initStateMachines() {
 	app.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
+		if t.To() == client.RoomStateInGame.String() {
+			tree := game.NewFsTree("C:\\Windows", game.TreeGenOptions{
+				Ignore:          game.DefaultTreeGenIgnores,
+				VisibilityDepth: 8,
+				Depth:           8,
+				Width:           20,
+			})
+			app.publishGameState(&tree)
+		}
+
 		runtime.EventsEmit(app.wailsCtx, string(StateChangeEvent), client.MustParseRoomState(t.To()))
 	})
 
 	app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
 		runtime.EventsEmit(app.wailsCtx, string(ServerConnectionChangeEvent), t.To() == client.ConnectionStateConnected.String())
 	})
+}
+
+func (app *WailsApp) publishGameState(tree *pb.FsTree) error {
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+	defer cancel()
+
+	_, err := app.GameClient.AddPlayer(unaryCtx, &pb.AddPlayerRequest{Tree: tree})
+	if err != nil {
+		log.Printf("Could not publish player state: %v", err)
+		return err
+	}
+
+	log.Println("Published player state")
+
+	return nil
 }
 
 // TODO: Add reconnection logic to recover streaming messages.
