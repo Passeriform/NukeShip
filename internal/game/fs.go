@@ -80,6 +80,7 @@ func generateTree(root string, opts TreeGenOptions, depth int) []*pb.FsTreeNode 
 
 			// Recursively populate the directory.
 			children := generateTree(filepath.Join(root, entry.Name()), opts, depth+1)
+
 			nodes = append(nodes, NewFsTreeNode(entry.Name(), visibility).WithChildren(children))
 		}
 

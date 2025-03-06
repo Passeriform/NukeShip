@@ -9,12 +9,14 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/Gurpartap/statemachine-go"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"github.com/Gurpartap/statemachine-go"
 
 	"passeriform.com/nukeship/internal/client"
 	"passeriform.com/nukeship/internal/game"
@@ -41,7 +43,7 @@ type WailsApp struct {
 	stateMachine client.RoomStateFSM
 }
 
-func (app *WailsApp) setAppContext(wailsCtx context.Context, configCtx context.Context) {
+func (app *WailsApp) setAppContext(wailsCtx, configCtx context.Context) {
 	app.wailsCtx = wailsCtx
 	app.configCtx = configCtx
 }
@@ -64,7 +66,6 @@ func (app *WailsApp) initGrpcClients() {
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
 	)
 	if err != nil {
-		// TODO: Change to LogFatalf
 		runtime.LogErrorf(app.wailsCtx, "Could not connect: %v", err)
 	}
 
@@ -80,6 +81,7 @@ func (app *WailsApp) initStateMachines() {
 				Depth:           8,
 				Width:           20,
 			})
+
 			app.publishGameState(&tree)
 		}
 
@@ -91,19 +93,17 @@ func (app *WailsApp) initStateMachines() {
 	})
 }
 
-func (app *WailsApp) publishGameState(tree *pb.FsTree) error {
+func (app *WailsApp) publishGameState(tree *pb.FsTree) {
 	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
 	_, err := app.GameClient.AddPlayer(unaryCtx, &pb.AddPlayerRequest{Tree: tree})
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not publish player state: %v", err)
-		return err
+		return
 	}
 
 	runtime.LogDebug(app.wailsCtx, "Published player state")
-
-	return nil
 }
 
 // TODO: Add reconnection logic to recover streaming messages.
@@ -141,7 +141,12 @@ func (app *WailsApp) connect() {
 }
 
 func newWailsApp() *WailsApp {
-	app := &WailsApp{}
+	app := &WailsApp{
+		wailsCtx:   nil,
+		configCtx:  nil,
+		RoomClient: nil,
+		GameClient: nil,
+	}
 
 	return app
 }
