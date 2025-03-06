@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
-	"log"
 	"strconv"
 
 	"github.com/Gurpartap/statemachine-go"
@@ -65,7 +64,8 @@ func (app *WailsApp) initGrpcClients() {
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
 	)
 	if err != nil {
-		log.Printf("Could not connect: %v", err)
+		// TODO: Change to LogFatalf
+		runtime.LogErrorf(app.wailsCtx, "Could not connect: %v", err)
 	}
 
 	app.RoomClient, app.GameClient = pb.NewRoomServiceClient(conn), pb.NewGameServiceClient(conn)
@@ -97,11 +97,11 @@ func (app *WailsApp) publishGameState(tree *pb.FsTree) error {
 
 	_, err := app.GameClient.AddPlayer(unaryCtx, &pb.AddPlayerRequest{Tree: tree})
 	if err != nil {
-		log.Printf("Could not publish player state: %v", err)
+		runtime.LogErrorf(app.wailsCtx, "Could not publish player state: %v", err)
 		return err
 	}
 
-	log.Println("Published player state")
+	runtime.LogDebug(app.wailsCtx, "Published player state")
 
 	return nil
 }
@@ -118,7 +118,7 @@ func (app *WailsApp) connect() {
 
 	streamClient, err := app.RoomClient.SubscribeMessages(streamCtx, &pb.SubscribeMessagesRequest{})
 	if err != nil {
-		log.Printf("Subscription to server messages failed: %v", err)
+		runtime.LogErrorf(app.wailsCtx, "Subscription to server messages failed: %v", err)
 		return
 	}
 
@@ -127,12 +127,12 @@ func (app *WailsApp) connect() {
 	for {
 		update, err := streamClient.Recv()
 		if errors.Is(err, io.EOF) {
-			log.Println("Stopped receiving updates from server.")
+			runtime.LogError(app.wailsCtx, "Stopped receiving updates from server.")
 			return
 		}
 
 		if err != nil {
-			log.Printf("Received error frame: %v", err)
+			runtime.LogErrorf(app.wailsCtx, "Received error frame: %v", err)
 			return
 		}
 
@@ -161,16 +161,16 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	// TODO: Use error codes middleware to handle RPC errors properly.
 	resp, err := app.RoomClient.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
 	if err != nil {
-		log.Printf("Could not update ready state: %v", err)
+		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
 		return false, err
 	}
 
 	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
-		log.Printf("Unable to ready as the room is invalid")
+		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
 		return false, nil
 	}
 
-	log.Printf("Updated ready state: %t", ready)
+	runtime.LogDebugf(app.wailsCtx, "Updated ready state: %t", ready)
 
 	if !ready {
 		app.stateMachine.Fire(client.LocalEventSelfRevertedReady.String())
@@ -188,11 +188,11 @@ func (app *WailsApp) CreateRoom() (string, error) {
 
 	resp, err := app.RoomClient.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
 	if err != nil {
-		log.Printf("Could not create room: %v", err)
+		runtime.LogErrorf(app.wailsCtx, "Could not create room: %v", err)
 		return "", err
 	}
 
-	log.Printf("Room created: %s", resp.GetRoomId())
+	runtime.LogDebugf(app.wailsCtx, "Room created: %s", resp.GetRoomId())
 
 	app.stateMachine.Fire(client.LocalEventSelfJoined.String())
 
@@ -205,11 +205,11 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 
 	resp, err := app.RoomClient.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
 	if err != nil {
-		log.Printf("Could not join room with id %v: %v", roomCode, err)
+		runtime.LogErrorf(app.wailsCtx, "Could not join room with id %v: %v", roomCode, err)
 		return false
 	}
 
-	log.Printf("Room joined status: %s", resp.GetStatus().String())
+	runtime.LogDebugf(app.wailsCtx, "Room joined status: %s", resp.GetStatus().String())
 
 	app.stateMachine.Fire(client.LocalEventSelfJoined.String())
 
@@ -222,11 +222,11 @@ func (app *WailsApp) LeaveRoom() bool {
 
 	resp, err := app.RoomClient.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
 	if err != nil {
-		log.Printf("Could not leave room: %v", err)
+		runtime.LogErrorf(app.wailsCtx, "Could not leave room: %v", err)
 		return false
 	}
 
-	log.Printf("Room left status: %s", resp.GetStatus().String())
+	runtime.LogDebugf(app.wailsCtx, "Room left status: %s", resp.GetStatus().String())
 
 	app.stateMachine.Fire(client.LocalEventSelfLeft.String())
 
