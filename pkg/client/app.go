@@ -35,7 +35,7 @@ type WailsApp struct {
 	wailsCtx context.Context
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
 	configCtx    context.Context
-	Client       pb.RoomServiceClient
+	RoomClient   pb.RoomServiceClient
 	connMachine  client.ConnectionFSM
 	stateMachine client.RoomStateFSM
 }
@@ -66,7 +66,7 @@ func (app *WailsApp) initGrpcClients() {
 		log.Printf("Could not connect: %v", err)
 	}
 
-	app.Client = pb.NewRoomServiceClient(conn)
+	app.RoomClient = pb.NewRoomServiceClient(conn)
 }
 
 func (app *WailsApp) initStateMachines() {
@@ -89,7 +89,7 @@ func (app *WailsApp) connect() {
 	streamCtx, cancel := client.NewStreamContext(app.configCtx)
 	defer cancel()
 
-	streamClient, err := app.Client.SubscribeMessages(streamCtx, &pb.SubscribeMessagesRequest{})
+	streamClient, err := app.RoomClient.SubscribeMessages(streamCtx, &pb.SubscribeMessagesRequest{})
 	if err != nil {
 		log.Printf("Subscription to server messages failed: %v", err)
 		return
@@ -132,7 +132,7 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	defer cancel()
 
 	// TODO: Use error codes middleware to handle RPC errors properly.
-	resp, err := app.Client.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
+	resp, err := app.RoomClient.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
 	if err != nil {
 		log.Printf("Could not update ready state: %v", err)
 		return false, err
@@ -159,7 +159,7 @@ func (app *WailsApp) CreateRoom() (string, error) {
 	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
-	resp, err := app.Client.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
+	resp, err := app.RoomClient.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
 	if err != nil {
 		log.Printf("Could not create room: %v", err)
 		return "", err
@@ -176,7 +176,7 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
-	resp, err := app.Client.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
+	resp, err := app.RoomClient.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
 	if err != nil {
 		log.Printf("Could not join room with id %v: %v", roomCode, err)
 		return false
@@ -193,7 +193,7 @@ func (app *WailsApp) LeaveRoom() bool {
 	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
-	resp, err := app.Client.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
+	resp, err := app.RoomClient.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
 	if err != nil {
 		log.Printf("Could not leave room: %v", err)
 		return false

@@ -27,3 +27,15 @@ message FsTreeNode {
 message FsTree {
     FsTreeNode top = 1;
 }
+
+service GameService {
+    rpc AddPlayer (AddPlayerRequest) returns (AddPlayerResponse);
+}
+
+message AddPlayerRequest {
+    FsTree tree = 1;
+}
+
+message AddPlayerResponse {
+    ResponseStatus status = 1;
+}

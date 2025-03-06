@@ -117,6 +117,8 @@
         "varnamelen",
         "wailsapp",
         "wailsjs",
+        "LogDebugf",
+        "LogWarningf",
         "winloader",
         "wrapcheck"
     ],

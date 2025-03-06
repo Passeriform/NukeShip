@@ -20,7 +20,7 @@ func main() {
 		log.Panicf("Could not parse environment variables: %v", err)
 	}
 
-	clientContext := client.NewContext(cfg.ServerHost, cfg.ServerPort, cfg.EnableTLS)
+	configContext := client.NewContext(cfg.ServerHost, cfg.ServerPort, cfg.EnableTLS)
 
-	RunApp(clientContext)
+	RunApp(configContext)
 }
