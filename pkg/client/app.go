@@ -10,6 +10,8 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/Gurpartap/statemachine-go"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,14 +32,21 @@ type (
 
 type WailsApp struct {
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
-	grpcCtx      context.Context
+	wailsCtx context.Context
+	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
+	configCtx    context.Context
 	Client       pb.RoomServiceClient
 	connMachine  client.ConnectionFSM
 	stateMachine client.RoomStateFSM
 }
 
-func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
-	cCtx := client.UnwrapContext(ctx)
+func (app *WailsApp) setAppContext(wailsCtx context.Context, configCtx context.Context) {
+	app.wailsCtx = wailsCtx
+	app.configCtx = configCtx
+}
+
+func (app *WailsApp) initGrpcClients() {
+	cCtx := client.UnwrapContext(app.configCtx)
 
 	var creds credentials.TransportCredentials
 
@@ -55,22 +64,29 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 	)
 	if err != nil {
 		log.Printf("Could not connect: %v", err)
-		return nil, err
 	}
 
-	c := pb.NewRoomServiceClient(conn)
+	app.Client = pb.NewRoomServiceClient(conn)
+}
 
-	return c, nil
+func (app *WailsApp) initStateMachines() {
+	app.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
+		runtime.EventsEmit(app.wailsCtx, string(StateChangeEvent), client.MustParseRoomState(t.To()))
+	})
+
+	app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
+		runtime.EventsEmit(app.wailsCtx, string(ServerConnectionChangeEvent), t.To() == client.ConnectionStateConnected.String())
+	})
 }
 
 // TODO: Add reconnection logic to recover streaming messages.
 
-func (app *WailsApp) connect(ctx context.Context) {
+func (app *WailsApp) connect() {
 	defer func() {
 		app.connMachine.Fire(client.LocalEventDisconnected.String())
 	}()
 
-	streamCtx, cancel := client.NewStreamContext(ctx)
+	streamCtx, cancel := client.NewStreamContext(app.configCtx)
 	defer cancel()
 
 	streamClient, err := app.Client.SubscribeMessages(streamCtx, &pb.SubscribeMessagesRequest{})
@@ -97,11 +113,8 @@ func (app *WailsApp) connect(ctx context.Context) {
 	}
 }
 
-func newWailsApp(grpcCtx context.Context) *WailsApp {
-	app := &WailsApp{
-		grpcCtx: grpcCtx,
-		Client:  nil,
-	}
+func newWailsApp() *WailsApp {
+	app := &WailsApp{}
 
 	return app
 }
@@ -115,7 +128,7 @@ func (app *WailsApp) GetConnectionState() bool {
 }
 
 func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
 	// TODO: Use error codes middleware to handle RPC errors properly.
@@ -143,7 +156,7 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 }
 
 func (app *WailsApp) CreateRoom() (string, error) {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
 	resp, err := app.Client.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
@@ -160,7 +173,7 @@ func (app *WailsApp) CreateRoom() (string, error) {
 }
 
 func (app *WailsApp) JoinRoom(roomCode string) bool {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
 	resp, err := app.Client.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
@@ -177,7 +190,7 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 }
 
 func (app *WailsApp) LeaveRoom() bool {
-	unaryCtx, cancel := client.NewUnaryContext(app.grpcCtx)
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
 	resp, err := app.Client.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})

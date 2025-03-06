@@ -11,9 +11,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
-
-	"github.com/Gurpartap/statemachine-go"
 
 	"passeriform.com/nukeship/internal/client"
 )
@@ -49,8 +46,8 @@ var (
 	}
 )
 
-func RunApp(ctx context.Context) {
-	app := newWailsApp(ctx)
+func RunApp(configCtx context.Context) {
+	app := newWailsApp()
 
 	err := wails.Run(&options.App{
 		Title:         "NukeShip",
@@ -59,22 +56,10 @@ func RunApp(ctx context.Context) {
 		Frameless:     true,
 		Assets:        assets,
 		OnStartup: func(wCtx context.Context) {
-			c, err := newClient(ctx)
-			if err != nil {
-				log.Panicf("Cannot create new grpc client: %v", err)
-			}
-
-			app.Client = c
-
-			app.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, StateChangeEvent.String(), client.MustParseRoomState(t.To()))
-			})
-
-			app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
-				runtime.EventsEmit(wCtx, ServerConnectionChangeEvent.String(), t.To() == client.ConnectionStateConnected.String())
-			})
-
-			go app.connect(ctx)
+			app.setAppContext(wCtx, configCtx)
+			app.initGrpcClients()
+			app.initStateMachines()
+			go app.connect()
 		},
 		WindowStartState:                 options.Fullscreen,
 		Bind:                             []any{app},
