@@ -2,7 +2,7 @@ import { useParams } from "@solidjs/router"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
-import { Matrix4, Quaternion, Vector3 } from "three"
+import { Line, Matrix4, Mesh, Quaternion, Vector3 } from "three"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
@@ -13,36 +13,89 @@ import { CAMERA_TYPE, createCamera } from "@game/camera"
 import { createLighting } from "@game/lighting"
 import { createScene } from "@game/scene"
 import { Tree } from "@game/tree"
-import { tweenObject } from "@game/tween"
+import { tweenOpacity } from "@game/tween"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.
 // TODO: Migrate to using trackball controls with no panning.
+
+const getFocusOpacity = (limitIdx: number, testIdx: number) => {
+    switch (Math.sign(limitIdx - testIdx)) {
+        case -1:
+            return 0.2
+        case 1:
+            return 0
+        case 0:
+            return 1
+    }
+
+    return 1
+}
+
+const treeFocusTransform = (tree: Tree) => (mesh: Mesh | Line, level: number, idx: number) => {
+    tweenOpacity(tree.tweenGroup, mesh, getFocusOpacity(level, idx))
+}
 
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
     const { scene, renderer, cleanup: sceneCleanup } = createScene()
     const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
-    const { camera, tweenGroup, resize: cameraResize, cleanup: cameraCleanup } = createCamera(CAMERA_TYPE.PERSPECTIVE)
+    const {
+        camera,
+        animate: cameraAnimate,
+        resize: cameraResize,
+        cleanup: cameraCleanup,
+        tweenGroup: cameraTweenGroup,
+    } = createCamera(CAMERA_TYPE.PERSPECTIVE)
 
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
 
-    const [planeIdx, setPlaneIdx] = createSignal(0)
+    const [activeLevel, setActiveLevel] = createSignal(0)
     const [view, setView] = createSignal<VIEW_TYPE>(VIEW_TYPE.ELEVATION)
     const [focus, setFocus] = createSignal<FOCUS_TYPE>(FOCUS_TYPE.NONE)
+
+    const drillDown = () => {
+        const maxLevels = (focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree).planes.length - 1
+
+        if (activeLevel() === maxLevels) {
+            return
+        }
+
+        setActiveLevel(activeLevel() + 1)
+    }
+
+    const drillUp = () => {
+        if (activeLevel() === 0) {
+            return
+        }
+
+        setActiveLevel(activeLevel() - 1)
+    }
+
+    const draw = (time: number = 0) => {
+        cameraTweenGroup.update(time)
+        selfFsTree.tweenGroup.update(time)
+        opponentFsTree.tweenGroup.update(time)
+        renderer.render(scene, camera)
+    }
 
     createEffect(() => {
         // Set position and rotation for NONE focus.
         if (focus() === FOCUS_TYPE.NONE) {
-            return tweenObject(tweenGroup, camera, {
-                position: new Vector3()
+            setView(VIEW_TYPE.ELEVATION)
+            selfFsTree.blurLevel()
+            opponentFsTree.blurLevel()
+            setActiveLevel(0)
+            cameraAnimate(
+                new Vector3()
                     .addVectors(selfFsTree.getWorldPosition(), opponentFsTree.getWorldPosition())
                     .divideScalar(2)
                     .add(ELEVATION_CAMERA_OFFSET),
-                rotation: new Quaternion(0, 1, 0, 0).normalize(),
-            })
+                new Quaternion(0, 1, 0, 0).normalize(),
+            )
+            return
         }
 
         const targetTree = focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree
@@ -51,49 +104,27 @@ const GameBoard: VoidComponent = () => {
             case VIEW_TYPE.ELEVATION: {
                 const position = new Vector3().addVectors(targetTree.midpoint, ELEVATION_CAMERA_OFFSET)
                 const rotation = new Quaternion(0, 1, 0, 0).normalize()
-                return tweenObject(tweenGroup, camera, {
-                    position,
-                    rotation,
-                })
+                targetTree.blurLevel()
+                cameraAnimate(position, rotation)
+                return
             }
             case VIEW_TYPE.PLAN: {
                 const position = new Vector3().addVectors(
-                    targetTree.planes[planeIdx()].center,
+                    targetTree.planes[activeLevel()].center,
                     new Vector3().addScaledVector(
-                        targetTree.planes[planeIdx()].normal.clone().negate(),
+                        targetTree.planes[activeLevel()].normal.clone().negate(),
                         PLAN_CAMERA_NODE_DISTANCE,
                     ),
                 )
                 const rotation = new Quaternion().setFromRotationMatrix(
-                    new Matrix4().lookAt(position, targetTree.planes[planeIdx()].center, Y_AXIS),
+                    new Matrix4().lookAt(position, targetTree.planes[activeLevel()].center, Y_AXIS),
                 )
-                return tweenObject(tweenGroup, camera, { position, rotation })
+                targetTree.focusLevel(activeLevel(), treeFocusTransform(targetTree))
+                cameraAnimate(position, rotation)
+                return
             }
         }
     })
-
-    const moveForward = () => {
-        const maxPlaneIdx = (focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree).planes.length - 1
-
-        if (planeIdx() === maxPlaneIdx) {
-            return
-        }
-
-        setPlaneIdx(planeIdx() + 1)
-    }
-
-    const moveBackward = () => {
-        if (planeIdx() === 0) {
-            return
-        }
-
-        setPlaneIdx(planeIdx() - 1)
-    }
-
-    const draw = (time: number = 0) => {
-        tweenGroup.update(time)
-        renderer.render(scene, camera)
-    }
 
     onMount(() => {
         if (!WebGL.isWebGL2Available()) {
@@ -146,7 +177,6 @@ const GameBoard: VoidComponent = () => {
                             text="Focus Self"
                             onClick={() => {
                                 setFocus(FOCUS_TYPE.SELF)
-                                setPlaneIdx(0)
                             }}
                         />
                         <Button
@@ -154,7 +184,6 @@ const GameBoard: VoidComponent = () => {
                             text="Focus Opponent"
                             onClick={() => {
                                 setFocus(FOCUS_TYPE.OPPONENT)
-                                setPlaneIdx(0)
                             }}
                         />
                     </Match>
@@ -172,16 +201,14 @@ const GameBoard: VoidComponent = () => {
                         text="Focus Back"
                         onClick={() => {
                             setFocus(FOCUS_TYPE.NONE)
-                            setView(VIEW_TYPE.ELEVATION)
-                            setPlaneIdx(0)
                         }}
                     />
                 </Show>
             </section>
             <section class="absolute left-8 top-8 flex flex-col justify-evenly gap-8">
                 <Show when={view() === VIEW_TYPE.PLAN}>
-                    <Button class="p-8" text="+" onClick={moveForward} />
-                    <Button class="p-8" text="-" onClick={moveBackward} />
+                    <Button class="p-8" text="+" onClick={drillDown} />
+                    <Button class="p-8" text="-" onClick={drillUp} />
                 </Show>
             </section>
             <NavButton class="pointer-events-none cursor-default" position="right" text={code} />

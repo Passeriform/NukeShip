@@ -1,16 +1,18 @@
+import { Group as TweenGroup } from "@tweenjs/tween.js"
 import {
     Box3,
     BufferGeometry,
-    Group,
     Line,
     LineBasicMaterial,
     Mesh,
     MeshLambertMaterial,
     Object3D,
+    Group as ObjectGroup,
     Plane,
     SphereGeometry,
     Vector3,
 } from "three"
+import { tweenOpacity } from "./tween"
 
 export type PlaneDescriptor = {
     center: Vector3
@@ -32,9 +34,6 @@ const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
 export class Tree extends Object3D {
     private static NODE_MATERIALS = COLORS.map((color) => new MeshLambertMaterial({ color, transparent: true }))
     private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
-
-    private levels: Mesh[][]
-    public planes: PlaneDescriptor[]
 
     private static splitChildrenEvenly(itemCount: number) {
         if (itemCount === 1) {
@@ -68,27 +67,42 @@ export class Tree extends Object3D {
         }
     }
 
-    constructor() {
+    constructor(
+        private levels: Mesh[][] = [],
+        private connectorLevels: Line[][] = [],
+        public tweenGroup: TweenGroup = new TweenGroup(),
+        public planes: PlaneDescriptor[] = [],
+    ) {
         super()
-        this.levels = []
-        this.planes = []
+    }
+
+    public clear() {
+        this.tweenGroup.removeAll()
+        return super.clear()
     }
 
     private generateRenderNodes = (node: TreeRawData, depth: number, colorSeed: number) => {
         // Node mesh
         const nodeGeometry = new SphereGeometry(0.1, 64, 64)
         // const nodeGeometry = new BoxGeometry(2 / depth, 2 / depth, 2 / depth)
-        const nodeMesh = new Mesh(nodeGeometry, Tree.NODE_MATERIALS[(colorSeed + depth - 1) % COLORS.length])
+        const nodeMesh = new Mesh(nodeGeometry, Tree.NODE_MATERIALS[(colorSeed + depth - 1) % COLORS.length].clone())
 
-        // Add levels
+        // Add level collection
         if (this.levels.length < depth) {
             this.levels.push([])
         }
+        if (this.connectorLevels.length < depth) {
+            this.connectorLevels.push([])
+        }
+
+        // Add level meshes
         this.levels[depth - 1].push(nodeMesh)
 
         // Children meshes
-        const childrenGroup = new Group()
-        const childrenMeshes = node.children.map((node): Group => this.generateRenderNodes(node, depth + 1, colorSeed))
+        const childrenGroup = new ObjectGroup()
+        const childrenMeshes = node.children.map(
+            (node): ObjectGroup => this.generateRenderNodes(node, depth + 1, colorSeed),
+        )
 
         if (childrenMeshes.length) {
             const positions = Tree.splitChildrenEvenly(childrenMeshes.length)
@@ -103,18 +117,22 @@ export class Tree extends Object3D {
         }
 
         // Connector meshes
-        const connectorGroup = new Group()
+        const connectorGroup = new ObjectGroup()
+        const connectorMaterial = Tree.CONNECTOR_MATERIALS[(colorSeed + depth - 1) % COLORS.length].clone()
         const connectorMeshes = childrenMeshes.map((node) => {
             const connectorGeometry = new BufferGeometry().setFromPoints([nodeMesh.position, node.position])
-            const line = new Line(connectorGeometry, Tree.CONNECTOR_MATERIALS[(colorSeed + depth - 1) % COLORS.length])
+            const line = new Line(connectorGeometry, connectorMaterial)
             return line
         })
         if (connectorMeshes.length) {
             connectorGroup.add(...connectorMeshes)
         }
 
+        // Add connector level meshes
+        this.connectorLevels[depth - 1].push(...connectorMeshes)
+
         // Parent group
-        const parent = new Group()
+        const parent = new ObjectGroup()
         parent.add(nodeMesh, childrenGroup, connectorGroup)
 
         return parent
@@ -128,6 +146,42 @@ export class Tree extends Object3D {
 
     get midpoint() {
         return new Vector3().addVectors(this.planes[0].center, this.planes.at(-1)!.center).divideScalar(2)
+    }
+
+    focusLevel(levelIdx: number, levelTransform: (mesh: Mesh | Line, levelIdx: number, idx: number) => void) {
+        this.tweenGroup.removeAll()
+
+        // Run transform on level nodes.
+        this.levels.forEach((level, idx) =>
+            level.forEach((mesh) => {
+                levelTransform(mesh, levelIdx, idx)
+            }),
+        )
+
+        // Run transform on level node connectors.
+        this.connectorLevels.forEach((level, idx) =>
+            level.forEach((line) => {
+                levelTransform(line, levelIdx, idx)
+            }),
+        )
+    }
+
+    blurLevel() {
+        this.tweenGroup.removeAll()
+
+        // Run transform on level nodes.
+        this.levels.forEach((level) =>
+            level.forEach((mesh) => {
+                tweenOpacity(this.tweenGroup, mesh, 1)
+            }),
+        )
+
+        // Run transform on level node connectors.
+        this.connectorLevels.forEach((level) =>
+            level.forEach((line) => {
+                tweenOpacity(this.tweenGroup, line, 1)
+            }),
+        )
     }
 
     recomputePlanes() {
