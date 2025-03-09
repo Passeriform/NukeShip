@@ -57,9 +57,9 @@ const GameBoard: VoidComponent = () => {
     const [focus, setFocus] = createSignal<FOCUS_TYPE>(FOCUS_TYPE.NONE)
 
     const drillDown = () => {
-        const maxLevels = (focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree).planes.length - 1
+        const maxLevelIdx = (focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree).levelCount - 1
 
-        if (activeLevel() === maxLevels) {
+        if (activeLevel() === maxLevelIdx) {
             return
         }
 
@@ -110,14 +110,11 @@ const GameBoard: VoidComponent = () => {
             }
             case VIEW_TYPE.PLAN: {
                 const position = new Vector3().addVectors(
-                    targetTree.planes[activeLevel()].center,
-                    new Vector3().addScaledVector(
-                        targetTree.planes[activeLevel()].normal.clone().negate(),
-                        PLAN_CAMERA_NODE_DISTANCE,
-                    ),
+                    targetTree.planeCenters[activeLevel()],
+                    new Vector3().addScaledVector(targetTree.normal.clone().negate(), PLAN_CAMERA_NODE_DISTANCE),
                 )
                 const rotation = new Quaternion().setFromRotationMatrix(
-                    new Matrix4().lookAt(position, targetTree.planes[activeLevel()].center, Y_AXIS),
+                    new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
                 )
                 targetTree.focusLevel(activeLevel(), treeFocusTransform(targetTree))
                 cameraAnimate(position, rotation)

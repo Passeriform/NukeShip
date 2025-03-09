@@ -8,16 +8,10 @@ import {
     MeshLambertMaterial,
     Object3D,
     Group as ObjectGroup,
-    Plane,
     SphereGeometry,
     Vector3,
 } from "three"
 import { tweenOpacity } from "./tween"
-
-export type PlaneDescriptor = {
-    center: Vector3
-    normal: Vector3
-}
 
 // TODO: Fixup according to client structure.
 export type TreeRawData = {
@@ -32,6 +26,7 @@ const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
 
 export class Tree extends Object3D {
+    private static UP = new Vector3(0, 0, 1)
     private static NODE_MATERIALS = COLORS.map((color) => new MeshLambertMaterial({ color, transparent: true }))
     private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
 
@@ -71,7 +66,7 @@ export class Tree extends Object3D {
         private levels: Mesh[][] = [],
         private connectorLevels: Line[][] = [],
         public tweenGroup: TweenGroup = new TweenGroup(),
-        public planes: PlaneDescriptor[] = [],
+        public planeCenters: Vector3[] = [],
     ) {
         super()
     }
@@ -144,8 +139,16 @@ export class Tree extends Object3D {
         return pos
     }
 
+    get normal() {
+        return Tree.UP.clone().applyQuaternion(this.quaternion)
+    }
+
+    get levelCount() {
+        return this.levels.length
+    }
+
     get midpoint() {
-        return new Vector3().addVectors(this.planes[0].center, this.planes.at(-1)!.center).divideScalar(2)
+        return new Vector3().addVectors(this.planeCenters[0], this.planeCenters.at(-1)!).divideScalar(2)
     }
 
     focusLevel(levelIdx: number, levelTransform: (mesh: Mesh | Line, levelIdx: number, idx: number) => void) {
@@ -187,8 +190,7 @@ export class Tree extends Object3D {
     recomputePlanes() {
         const boundingBox = new Box3()
         const worldPosition = new Vector3()
-        const plane = new Plane()
-        this.planes = this.levels.map((level) => {
+        this.planeCenters = this.levels.map((level) => {
             const positions = level.map((mesh) => {
                 mesh.getWorldPosition(worldPosition)
                 return worldPosition.clone()
@@ -197,14 +199,7 @@ export class Tree extends Object3D {
             const center = new Vector3()
             boundingBox.setFromPoints(positions).getCenter(center)
 
-            let normal = new Vector3(0, 0, 1).applyQuaternion(this.quaternion)
-
-            if (positions.length >= 3) {
-                plane.setFromCoplanarPoints(positions[0], positions[1], positions[2])
-                normal = plane.normal.negate().clone()
-            }
-
-            return { center, normal }
+            return center
         })
     }
 
