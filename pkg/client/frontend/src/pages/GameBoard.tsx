@@ -43,6 +43,7 @@ const GameBoard: VoidComponent = () => {
     const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
     const {
         camera,
+        fitToObjects,
         animate: cameraAnimate,
         resize: cameraResize,
         cleanup: cameraCleanup,
@@ -81,48 +82,6 @@ const GameBoard: VoidComponent = () => {
         renderer.render(scene, camera)
     }
 
-    createEffect(() => {
-        // Set position and rotation for NONE focus.
-        if (focus() === FOCUS_TYPE.NONE) {
-            setView(VIEW_TYPE.ELEVATION)
-            selfFsTree.blurLevel()
-            opponentFsTree.blurLevel()
-            setActiveLevel(0)
-            cameraAnimate(
-                new Vector3()
-                    .addVectors(selfFsTree.getWorldPosition(), opponentFsTree.getWorldPosition())
-                    .divideScalar(2)
-                    .add(ELEVATION_CAMERA_OFFSET),
-                new Quaternion(0, 1, 0, 0).normalize(),
-            )
-            return
-        }
-
-        const targetTree = focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree
-
-        switch (view()) {
-            case VIEW_TYPE.ELEVATION: {
-                const position = new Vector3().addVectors(targetTree.midpoint, ELEVATION_CAMERA_OFFSET)
-                const rotation = new Quaternion(0, 1, 0, 0).normalize()
-                targetTree.blurLevel()
-                cameraAnimate(position, rotation)
-                return
-            }
-            case VIEW_TYPE.PLAN: {
-                const position = new Vector3().addVectors(
-                    targetTree.planeCenters[activeLevel()],
-                    new Vector3().addScaledVector(targetTree.normal.clone().negate(), PLAN_CAMERA_NODE_DISTANCE),
-                )
-                const rotation = new Quaternion().setFromRotationMatrix(
-                    new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
-                )
-                targetTree.focusLevel(activeLevel(), treeFocusTransform(targetTree))
-                cameraAnimate(position, rotation)
-                return
-            }
-        }
-    })
-
     onMount(() => {
         if (!WebGL.isWebGL2Available()) {
             toast.error(`WebGL is not available ${WebGL.getWebGL2ErrorMessage()}`, { duration: -1 })
@@ -153,6 +112,40 @@ const GameBoard: VoidComponent = () => {
             cameraResize()
             renderer.setSize(window.innerWidth, window.innerHeight)
         })
+    })
+
+    createEffect(() => {
+        // Set position and rotation for NONE focus.
+        if (focus() === FOCUS_TYPE.NONE) {
+            setView(VIEW_TYPE.ELEVATION)
+            selfFsTree.blurLevel()
+            opponentFsTree.blurLevel()
+            setActiveLevel(0)
+            fitToObjects(selfFsTree, opponentFsTree)
+            return
+        }
+
+        const targetTree = focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree
+
+        switch (view()) {
+            case VIEW_TYPE.ELEVATION: {
+                targetTree.blurLevel()
+                fitToObjects(targetTree)
+                return
+            }
+            case VIEW_TYPE.PLAN: {
+                const position = new Vector3().addVectors(
+                    targetTree.planeCenters[activeLevel()],
+                    new Vector3().addScaledVector(targetTree.normal.clone().negate(), PLAN_CAMERA_NODE_DISTANCE),
+                )
+                const rotation = new Quaternion().setFromRotationMatrix(
+                    new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
+                )
+                targetTree.focusLevel(activeLevel(), treeFocusTransform(targetTree))
+                cameraAnimate(position, rotation)
+                return
+            }
+        }
     })
 
     onCleanup(() => {

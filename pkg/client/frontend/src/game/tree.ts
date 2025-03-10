@@ -147,10 +147,6 @@ export class Tree extends Object3D {
         return this.levels.length
     }
 
-    get midpoint() {
-        return new Vector3().addVectors(this.planeCenters[0], this.planeCenters.at(-1)!).divideScalar(2)
-    }
-
     focusLevel(levelIdx: number, levelTransform: (mesh: Mesh | Line, levelIdx: number, idx: number) => void) {
         this.tweenGroup.removeAll()
 

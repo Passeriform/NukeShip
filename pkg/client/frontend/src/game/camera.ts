@@ -1,5 +1,5 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
-import { OrthographicCamera, PerspectiveCamera, Quaternion, Vector3 } from "three"
+import { Box3, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion, Vector3 } from "three"
 import { tweenTransform } from "./tween"
 
 export const CAMERA_TYPE = {
@@ -10,6 +10,7 @@ export const CAMERA_TYPE = {
 export type CAMERA_TYPE = (typeof CAMERA_TYPE)[keyof typeof CAMERA_TYPE]
 
 const ORTHO_FRUSTUM_SIZE = 10
+const FIT_OFFSET = 4
 
 export const createCamera = (type: CAMERA_TYPE) => {
     const createOrthographicCamera = () => {
@@ -27,8 +28,8 @@ export const createCamera = (type: CAMERA_TYPE) => {
         return new PerspectiveCamera(fov, aspect, 0.1, 2000)
     }
 
-    const isPerspective = (_: OrthographicCamera | PerspectiveCamera): _ is PerspectiveCamera =>
-        type === CAMERA_TYPE.PERSPECTIVE
+    const isPerspective = (cam: OrthographicCamera | PerspectiveCamera): cam is PerspectiveCamera =>
+        "isPerspectiveCamera" in cam && cam.isPerspectiveCamera
 
     const camera = type === CAMERA_TYPE.PERSPECTIVE ? createPerspectiveCamera() : createOrthographicCamera()
     const tweenGroup = new TweenGroup()
@@ -36,6 +37,24 @@ export const createCamera = (type: CAMERA_TYPE) => {
     const animate = (position: Vector3, rotation: Quaternion) => {
         tweenGroup.removeAll()
         tweenTransform(tweenGroup, camera, { position, rotation })
+    }
+
+    const fitToObjects = (...objects: Object3D[]) => {
+        const fitBox = new Box3()
+
+        objects.forEach((obj) => fitBox.expandByObject(obj))
+
+        const center = new Vector3()
+        const size = new Vector3()
+        fitBox.getCenter(center)
+        fitBox.getSize(size)
+
+        if (isPerspective(camera)) {
+            const heightToFit = size.x / size.y < camera.aspect ? size.y : size.x / camera.aspect
+            const cameraZ = (heightToFit * 0.5) / Math.tan(camera.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET
+
+            animate(new Vector3(center.x, center.y, center.z - cameraZ), new Quaternion(0, 1, 0, 0).normalize())
+        }
     }
 
     const resize = () => {
@@ -59,6 +78,7 @@ export const createCamera = (type: CAMERA_TYPE) => {
     return {
         camera,
         animate,
+        fitToObjects,
         resize,
         tweenGroup,
         cleanup,

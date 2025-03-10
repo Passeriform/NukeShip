@@ -3,7 +3,6 @@ import { TweenTransform } from "@constants/types"
 
 export const Y_AXIS = new Vector3(0, 1, 0)
 export const PLAN_CAMERA_NODE_DISTANCE = 4
-export const ELEVATION_CAMERA_OFFSET = new Vector3(0, 0, -12)
 
 // TODO: Adapt for arbitrary FsTree positioning and rotation.
 
