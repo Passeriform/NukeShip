@@ -7,9 +7,9 @@ import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
-import { ELEVATION_CAMERA_OFFSET, PLAN_CAMERA_NODE_DISTANCE, STATICS, Y_AXIS } from "@constants/statics"
+import { PLAN_CAMERA_NODE_DISTANCE, STATICS, Y_AXIS } from "@constants/statics"
 import { FOCUS_TYPE, VIEW_TYPE } from "@constants/types"
-import { CAMERA_TYPE, createCamera } from "@game/camera"
+import { CAMERA_TYPE, TogglingCamera } from "@game/camera"
 import { createLighting } from "@game/lighting"
 import { createScene } from "@game/scene"
 import { Tree } from "@game/tree"
@@ -41,15 +41,8 @@ const GameBoard: VoidComponent = () => {
 
     const { scene, renderer, cleanup: sceneCleanup } = createScene()
     const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
-    const {
-        camera,
-        fitToObjects,
-        animate: cameraAnimate,
-        resize: cameraResize,
-        cleanup: cameraCleanup,
-        tweenGroup: cameraTweenGroup,
-    } = createCamera(CAMERA_TYPE.PERSPECTIVE)
 
+    const camera = new TogglingCamera(CAMERA_TYPE.PERSPECTIVE)
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
 
@@ -76,7 +69,7 @@ const GameBoard: VoidComponent = () => {
     }
 
     const draw = (time: number = 0) => {
-        cameraTweenGroup.update(time)
+        camera.tweenGroup.update(time)
         selfFsTree.tweenGroup.update(time)
         opponentFsTree.tweenGroup.update(time)
         renderer.render(scene, camera)
@@ -109,7 +102,6 @@ const GameBoard: VoidComponent = () => {
 
         // Resize handler
         window.addEventListener("resize", () => {
-            cameraResize()
             renderer.setSize(window.innerWidth, window.innerHeight)
         })
     })
@@ -121,7 +113,7 @@ const GameBoard: VoidComponent = () => {
             selfFsTree.blurLevel()
             opponentFsTree.blurLevel()
             setActiveLevel(0)
-            fitToObjects(selfFsTree, opponentFsTree)
+            camera.fitToObjects(selfFsTree, opponentFsTree)
             return
         }
 
@@ -130,7 +122,7 @@ const GameBoard: VoidComponent = () => {
         switch (view()) {
             case VIEW_TYPE.ELEVATION: {
                 targetTree.blurLevel()
-                fitToObjects(targetTree)
+                camera.fitToObjects(targetTree)
                 return
             }
             case VIEW_TYPE.PLAN: {
@@ -142,7 +134,7 @@ const GameBoard: VoidComponent = () => {
                     new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
                 )
                 targetTree.focusLevel(activeLevel(), treeFocusTransform(targetTree))
-                cameraAnimate(position, rotation)
+                camera.animate(position, rotation)
                 return
             }
         }
@@ -151,8 +143,8 @@ const GameBoard: VoidComponent = () => {
     onCleanup(() => {
         selfFsTree.clear()
         opponentFsTree.clear()
+        camera.clear()
         lightingCleanup()
-        cameraCleanup()
         sceneCleanup()
     })
 

@@ -71,11 +71,6 @@ export class Tree extends Object3D {
         super()
     }
 
-    public clear() {
-        this.tweenGroup.removeAll()
-        return super.clear()
-    }
-
     private generateRenderNodes = (node: TreeRawData, depth: number, colorSeed: number) => {
         // Node mesh
         const nodeGeometry = new SphereGeometry(0.1, 64, 64)
@@ -131,12 +126,6 @@ export class Tree extends Object3D {
         parent.add(nodeMesh, childrenGroup, connectorGroup)
 
         return parent
-    }
-
-    getWorldPosition() {
-        const pos = new Vector3()
-        super.getWorldPosition(pos)
-        return pos
     }
 
     get normal() {
@@ -203,5 +192,10 @@ export class Tree extends Object3D {
         this.add(this.generateRenderNodes(data, 1, colorSeed))
         this.recomputePlanes()
         return this
+    }
+
+    clear() {
+        this.tweenGroup.removeAll()
+        return super.clear()
     }
 }
