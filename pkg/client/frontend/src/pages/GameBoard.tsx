@@ -1,4 +1,5 @@
 import { useParams } from "@solidjs/router"
+import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
@@ -9,7 +10,8 @@ import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { PLAN_CAMERA_NODE_DISTANCE, STATICS, Y_AXIS } from "@constants/statics"
 import { FOCUS_TYPE, VIEW_TYPE } from "@constants/types"
-import { CAMERA_TYPE, TogglingCamera } from "@game/camera"
+import { createOrthographicCamera, createPerspectiveCamera } from "@game/camera"
+import { ArchControls } from "@game/controls"
 import { createLighting } from "@game/lighting"
 import { createScene } from "@game/scene"
 import { Tree } from "@game/tree"
@@ -17,24 +19,6 @@ import { tweenOpacity } from "@game/tween"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.
-// TODO: Migrate to using trackball controls with no panning.
-
-const getFocusOpacity = (limitIdx: number, testIdx: number) => {
-    switch (Math.sign(limitIdx - testIdx)) {
-        case -1:
-            return 0.2
-        case 1:
-            return 0
-        case 0:
-            return 1
-    }
-
-    return 1
-}
-
-const treeFocusTransform = (tree: Tree) => (mesh: Mesh | Line, level: number, idx: number) => {
-    tweenOpacity(tree.tweenGroup, mesh, getFocusOpacity(level, idx))
-}
 
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
@@ -42,13 +26,48 @@ const GameBoard: VoidComponent = () => {
     const { scene, renderer, cleanup: sceneCleanup } = createScene()
     const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
 
-    const camera = new TogglingCamera(CAMERA_TYPE.PERSPECTIVE)
+    const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
+    const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
+    const controls = new ArchControls(camera)
+
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
 
     const [activeLevel, setActiveLevel] = createSignal(0)
     const [view, setView] = createSignal<VIEW_TYPE>(VIEW_TYPE.ELEVATION)
     const [focus, setFocus] = createSignal<FOCUS_TYPE>(FOCUS_TYPE.NONE)
+
+    const getControlTargets = () => {
+        switch (focus()) {
+            case FOCUS_TYPE.NONE:
+                return [selfFsTree, opponentFsTree]
+            case FOCUS_TYPE.SELF:
+                return [selfFsTree]
+            case FOCUS_TYPE.OPPONENT:
+                return [opponentFsTree]
+        }
+    }
+
+    const getFocusOpacity = (testIdx: number) => {
+        if (view() !== VIEW_TYPE.PLAN || activeLevel() === undefined) {
+            return 1
+        }
+
+        switch (Math.sign(activeLevel() - testIdx)) {
+            case -1:
+                return 0.2
+            case 1:
+                return 0
+            case 0:
+                return 1
+        }
+
+        return 1
+    }
+
+    const treeFocusTransform = (mesh: Mesh | Line, idx: number, tweenGroup: TweenGroup) => {
+        tweenOpacity(tweenGroup, mesh, getFocusOpacity(idx))
+    }
 
     const drillDown = () => {
         const maxLevelIdx = (focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree).levelCount - 1
@@ -69,9 +88,9 @@ const GameBoard: VoidComponent = () => {
     }
 
     const draw = (time: number = 0) => {
-        camera.tweenGroup.update(time)
-        selfFsTree.tweenGroup.update(time)
-        opponentFsTree.tweenGroup.update(time)
+        controls.update(time)
+        selfFsTree.update(time)
+        opponentFsTree.update(time)
         renderer.render(scene, camera)
     }
 
@@ -103,6 +122,7 @@ const GameBoard: VoidComponent = () => {
         // Resize handler
         window.addEventListener("resize", () => {
             renderer.setSize(window.innerWidth, window.innerHeight)
+            controls.fitToObjects(getControlTargets())
         })
     })
 
@@ -110,10 +130,10 @@ const GameBoard: VoidComponent = () => {
         // Set position and rotation for NONE focus.
         if (focus() === FOCUS_TYPE.NONE) {
             setView(VIEW_TYPE.ELEVATION)
-            selfFsTree.blurLevel()
-            opponentFsTree.blurLevel()
+            selfFsTree.traverseLevelOrder(treeFocusTransform)
+            opponentFsTree.traverseLevelOrder(treeFocusTransform)
             setActiveLevel(0)
-            camera.fitToObjects(selfFsTree, opponentFsTree)
+            controls.fitToObjects(getControlTargets(), true)
             return
         }
 
@@ -121,8 +141,8 @@ const GameBoard: VoidComponent = () => {
 
         switch (view()) {
             case VIEW_TYPE.ELEVATION: {
-                targetTree.blurLevel()
-                camera.fitToObjects(targetTree)
+                targetTree.traverseLevelOrder(treeFocusTransform)
+                controls.fitToObjects([targetTree], true)
                 return
             }
             case VIEW_TYPE.PLAN: {
@@ -133,8 +153,8 @@ const GameBoard: VoidComponent = () => {
                 const rotation = new Quaternion().setFromRotationMatrix(
                     new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
                 )
-                targetTree.focusLevel(activeLevel(), treeFocusTransform(targetTree))
-                camera.animate(position, rotation)
+                targetTree.traverseLevelOrder(treeFocusTransform)
+                controls.animate(position, rotation)
                 return
             }
         }

@@ -11,7 +11,7 @@ import {
     SphereGeometry,
     Vector3,
 } from "three"
-import { tweenOpacity } from "./tween"
+import { Z_AXIS } from "@constants/statics"
 
 // TODO: Fixup according to client structure.
 export type TreeRawData = {
@@ -26,7 +26,6 @@ const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
 
 export class Tree extends Object3D {
-    private static UP = new Vector3(0, 0, 1)
     private static NODE_MATERIALS = COLORS.map((color) => new MeshLambertMaterial({ color, transparent: true }))
     private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
 
@@ -65,7 +64,7 @@ export class Tree extends Object3D {
     constructor(
         private levels: Mesh[][] = [],
         private connectorLevels: Line[][] = [],
-        public tweenGroup: TweenGroup = new TweenGroup(),
+        private tweenGroup: TweenGroup = new TweenGroup(),
         public planeCenters: Vector3[] = [],
     ) {
         super()
@@ -129,45 +128,27 @@ export class Tree extends Object3D {
     }
 
     get normal() {
-        return Tree.UP.clone().applyQuaternion(this.quaternion)
+        return Z_AXIS.clone().applyQuaternion(this.quaternion)
     }
 
     get levelCount() {
         return this.levels.length
     }
 
-    focusLevel(levelIdx: number, levelTransform: (mesh: Mesh | Line, levelIdx: number, idx: number) => void) {
+    traverseLevelOrder(levelTransform: (mesh: Mesh | Line, levelIdx: number, tweenGroup: TweenGroup) => void) {
         this.tweenGroup.removeAll()
 
         // Run transform on level nodes.
         this.levels.forEach((level, idx) =>
             level.forEach((mesh) => {
-                levelTransform(mesh, levelIdx, idx)
+                levelTransform(mesh, idx, this.tweenGroup)
             }),
         )
 
         // Run transform on level node connectors.
         this.connectorLevels.forEach((level, idx) =>
             level.forEach((line) => {
-                levelTransform(line, levelIdx, idx)
-            }),
-        )
-    }
-
-    blurLevel() {
-        this.tweenGroup.removeAll()
-
-        // Run transform on level nodes.
-        this.levels.forEach((level) =>
-            level.forEach((mesh) => {
-                tweenOpacity(this.tweenGroup, mesh, 1)
-            }),
-        )
-
-        // Run transform on level node connectors.
-        this.connectorLevels.forEach((level) =>
-            level.forEach((line) => {
-                tweenOpacity(this.tweenGroup, line, 1)
+                levelTransform(line, idx, this.tweenGroup)
             }),
         )
     }
@@ -192,6 +173,10 @@ export class Tree extends Object3D {
         this.add(this.generateRenderNodes(data, 1, colorSeed))
         this.recomputePlanes()
         return this
+    }
+
+    update(time: number) {
+        this.tweenGroup.update(time)
     }
 
     clear() {
