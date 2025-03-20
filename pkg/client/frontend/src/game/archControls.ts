@@ -1,6 +1,7 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
-import { Box3, Controls, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion, Vector3 } from "three"
+import { Box3, Controls, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Vector3 } from "three"
 import { ELEVATION_CAMERA_LOOK_AT_ROTATION, Z_AXIS } from "@constants/statics"
+import { TweenTransform } from "@constants/types"
 import { isOrthographicCamera, isPerspectiveCamera } from "./camera"
 import { tweenTransform } from "./tween"
 
@@ -12,6 +13,7 @@ const FIT_OFFSET = 4
 
 export class ArchControls extends Controls<Record<never, never>> {
     private tweenGroup: TweenGroup
+    private transitioning: boolean
 
     private resize() {
         if (isPerspectiveCamera(this.object)) {
@@ -34,6 +36,7 @@ export class ArchControls extends Controls<Record<never, never>> {
         super(object, domElement)
 
         this.tweenGroup = new TweenGroup()
+        this.transitioning = false
 
         this.connect()
         this.update()
@@ -43,13 +46,16 @@ export class ArchControls extends Controls<Record<never, never>> {
         ;(this.domElement ?? window).addEventListener("resize", () => this.resize())
     }
 
-    animate(position: Vector3, rotation: Quaternion) {
+    animate(tweenTarget: TweenTransform) {
         if (!this.enabled) {
             return
         }
 
+        this.transitioning = true
         this.tweenGroup.removeAll()
-        tweenTransform(this.tweenGroup, this.object, { position, rotation })
+        tweenTransform(this.tweenGroup, this.object, tweenTarget, () => {
+            this.transitioning = false
+        })
     }
 
     fitToObjects(objects: Object3D[], reposition = false) {
@@ -70,12 +76,12 @@ export class ArchControls extends Controls<Record<never, never>> {
             const heightToFit = size.x / size.y < this.object.aspect ? size.y : size.x / this.object.aspect
             const cameraZ = (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET
 
-            this.animate(
-                reposition
+            this.animate({
+                position: reposition
                     ? new Vector3().addVectors(center, Z_AXIS.clone().multiplyScalar(-cameraZ))
                     : new Vector3(this.object.position.x, this.object.position.y, -cameraZ),
-                ELEVATION_CAMERA_LOOK_AT_ROTATION.clone(),
-            )
+                rotation: ELEVATION_CAMERA_LOOK_AT_ROTATION.clone(),
+            })
         }
     }
 

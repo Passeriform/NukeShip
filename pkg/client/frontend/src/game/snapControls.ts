@@ -26,6 +26,12 @@ export class SnapControls extends Controls<Record<never, never>> {
         this.historyIdx = -1
     }
 
+    private animate(tweenTarget: TweenTransform) {
+        this.transitioning = true
+        this.tweenGroup.removeAll()
+        tweenTransform(this.tweenGroup, this.object, tweenTarget, () => (this.transitioning = false))
+    }
+
     private onMouseMove(event: MouseEvent) {
         if (!this.enabled) {
             return
@@ -53,9 +59,7 @@ export class SnapControls extends Controls<Record<never, never>> {
             this.historyIdx--
         }
 
-        this.transitioning = true
-        this.tweenGroup.removeAll()
-        tweenTransform(this.tweenGroup, this.object, this.history[this.historyIdx], () => (this.transitioning = false))
+        this.animate(this.history[this.historyIdx])
     }
 
     private onMouseDown(event: MouseEvent) {
@@ -67,9 +71,7 @@ export class SnapControls extends Controls<Record<never, never>> {
 
         if (event.button === 2) {
             if (this.history.length) {
-                this.transitioning = true
-                this.tweenGroup.removeAll()
-                tweenTransform(this.tweenGroup, this.object, this.history[0], () => (this.transitioning = false))
+                this.animate(this.history[0])
             }
             this.resetHistory()
             return
@@ -116,9 +118,7 @@ export class SnapControls extends Controls<Record<never, never>> {
         this.history.push(tweenTarget)
         this.historyIdx = this.history.length - 1
 
-        this.transitioning = true
-        this.tweenGroup.removeAll()
-        tweenTransform(this.tweenGroup, this.object, tweenTarget, () => (this.transitioning = false))
+        this.animate(tweenTarget)
     }
 
     constructor(

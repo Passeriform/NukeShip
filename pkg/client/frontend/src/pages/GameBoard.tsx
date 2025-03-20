@@ -75,6 +75,7 @@ const GameBoard: VoidComponent = () => {
         tweenOpacity(tweenGroup, mesh, getFocusOpacity(idx))
     }
 
+    // TODO: Move into PLAN view for arch controls.
     const drillDown = () => {
         const maxLevelIdx = (focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree).levelCount - 1
 
@@ -165,7 +166,8 @@ const GameBoard: VoidComponent = () => {
                     new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
                 )
                 targetTree.traverseLevelOrder(treeFocusTransform)
-                archControls.animate(position, rotation)
+                // TODO: Use arch controls native to traverse. Convert animate to private property.
+                archControls.animate({ position, rotation })
                 return
             }
         }
