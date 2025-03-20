@@ -1,14 +1,16 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Box3, Controls, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion, Vector3 } from "three"
-import { DEFAULT_CAMERA_LOOK_AT_ROTATION, Z_AXIS } from "@constants/statics"
+import { ELEVATION_CAMERA_LOOK_AT_ROTATION, Z_AXIS } from "@constants/statics"
 import { isOrthographicCamera, isPerspectiveCamera } from "./camera"
 import { tweenTransform } from "./tween"
 
 const FIT_OFFSET = 4
 
 // TODO: Animate camera position along a pivot arc when rotating, instead of linear path.
+// TODO: Add scroll binding for changing PLAN levels.
+// TODO: Add rotation to FSTree on panning.
 
-export class ArchControls extends Controls<never> {
+export class ArchControls extends Controls<Record<never, never>> {
     private tweenGroup: TweenGroup
 
     private resize() {
@@ -25,10 +27,20 @@ export class ArchControls extends Controls<never> {
         this.object.updateProjectionMatrix()
     }
 
-    constructor(public object: PerspectiveCamera | OrthographicCamera) {
-        super(object)
+    constructor(
+        public object: PerspectiveCamera | OrthographicCamera,
+        public domElement: HTMLElement | null = null,
+    ) {
+        super(object, domElement)
+
         this.tweenGroup = new TweenGroup()
-        window.addEventListener("resize", () => this.resize())
+
+        this.connect()
+        this.update()
+    }
+
+    connect() {
+        ;(this.domElement ?? window).addEventListener("resize", () => this.resize())
     }
 
     animate(position: Vector3, rotation: Quaternion) {
@@ -62,18 +74,18 @@ export class ArchControls extends Controls<never> {
                 reposition
                     ? new Vector3().addVectors(center, Z_AXIS.clone().multiplyScalar(-cameraZ))
                     : new Vector3(this.object.position.x, this.object.position.y, -cameraZ),
-                DEFAULT_CAMERA_LOOK_AT_ROTATION.clone(),
+                ELEVATION_CAMERA_LOOK_AT_ROTATION.clone(),
             )
         }
     }
 
-    update(time: number) {
+    update(time?: number) {
         this.tweenGroup.update(time)
     }
 
     clear() {
         this.tweenGroup.removeAll()
-        window.removeEventListener("resize", this.resize)
+        super.dispose()
         return
     }
 }

@@ -73,7 +73,6 @@ export class Tree extends Object3D {
     private generateRenderNodes = (node: TreeRawData, depth: number, colorSeed: number) => {
         // Node mesh
         const nodeGeometry = new SphereGeometry(0.1, 64, 64)
-        // const nodeGeometry = new BoxGeometry(2 / depth, 2 / depth, 2 / depth)
         const nodeMesh = new Mesh(nodeGeometry, Tree.NODE_MATERIALS[(colorSeed + depth - 1) % COLORS.length].clone())
 
         // Add level collection

@@ -10,10 +10,11 @@ import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { PLAN_CAMERA_NODE_DISTANCE, STATICS, Y_AXIS } from "@constants/statics"
 import { FOCUS_TYPE, VIEW_TYPE } from "@constants/types"
+import { ArchControls } from "@game/archControls"
 import { createOrthographicCamera, createPerspectiveCamera } from "@game/camera"
-import { ArchControls } from "@game/controls"
 import { createLighting } from "@game/lighting"
 import { createScene } from "@game/scene"
+import { SnapControls } from "@game/snapControls"
 import { Tree } from "@game/tree"
 import { tweenOpacity } from "@game/tween"
 
@@ -28,7 +29,8 @@ const GameBoard: VoidComponent = () => {
 
     const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
-    const controls = new ArchControls(camera)
+    const archControls = new ArchControls(camera)
+    const snapControls = new SnapControls([], camera)
 
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
@@ -36,6 +38,10 @@ const GameBoard: VoidComponent = () => {
     const [activeLevel, setActiveLevel] = createSignal(0)
     const [view, setView] = createSignal<VIEW_TYPE>(VIEW_TYPE.ELEVATION)
     const [focus, setFocus] = createSignal<FOCUS_TYPE>(FOCUS_TYPE.NONE)
+
+    const disableContextMenu = (event: MouseEvent) => {
+        event.preventDefault()
+    }
 
     const getControlTargets = () => {
         switch (focus()) {
@@ -88,7 +94,8 @@ const GameBoard: VoidComponent = () => {
     }
 
     const draw = (time: number = 0) => {
-        controls.update(time)
+        archControls.update(time)
+        snapControls.update(time)
         selfFsTree.update(time)
         opponentFsTree.update(time)
         renderer.render(scene, camera)
@@ -101,8 +108,9 @@ const GameBoard: VoidComponent = () => {
         }
 
         // Renderer
-        renderer.setAnimationLoop(draw)
+        renderer.setPixelRatio(window.devicePixelRatio)
         renderer.setSize(window.innerWidth, window.innerHeight)
+        renderer.setAnimationLoop(draw)
 
         // Lighting
         directionalLight.position.copy(STATICS.DIRECTIONAL_LIGHT.position)
@@ -119,10 +127,11 @@ const GameBoard: VoidComponent = () => {
         selfFsTree.recomputePlanes()
         opponentFsTree.recomputePlanes()
 
+        window.addEventListener("contextmenu", disableContextMenu)
         // Resize handler
         window.addEventListener("resize", () => {
             renderer.setSize(window.innerWidth, window.innerHeight)
-            controls.fitToObjects(getControlTargets())
+            archControls.fitToObjects(getControlTargets())
         })
     })
 
@@ -133,7 +142,8 @@ const GameBoard: VoidComponent = () => {
             selfFsTree.traverseLevelOrder(treeFocusTransform)
             opponentFsTree.traverseLevelOrder(treeFocusTransform)
             setActiveLevel(0)
-            controls.fitToObjects(getControlTargets(), true)
+            archControls.fitToObjects(getControlTargets(), true)
+            snapControls.setTargets([])
             return
         }
 
@@ -142,7 +152,8 @@ const GameBoard: VoidComponent = () => {
         switch (view()) {
             case VIEW_TYPE.ELEVATION: {
                 targetTree.traverseLevelOrder(treeFocusTransform)
-                controls.fitToObjects([targetTree], true)
+                archControls.fitToObjects([targetTree], true)
+                snapControls.setTargets([targetTree])
                 return
             }
             case VIEW_TYPE.PLAN: {
@@ -154,7 +165,7 @@ const GameBoard: VoidComponent = () => {
                     new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
                 )
                 targetTree.traverseLevelOrder(treeFocusTransform)
-                controls.animate(position, rotation)
+                archControls.animate(position, rotation)
                 return
             }
         }
@@ -166,6 +177,8 @@ const GameBoard: VoidComponent = () => {
         camera.clear()
         lightingCleanup()
         sceneCleanup()
+
+        window.removeEventListener("contextmenu", disableContextMenu)
     })
 
     return (

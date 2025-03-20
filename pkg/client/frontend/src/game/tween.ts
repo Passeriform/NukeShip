@@ -2,7 +2,7 @@ import { Easing, Tween, Group as TweenGroup } from "@tweenjs/tween.js"
 import { Line, Material, Mesh, Object3D } from "three"
 import { TweenTransform } from "@constants/types"
 
-export const tweenTransform = (group: TweenGroup, object: Object3D, to: TweenTransform) => {
+export const tweenTransform = (group: TweenGroup, object: Object3D, to: TweenTransform, onComplete?: () => void) => {
     if (!group) {
         return
     }
@@ -22,6 +22,7 @@ export const tweenTransform = (group: TweenGroup, object: Object3D, to: TweenTra
                 object.position.copy(position)
                 object.quaternion.slerpQuaternions(qFrom, qTo, time)
             })
+            .onComplete(onComplete)
             .start(),
     )
 }
