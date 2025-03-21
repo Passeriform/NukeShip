@@ -29,7 +29,33 @@ export class ArchControls extends Controls<Record<never, never>> {
         this.object.updateProjectionMatrix()
     }
 
+    private fitToObjects() {
+        if (!this.enabled) {
+            return
+        }
+
+        const fitBox = new Box3()
+
+        this.targets.forEach((target) => fitBox.expandByObject(target))
+
+        const center = new Vector3()
+        const size = new Vector3()
+        fitBox.getCenter(center)
+        fitBox.getSize(size)
+
+        if (isPerspectiveCamera(this.object)) {
+            const heightToFit = size.x / size.y < this.object.aspect ? size.y : size.x / this.object.aspect
+            const cameraZ = (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET
+
+            const position = new Vector3().addVectors(center, Z_AXIS.clone().multiplyScalar(-cameraZ))
+            const rotation = ELEVATION_CAMERA_LOOK_AT_ROTATION.clone()
+
+            this.animate({ position, rotation })
+        }
+    }
+
     constructor(
+        private targets: Object3D[],
         public object: PerspectiveCamera | OrthographicCamera,
         public domElement: HTMLElement | null = null,
     ) {
@@ -46,6 +72,14 @@ export class ArchControls extends Controls<Record<never, never>> {
         ;(this.domElement ?? window).addEventListener("resize", () => this.resize())
     }
 
+    setTargets(targets: Object3D[]) {
+        this.targets = targets
+
+        if (targets.length) {
+            this.fitToObjects()
+        }
+    }
+
     animate(tweenTarget: TweenTransform) {
         if (!this.enabled) {
             return
@@ -56,33 +90,6 @@ export class ArchControls extends Controls<Record<never, never>> {
         tweenTransform(this.tweenGroup, this.object, tweenTarget, () => {
             this.transitioning = false
         })
-    }
-
-    fitToObjects(objects: Object3D[], reposition = false) {
-        if (!this.enabled) {
-            return
-        }
-
-        const fitBox = new Box3()
-
-        objects.forEach((obj) => fitBox.expandByObject(obj))
-
-        const center = new Vector3()
-        const size = new Vector3()
-        fitBox.getCenter(center)
-        fitBox.getSize(size)
-
-        if (isPerspectiveCamera(this.object)) {
-            const heightToFit = size.x / size.y < this.object.aspect ? size.y : size.x / this.object.aspect
-            const cameraZ = (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET
-
-            this.animate({
-                position: reposition
-                    ? new Vector3().addVectors(center, Z_AXIS.clone().multiplyScalar(-cameraZ))
-                    : new Vector3(this.object.position.x, this.object.position.y, -cameraZ),
-                rotation: ELEVATION_CAMERA_LOOK_AT_ROTATION.clone(),
-            })
-        }
     }
 
     update(time?: number) {

@@ -29,7 +29,7 @@ const GameBoard: VoidComponent = () => {
 
     const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
-    const archControls = new ArchControls(camera)
+    const archControls = new ArchControls([], camera)
     const snapControls = new SnapControls([], camera)
 
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
@@ -41,17 +41,6 @@ const GameBoard: VoidComponent = () => {
 
     const disableContextMenu = (event: MouseEvent) => {
         event.preventDefault()
-    }
-
-    const getControlTargets = () => {
-        switch (focus()) {
-            case FOCUS_TYPE.NONE:
-                return [selfFsTree, opponentFsTree]
-            case FOCUS_TYPE.SELF:
-                return [selfFsTree]
-            case FOCUS_TYPE.OPPONENT:
-                return [opponentFsTree]
-        }
     }
 
     const getFocusOpacity = (testIdx: number) => {
@@ -132,7 +121,12 @@ const GameBoard: VoidComponent = () => {
         // Resize handler
         window.addEventListener("resize", () => {
             renderer.setSize(window.innerWidth, window.innerHeight)
-            archControls.fitToObjects(getControlTargets())
+            const targetTrees = {
+                [FOCUS_TYPE.NONE]: [selfFsTree, opponentFsTree],
+                [FOCUS_TYPE.SELF]: [selfFsTree],
+                [FOCUS_TYPE.OPPONENT]: [opponentFsTree],
+            }[focus()]
+            archControls.setTargets(targetTrees)
         })
     })
 
@@ -143,7 +137,7 @@ const GameBoard: VoidComponent = () => {
             selfFsTree.traverseLevelOrder(treeFocusTransform)
             opponentFsTree.traverseLevelOrder(treeFocusTransform)
             setActiveLevel(0)
-            archControls.fitToObjects(getControlTargets(), true)
+            archControls.setTargets([selfFsTree, opponentFsTree])
             snapControls.setTargets([])
             return
         }
@@ -153,7 +147,7 @@ const GameBoard: VoidComponent = () => {
         switch (view()) {
             case VIEW_TYPE.ELEVATION: {
                 targetTree.traverseLevelOrder(treeFocusTransform)
-                archControls.fitToObjects([targetTree], true)
+                archControls.setTargets([targetTree])
                 snapControls.setTargets([targetTree])
                 return
             }
