@@ -1,20 +1,20 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Box3, Controls, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Vector3 } from "three"
-import { ELEVATION_CAMERA_LOOK_AT_ROTATION, Z_AXIS } from "@constants/statics"
+import { ELEVATION_FIT_OFFSET, WORLD_ELEVATION_ROTATION, Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
 import { isOrthographicCamera, isPerspectiveCamera } from "./camera"
 import { tweenTransform } from "./tween"
 
-const FIT_OFFSET = 4
-
 // TODO: Animate camera position along a pivot arc when rotating, instead of linear path.
 // TODO: Add scroll binding for changing PLAN levels.
 // TODO: Add rotation to FSTree on panning.
+// TODO: Add PLAN and ELEVATION as properties of archControls.
 
 export class ArchControls extends Controls<Record<never, never>> {
     private tweenGroup: TweenGroup
     private transitioning: boolean
 
+    // TODO: Fix resize recalculating the camera position if snapControls is enabled.
     private resize() {
         if (isPerspectiveCamera(this.object)) {
             this.object.aspect = window.innerWidth / window.innerHeight
@@ -45,10 +45,11 @@ export class ArchControls extends Controls<Record<never, never>> {
 
         if (isPerspectiveCamera(this.object)) {
             const heightToFit = size.x / size.y < this.object.aspect ? size.y : size.x / this.object.aspect
-            const cameraZ = (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET
+            const cameraDistance =
+                (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + ELEVATION_FIT_OFFSET
 
-            const position = new Vector3().addVectors(center, Z_AXIS.clone().multiplyScalar(-cameraZ))
-            const rotation = ELEVATION_CAMERA_LOOK_AT_ROTATION.clone()
+            const rotation = WORLD_ELEVATION_ROTATION.clone()
+            const position = new Vector3().addVectors(center, Z_AXIS.clone().multiplyScalar(-cameraDistance))
 
             this.animate({ position, rotation })
         }

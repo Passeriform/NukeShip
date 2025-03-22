@@ -9,7 +9,7 @@ import Button from "@components/Button"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { PLAN_CAMERA_NODE_DISTANCE, STATICS, Y_AXIS } from "@constants/statics"
-import { FOCUS_TYPE, VIEW_TYPE } from "@constants/types"
+import { FocusType, ViewType } from "@constants/types"
 import { ArchControls } from "@game/archControls"
 import { createOrthographicCamera, createPerspectiveCamera } from "@game/camera"
 import { createLighting } from "@game/lighting"
@@ -36,15 +36,15 @@ const GameBoard: VoidComponent = () => {
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
 
     const [activeLevel, setActiveLevel] = createSignal(0)
-    const [view, setView] = createSignal<VIEW_TYPE>(VIEW_TYPE.ELEVATION)
-    const [focus, setFocus] = createSignal<FOCUS_TYPE>(FOCUS_TYPE.NONE)
+    const [view, setView] = createSignal<ViewType>(ViewType.ELEVATION)
+    const [focus, setFocus] = createSignal<FocusType>(FocusType.NONE)
 
     const disableContextMenu = (event: MouseEvent) => {
         event.preventDefault()
     }
 
     const getFocusOpacity = (testIdx: number) => {
-        if (view() !== VIEW_TYPE.PLAN || activeLevel() === undefined) {
+        if (view() !== ViewType.PLAN || activeLevel() === undefined) {
             return 1
         }
 
@@ -66,7 +66,7 @@ const GameBoard: VoidComponent = () => {
 
     // TODO: Move into PLAN view for arch controls.
     const drillDown = () => {
-        const maxLevelIdx = (focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree).levelCount - 1
+        const maxLevelIdx = (focus() === FocusType.SELF ? selfFsTree : opponentFsTree).levelCount - 1
 
         if (activeLevel() === maxLevelIdx) {
             return
@@ -122,9 +122,9 @@ const GameBoard: VoidComponent = () => {
         window.addEventListener("resize", () => {
             renderer.setSize(window.innerWidth, window.innerHeight)
             const targetTrees = {
-                [FOCUS_TYPE.NONE]: [selfFsTree, opponentFsTree],
-                [FOCUS_TYPE.SELF]: [selfFsTree],
-                [FOCUS_TYPE.OPPONENT]: [opponentFsTree],
+                [FocusType.NONE]: [selfFsTree, opponentFsTree],
+                [FocusType.SELF]: [selfFsTree],
+                [FocusType.OPPONENT]: [opponentFsTree],
             }[focus()]
             archControls.setTargets(targetTrees)
         })
@@ -132,8 +132,8 @@ const GameBoard: VoidComponent = () => {
 
     createEffect(() => {
         // Set position and rotation for NONE focus.
-        if (focus() === FOCUS_TYPE.NONE) {
-            setView(VIEW_TYPE.ELEVATION)
+        if (focus() === FocusType.NONE) {
+            setView(ViewType.ELEVATION)
             selfFsTree.traverseLevelOrder(treeFocusTransform)
             opponentFsTree.traverseLevelOrder(treeFocusTransform)
             setActiveLevel(0)
@@ -142,16 +142,16 @@ const GameBoard: VoidComponent = () => {
             return
         }
 
-        const targetTree = focus() === FOCUS_TYPE.SELF ? selfFsTree : opponentFsTree
+        const targetTree = focus() === FocusType.SELF ? selfFsTree : opponentFsTree
 
         switch (view()) {
-            case VIEW_TYPE.ELEVATION: {
+            case ViewType.ELEVATION: {
                 targetTree.traverseLevelOrder(treeFocusTransform)
                 archControls.setTargets([targetTree])
                 snapControls.setTargets([targetTree])
                 return
             }
-            case VIEW_TYPE.PLAN: {
+            case ViewType.PLAN: {
                 const position = new Vector3().addVectors(
                     targetTree.planeCenters[activeLevel()],
                     new Vector3().addScaledVector(targetTree.normal.clone().negate(), PLAN_CAMERA_NODE_DISTANCE),
@@ -182,42 +182,42 @@ const GameBoard: VoidComponent = () => {
             {renderer.domElement}
             <section class="absolute bottom-8 flex flex-row justify-evenly gap-8">
                 <Switch>
-                    <Match when={focus() === FOCUS_TYPE.NONE}>
+                    <Match when={focus() === FocusType.NONE}>
                         <Button
                             class="p-8"
                             text="Focus Self"
                             onClick={() => {
-                                setFocus(FOCUS_TYPE.SELF)
+                                setFocus(FocusType.SELF)
                             }}
                         />
                         <Button
                             class="p-8"
                             text="Focus Opponent"
                             onClick={() => {
-                                setFocus(FOCUS_TYPE.OPPONENT)
+                                setFocus(FocusType.OPPONENT)
                             }}
                         />
                     </Match>
                 </Switch>
-                <Show when={focus() !== FOCUS_TYPE.NONE}>
+                <Show when={focus() !== FocusType.NONE}>
                     <Button
                         class="p-8"
                         text="Switch View"
                         onClick={() => {
-                            setView(view() === VIEW_TYPE.PLAN ? VIEW_TYPE.ELEVATION : VIEW_TYPE.PLAN)
+                            setView(view() === ViewType.PLAN ? ViewType.ELEVATION : ViewType.PLAN)
                         }}
                     />
                     <Button
                         class="p-8"
                         text="Focus Back"
                         onClick={() => {
-                            setFocus(FOCUS_TYPE.NONE)
+                            setFocus(FocusType.NONE)
                         }}
                     />
                 </Show>
             </section>
             <section class="absolute left-8 top-8 flex flex-col justify-evenly gap-8">
-                <Show when={view() === VIEW_TYPE.PLAN}>
+                <Show when={view() === ViewType.PLAN}>
                     <Button class="p-8" text="+" onClick={drillDown} />
                     <Button class="p-8" text="-" onClick={drillUp} />
                 </Show>

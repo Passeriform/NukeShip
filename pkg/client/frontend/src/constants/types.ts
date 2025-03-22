@@ -1,19 +1,19 @@
 import { Quaternion, Vector3 } from "three"
 
-export const FOCUS_TYPE = {
+export const FocusType = {
     NONE: "NONE",
     SELF: "SELF",
     OPPONENT: "OPPONENT",
 } as const
 
-export type FOCUS_TYPE = (typeof FOCUS_TYPE)[keyof typeof FOCUS_TYPE]
+export type FocusType = (typeof FocusType)[keyof typeof FocusType]
 
-export const VIEW_TYPE = {
+export const ViewType = {
     PLAN: "PLAN",
     ELEVATION: "ELEVATION",
 } as const
 
-export type VIEW_TYPE = (typeof VIEW_TYPE)[keyof typeof VIEW_TYPE]
+export type ViewType = (typeof ViewType)[keyof typeof ViewType]
 
 export type TweenTransform = {
     position: Vector3
