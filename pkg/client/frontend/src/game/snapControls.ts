@@ -13,7 +13,7 @@ import { Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
 import { tweenTransform } from "./tween"
 
-const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 3, 0, 1).normalize())
+const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, 0).normalize())
 
 // TODO: Add resize handler
 
@@ -21,6 +21,7 @@ export class SnapControls extends Controls<Record<never, never>> {
     private _pointer: Vector2
     private _position: Vector3
     private _rotation: Quaternion
+    private _targetRotation: Quaternion
     private tweenGroup: TweenGroup
     private raycaster: Raycaster
     private historyIdx: number
@@ -103,8 +104,8 @@ export class SnapControls extends Controls<Record<never, never>> {
 
         // TODO: Make this reliant on getWorldQuaternion.
         const tweenTarget = {
-            position: this._position.add(Z_AXIS.clone().applyQuaternion(FORWARD_QUATERNION)).clone(),
-            rotation: FORWARD_QUATERNION.clone(),
+            position: this._position.add(Z_AXIS.clone().applyQuaternion(this._targetRotation)).clone(),
+            rotation: this._targetRotation.clone(),
         }
 
         if (this.historyIdx < this.history.length - 1) {
@@ -134,6 +135,7 @@ export class SnapControls extends Controls<Record<never, never>> {
         this._pointer = new Vector2()
         this._position = new Vector3()
         this._rotation = new Quaternion()
+        this._targetRotation = new Quaternion()
         this.tweenGroup = new TweenGroup()
         this.raycaster = new Raycaster()
         this.history = []
@@ -152,6 +154,16 @@ export class SnapControls extends Controls<Record<never, never>> {
 
     setTargets(targets: Object3D[]) {
         this.targets = targets
+        if (targets.length) {
+            this._targetRotation = this.targets[0].quaternion.clone()
+            this.targets.slice(1).forEach((target, idx) => {
+                this._targetRotation.slerp(target.quaternion, 1 / (idx + 1))
+            })
+            this._targetRotation.normalize()
+        } else {
+            this._targetRotation = FORWARD_QUATERNION.clone()
+        }
+        this._targetRotation.slerp(FORWARD_QUATERNION.clone(), 0.5)
         this.resetHistory()
     }
 
