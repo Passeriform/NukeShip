@@ -1,14 +1,31 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Box3, Controls, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion, Vector3 } from "three"
 import { Z_AXIS } from "@constants/statics"
-import { TweenTransform } from "@constants/types"
 import { isOrthographicCamera, isPerspectiveCamera } from "./camera"
 import { tweenTransform } from "./tween"
 
-const FIT_OFFSET = 2
-const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, -1).normalize())
+// TODO: Animate camera position along a pivot arc when rotating, instead of linear path.
+// TODO: Add scroll binding for changing PLAN levels.
+// TODO: Add rotation to FSTree on panning.
+// TODO: Add PLAN and ELEVATION as properties of archControls.
 
-export class PlanControls extends Controls<Record<never, never>> {
+export const ViewType = {
+    PLAN: "PLAN",
+    ELEVATION: "ELEVATION",
+} as const
+
+export type ViewType = (typeof ViewType)[keyof typeof ViewType]
+
+const FIT_OFFSET = {
+    [ViewType.ELEVATION]: 4,
+    [ViewType.PLAN]: 2,
+}
+const FORWARD_QUATERNION = {
+    [ViewType.ELEVATION]: Object.freeze(new Quaternion(0, 1, 0, 0).normalize()),
+    [ViewType.PLAN]: Object.freeze(new Quaternion(0, 1, 0, -1).normalize()),
+}
+
+export class ArchControls extends Controls<Record<never, never>> {
     private _fitBox: Box3
     private _fitBoxCenter: Vector3
     private _fitBoxSize: Vector3
@@ -28,6 +45,7 @@ export class PlanControls extends Controls<Record<never, never>> {
             this.object.bottom = -inferredHalfFrustumSize
         }
         this.object.updateProjectionMatrix()
+        this.fitToObjects()
     }
 
     private fitToObjects() {
@@ -48,21 +66,31 @@ export class PlanControls extends Controls<Record<never, never>> {
                     ? this._fitBoxSize.y
                     : this._fitBoxSize.x / this.object.aspect
             const cameraDistance =
-                (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET
+                (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET[this.viewType]
 
+            // TODO: Fix rotation for PLAN view based on the rotation of targets.
             const tweenTarget = {
                 position: this._fitBoxCenter
-                    .add(Z_AXIS.clone().applyQuaternion(FORWARD_QUATERNION).multiplyScalar(cameraDistance))
+                    .add(
+                        Z_AXIS.clone()
+                            .applyQuaternion(FORWARD_QUATERNION[this.viewType])
+                            .multiplyScalar(cameraDistance),
+                    )
                     .clone(),
-                rotation: FORWARD_QUATERNION.clone(),
+                rotation: FORWARD_QUATERNION[this.viewType].clone(),
             }
 
-            this.animate(tweenTarget)
+            this.transitioning = true
+            this.tweenGroup.removeAll()
+            tweenTransform(this.tweenGroup, this.object, tweenTarget, () => {
+                this.transitioning = false
+            })
         }
     }
 
     constructor(
         private targets: Object3D[],
+        private viewType: ViewType,
         public object: PerspectiveCamera | OrthographicCamera,
         public domElement: HTMLElement | null = null,
     ) {
@@ -82,24 +110,16 @@ export class PlanControls extends Controls<Record<never, never>> {
         ;(this.domElement ?? window).addEventListener("resize", () => this.resize())
     }
 
-    setTargets(targets: Object3D[]) {
+    setTargets(targets: Object3D[], viewType?: ViewType) {
+        if (viewType) {
+            this.viewType = viewType
+        }
+
         this.targets = targets
 
         if (targets.length) {
             this.fitToObjects()
         }
-    }
-
-    animate(tweenTarget: TweenTransform) {
-        if (!this.enabled) {
-            return
-        }
-
-        this.transitioning = true
-        this.tweenGroup.removeAll()
-        tweenTransform(this.tweenGroup, this.object, tweenTarget, () => {
-            this.transitioning = false
-        })
     }
 
     update(time?: number) {

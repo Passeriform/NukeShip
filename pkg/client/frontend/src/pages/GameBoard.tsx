@@ -9,11 +9,10 @@ import Button from "@components/Button"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { STATICS } from "@constants/statics"
-import { FocusType, ViewType } from "@constants/types"
+import { FocusType } from "@constants/types"
+import { ArchControls, ViewType } from "@game/archControls"
 import { createOrthographicCamera, createPerspectiveCamera } from "@game/camera"
-import { ElevationControls } from "@game/elevationControls"
 import { createLighting } from "@game/lighting"
-import { PlanControls } from "@game/planControls"
 import { createScene } from "@game/scene"
 import { TargetControls } from "@game/targetControls"
 import { Tree } from "@game/tree"
@@ -30,8 +29,7 @@ const GameBoard: VoidComponent = () => {
 
     const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
-    const elevationControls = new ElevationControls([], camera)
-    const planControls = new PlanControls([], camera)
+    const archControls = new ArchControls([], ViewType.ELEVATION, camera)
     const targetControls = new TargetControls([], camera)
 
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
@@ -86,8 +84,7 @@ const GameBoard: VoidComponent = () => {
     }
 
     const draw = (time: number = 0) => {
-        elevationControls.update(time)
-        planControls.update(time)
+        archControls.update(time)
         targetControls.update(time)
         selfFsTree.update(time)
         opponentFsTree.update(time)
@@ -124,14 +121,6 @@ const GameBoard: VoidComponent = () => {
         // Resize handler
         window.addEventListener("resize", () => {
             renderer.setSize(window.innerWidth, window.innerHeight)
-            const targetTrees = {
-                [FocusType.NONE]: [selfFsTree, opponentFsTree],
-                [FocusType.SELF]: [selfFsTree],
-                [FocusType.OPPONENT]: [opponentFsTree],
-            }[focus()]
-            elevationControls.setTargets(targetTrees)
-            planControls.setTargets(targetTrees)
-            targetControls.setTargets(targetTrees)
         })
     })
 
@@ -142,11 +131,8 @@ const GameBoard: VoidComponent = () => {
             selfFsTree.traverseLevelOrder(treeFocusTransform)
             opponentFsTree.traverseLevelOrder(treeFocusTransform)
             setActiveLevel(0)
-            elevationControls.enabled = true
-            planControls.enabled = false
+            archControls.setTargets([selfFsTree, opponentFsTree], ViewType.ELEVATION)
             targetControls.enabled = false
-            elevationControls.setTargets([selfFsTree, opponentFsTree])
-            planControls.setTargets([])
             targetControls.setTargets([])
             return
         }
@@ -154,25 +140,17 @@ const GameBoard: VoidComponent = () => {
         const targetTree = focus() === FocusType.SELF ? selfFsTree : opponentFsTree
         targetTree.traverseLevelOrder(treeFocusTransform)
 
+        // TODO: Add targeting in plan mode as well. Pass the forward vector to controls along with targets.
+        targetControls.enabled = true
+        targetControls.setTargets([targetTree])
+
         switch (view()) {
             case ViewType.ELEVATION: {
-                elevationControls.enabled = true
-                planControls.enabled = false
-                targetControls.enabled = true
-                elevationControls.setTargets([targetTree])
-                planControls.setTargets(targetTree.levels[activeLevel()])
-                targetControls.setTargets([targetTree])
+                archControls.setTargets([targetTree], ViewType.ELEVATION)
                 return
             }
             case ViewType.PLAN: {
-                elevationControls.enabled = false
-                planControls.enabled = true
-                targetControls.enabled = false
-                elevationControls.setTargets([targetTree])
-                planControls.setTargets(targetTree.levels[activeLevel()])
-                targetControls.setTargets([targetTree])
-                // TODO: Add targeting in plan mode as well. Pass the forward vector to controls along with targets.
-                targetControls.setTargets([])
+                archControls.setTargets(targetTree.levels[activeLevel()], ViewType.PLAN)
                 return
             }
         }

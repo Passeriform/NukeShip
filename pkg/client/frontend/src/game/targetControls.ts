@@ -14,7 +14,7 @@ import { TweenTransform } from "@constants/types"
 import { tweenTransform } from "./tween"
 
 // TODO: Use dynamic fit offset so that all nodes of the next level are visible.
-const FIT_OFFSET = 4
+const FIT_OFFSET = 1
 const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, 0).normalize())
 
 // TODO: Add resize handler
