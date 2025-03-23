@@ -9,13 +9,19 @@ import {
     Vector2,
     Vector3,
 } from "three"
-import { SNAP_CAMERA_LOOK_AT_ROTATION, Z_AXIS } from "@constants/statics"
+import { Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
 import { tweenTransform } from "./tween"
 
+const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 3, 0, 1).normalize())
+
+// TODO: Add resize handler
+
 export class SnapControls extends Controls<Record<never, never>> {
+    private _pointer: Vector2
+    private _position: Vector3
+    private _rotation: Quaternion
     private tweenGroup: TweenGroup
-    private pointer: Vector2
     private raycaster: Raycaster
     private historyIdx: number
     private history: TweenTransform[]
@@ -37,8 +43,8 @@ export class SnapControls extends Controls<Record<never, never>> {
             return
         }
 
-        this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1
-        this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+        this._pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+        this._pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
     }
 
     private onMouseWheel(event: WheelEvent) {
@@ -77,7 +83,7 @@ export class SnapControls extends Controls<Record<never, never>> {
             return
         }
 
-        this.raycaster.setFromCamera(this.pointer, this.object)
+        this.raycaster.setFromCamera(this._pointer, this.object)
 
         const intersects = this.raycaster.intersectObjects(this.targets, true)
 
@@ -93,13 +99,12 @@ export class SnapControls extends Controls<Record<never, never>> {
             return
         }
 
-        const position = new Vector3()
-        matched.getWorldPosition(position)
+        matched.getWorldPosition(this._position)
 
         // TODO: Make this reliant on getWorldQuaternion.
         const tweenTarget = {
-            position: new Vector3().addVectors(position, Z_AXIS.clone().applyQuaternion(SNAP_CAMERA_LOOK_AT_ROTATION)),
-            rotation: SNAP_CAMERA_LOOK_AT_ROTATION.clone(),
+            position: this._position.add(Z_AXIS.clone().applyQuaternion(FORWARD_QUATERNION)).clone(),
+            rotation: FORWARD_QUATERNION.clone(),
         }
 
         if (this.historyIdx < this.history.length - 1) {
@@ -107,11 +112,9 @@ export class SnapControls extends Controls<Record<never, never>> {
         }
 
         if (this.history.length === 0) {
-            const position = new Vector3()
-            const rotation = new Quaternion()
-            this.object.getWorldPosition(position)
-            this.object.getWorldQuaternion(rotation)
-            this.history.push({ position, rotation })
+            this.object.getWorldPosition(this._position)
+            this.object.getWorldQuaternion(this._rotation)
+            this.history.push({ position: this._position.clone(), rotation: this._rotation.clone() })
             this.historyIdx = this.history.length - 1
         }
 
@@ -128,8 +131,10 @@ export class SnapControls extends Controls<Record<never, never>> {
     ) {
         super(object, domElement)
 
+        this._pointer = new Vector2()
+        this._position = new Vector3()
+        this._rotation = new Quaternion()
         this.tweenGroup = new TweenGroup()
-        this.pointer = new Vector2()
         this.raycaster = new Raycaster()
         this.history = []
         this.historyIdx = -1

@@ -4,9 +4,6 @@ import { TweenTransform } from "@constants/types"
 export const Y_AXIS = Object.freeze(new Vector3(0, 1, 0))
 export const Z_AXIS = Object.freeze(new Vector3(0, 0, 1))
 export const PLAN_CAMERA_NODE_DISTANCE = 4
-export const ELEVATION_FIT_OFFSET = 4
-export const WORLD_ELEVATION_ROTATION = Object.freeze(new Quaternion(0, 1, 0, 0).normalize())
-export const SNAP_CAMERA_LOOK_AT_ROTATION = Object.freeze(new Quaternion(0, 3, 0, 1).normalize())
 
 // TODO: Adapt for arbitrary FsTree positioning and rotation.
 

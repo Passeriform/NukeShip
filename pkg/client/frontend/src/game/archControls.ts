@@ -1,6 +1,6 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
-import { Box3, Controls, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Vector3 } from "three"
-import { ELEVATION_FIT_OFFSET, WORLD_ELEVATION_ROTATION, Z_AXIS } from "@constants/statics"
+import { Box3, Controls, MathUtils, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion, Vector3 } from "three"
+import { Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
 import { isOrthographicCamera, isPerspectiveCamera } from "./camera"
 import { tweenTransform } from "./tween"
@@ -10,7 +10,13 @@ import { tweenTransform } from "./tween"
 // TODO: Add rotation to FSTree on panning.
 // TODO: Add PLAN and ELEVATION as properties of archControls.
 
+const FIT_OFFSET = 4
+const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, 0).normalize())
+
 export class ArchControls extends Controls<Record<never, never>> {
+    private _fitBox: Box3
+    private _fitBoxCenter: Vector3
+    private _fitBoxSize: Vector3
     private tweenGroup: TweenGroup
     private transitioning: boolean
 
@@ -34,24 +40,29 @@ export class ArchControls extends Controls<Record<never, never>> {
             return
         }
 
-        const fitBox = new Box3()
+        // Computing position of the center and size to fit targets.
+        this._fitBox.makeEmpty()
+        this.targets.forEach((target) => this._fitBox.expandByObject(target))
 
-        this.targets.forEach((target) => fitBox.expandByObject(target))
-
-        const center = new Vector3()
-        const size = new Vector3()
-        fitBox.getCenter(center)
-        fitBox.getSize(size)
+        this._fitBox.getCenter(this._fitBoxCenter)
+        this._fitBox.getSize(this._fitBoxSize)
 
         if (isPerspectiveCamera(this.object)) {
-            const heightToFit = size.x / size.y < this.object.aspect ? size.y : size.x / this.object.aspect
+            const heightToFit =
+                this._fitBoxSize.x / this._fitBoxSize.y < this.object.aspect
+                    ? this._fitBoxSize.y
+                    : this._fitBoxSize.x / this.object.aspect
             const cameraDistance =
-                (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + ELEVATION_FIT_OFFSET
+                (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + FIT_OFFSET
 
-            const rotation = WORLD_ELEVATION_ROTATION.clone()
-            const position = new Vector3().addVectors(center, Z_AXIS.clone().multiplyScalar(-cameraDistance))
+            const tweenTarget = {
+                position: this._fitBoxCenter
+                    .add(Z_AXIS.clone().applyQuaternion(FORWARD_QUATERNION).multiplyScalar(cameraDistance))
+                    .clone(),
+                rotation: FORWARD_QUATERNION.clone(),
+            }
 
-            this.animate({ position, rotation })
+            this.animate(tweenTarget)
         }
     }
 
@@ -62,6 +73,9 @@ export class ArchControls extends Controls<Record<never, never>> {
     ) {
         super(object, domElement)
 
+        this._fitBox = new Box3()
+        this._fitBoxCenter = new Vector3()
+        this._fitBoxSize = new Vector3()
         this.tweenGroup = new TweenGroup()
         this.transitioning = false
 
