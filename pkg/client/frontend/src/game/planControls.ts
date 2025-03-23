@@ -5,15 +5,10 @@ import { TweenTransform } from "@constants/types"
 import { isOrthographicCamera, isPerspectiveCamera } from "./camera"
 import { tweenTransform } from "./tween"
 
-// TODO: Animate camera position along a pivot arc when rotating, instead of linear path.
-// TODO: Add scroll binding for changing PLAN levels.
-// TODO: Add rotation to FSTree on panning.
-// TODO: Add PLAN and ELEVATION as properties of archControls.
+const FIT_OFFSET = 2
+const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, -1).normalize())
 
-const FIT_OFFSET = 4
-const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, 0).normalize())
-
-export class ArchControls extends Controls<Record<never, never>> {
+export class PlanControls extends Controls<Record<never, never>> {
     private _fitBox: Box3
     private _fitBoxCenter: Vector3
     private _fitBoxSize: Vector3

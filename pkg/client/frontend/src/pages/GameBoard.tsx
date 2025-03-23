@@ -3,18 +3,19 @@ import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
-import { Line, Matrix4, Mesh, Quaternion, Vector3 } from "three"
+import { Line, Mesh } from "three"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
-import { PLAN_CAMERA_NODE_DISTANCE, STATICS, Y_AXIS } from "@constants/statics"
+import { STATICS } from "@constants/statics"
 import { FocusType, ViewType } from "@constants/types"
-import { ArchControls } from "@game/archControls"
 import { createOrthographicCamera, createPerspectiveCamera } from "@game/camera"
+import { ElevationControls } from "@game/elevationControls"
 import { createLighting } from "@game/lighting"
+import { PlanControls } from "@game/planControls"
 import { createScene } from "@game/scene"
-import { SnapControls } from "@game/snapControls"
+import { TargetControls } from "@game/targetControls"
 import { Tree } from "@game/tree"
 import { tweenOpacity } from "@game/tween"
 
@@ -29,8 +30,9 @@ const GameBoard: VoidComponent = () => {
 
     const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
-    const archControls = new ArchControls([], camera)
-    const snapControls = new SnapControls([], camera)
+    const elevationControls = new ElevationControls([], camera)
+    const planControls = new PlanControls([], camera)
+    const targetControls = new TargetControls([], camera)
 
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
@@ -84,8 +86,9 @@ const GameBoard: VoidComponent = () => {
     }
 
     const draw = (time: number = 0) => {
-        archControls.update(time)
-        snapControls.update(time)
+        elevationControls.update(time)
+        planControls.update(time)
+        targetControls.update(time)
         selfFsTree.update(time)
         opponentFsTree.update(time)
         renderer.render(scene, camera)
@@ -126,7 +129,9 @@ const GameBoard: VoidComponent = () => {
                 [FocusType.SELF]: [selfFsTree],
                 [FocusType.OPPONENT]: [opponentFsTree],
             }[focus()]
-            archControls.setTargets(targetTrees)
+            elevationControls.setTargets(targetTrees)
+            planControls.setTargets(targetTrees)
+            targetControls.setTargets(targetTrees)
         })
     })
 
@@ -137,31 +142,37 @@ const GameBoard: VoidComponent = () => {
             selfFsTree.traverseLevelOrder(treeFocusTransform)
             opponentFsTree.traverseLevelOrder(treeFocusTransform)
             setActiveLevel(0)
-            archControls.setTargets([selfFsTree, opponentFsTree])
-            snapControls.setTargets([])
+            elevationControls.enabled = true
+            planControls.enabled = false
+            targetControls.enabled = false
+            elevationControls.setTargets([selfFsTree, opponentFsTree])
+            planControls.setTargets([])
+            targetControls.setTargets([])
             return
         }
 
         const targetTree = focus() === FocusType.SELF ? selfFsTree : opponentFsTree
+        targetTree.traverseLevelOrder(treeFocusTransform)
 
         switch (view()) {
             case ViewType.ELEVATION: {
-                targetTree.traverseLevelOrder(treeFocusTransform)
-                archControls.setTargets([targetTree])
-                snapControls.setTargets([targetTree])
+                elevationControls.enabled = true
+                planControls.enabled = false
+                targetControls.enabled = true
+                elevationControls.setTargets([targetTree])
+                planControls.setTargets(targetTree.levels[activeLevel()])
+                targetControls.setTargets([targetTree])
                 return
             }
             case ViewType.PLAN: {
-                const position = new Vector3().addVectors(
-                    targetTree.planeCenters[activeLevel()],
-                    new Vector3().addScaledVector(targetTree.normal.clone().negate(), PLAN_CAMERA_NODE_DISTANCE),
-                )
-                const rotation = new Quaternion().setFromRotationMatrix(
-                    new Matrix4().lookAt(position, targetTree.planeCenters[activeLevel()], Y_AXIS),
-                )
-                targetTree.traverseLevelOrder(treeFocusTransform)
-                // TODO: Use arch controls native to traverse. Convert animate to private property.
-                archControls.animate({ position, rotation })
+                elevationControls.enabled = false
+                planControls.enabled = true
+                targetControls.enabled = false
+                elevationControls.setTargets([targetTree])
+                planControls.setTargets(targetTree.levels[activeLevel()])
+                targetControls.setTargets([targetTree])
+                // TODO: Add targeting in plan mode as well. Pass the forward vector to controls along with targets.
+                targetControls.setTargets([])
                 return
             }
         }

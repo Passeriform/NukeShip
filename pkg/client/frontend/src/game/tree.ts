@@ -62,9 +62,9 @@ export class Tree extends Object3D {
     }
 
     constructor(
-        private levels: Mesh[][] = [],
         private connectorLevels: Line[][] = [],
         private tweenGroup: TweenGroup = new TweenGroup(),
+        public levels: Mesh[][] = [],
         public planeCenters: Vector3[] = [],
     ) {
         super()
