@@ -23,6 +23,7 @@ export type TreeRawData = {
 const DEPTH_OFFSET = 4
 const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
+const NODE_MESH_NAME = "TREE_NODE"
 
 export class Tree extends Object3D {
     private static NODE_MATERIALS = COLORS.map((color) => new MeshLambertMaterial({ color, transparent: true }))
@@ -68,11 +69,16 @@ export class Tree extends Object3D {
         super()
     }
 
-    private generateRenderNodes = (node: TreeRawData, depth: number, colorSeed: number) => {
+    static isTreeNode(object: Object3D): object is Mesh {
+        return object.name === NODE_MESH_NAME
+    }
+
+    private generateRenderNodes(node: TreeRawData, depth: number, colorSeed: number) {
         // Node mesh
         const nodeGeometry = new SphereGeometry(0.1, 64, 64)
         // TODO: Use InstancedMesh with changing instanceColor instead of new meshes
         const nodeMesh = new Mesh(nodeGeometry, Tree.NODE_MATERIALS[(colorSeed + depth - 1) % COLORS.length].clone())
+        nodeMesh.name = ""
 
         // Add level collection
         if (this.levels.length < depth) {
