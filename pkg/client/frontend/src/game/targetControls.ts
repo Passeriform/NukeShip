@@ -11,7 +11,7 @@ import {
 } from "three"
 import { Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
-import { tweenTransform } from "./tween"
+import { tweenTransform } from "@utility/tween"
 
 // TODO: Use dynamic fit offset so that all nodes of the next level are visible.
 const FIT_OFFSET = 1

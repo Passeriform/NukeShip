@@ -9,13 +9,13 @@ import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType } from "@constants/types"
 import { ArchControls, DrillEvent, ViewType } from "@game/archControls"
-import { boundsFromObjects } from "@game/bounds"
-import { createOrthographicCamera, createPerspectiveCamera } from "@game/camera"
-import { createLighting } from "@game/lighting"
-import { createScene } from "@game/scene"
 import { TargetControls } from "@game/targetControls"
 import { Tree } from "@game/tree"
-import { tweenOpacity } from "@game/tween"
+import { boundsFromObjects } from "@utility/bounds"
+import { createOrthographicCamera, createPerspectiveCamera } from "@utility/camera"
+import { createLighting } from "@utility/lighting"
+import { createScene } from "@utility/scene"
+import { tweenOpacity } from "@utility/tween"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.

@@ -16,6 +16,7 @@ export default defineConfig({
             "@game": path.resolve(__dirname, "./src/game"),
             "@hooks": path.resolve(__dirname, "./src/hooks"),
             "@pages": path.resolve(__dirname, "./src/pages"),
+            "@utility": path.resolve(__dirname, "./src/utility"),
             "@wails": path.resolve(__dirname, "./wailsjs"),
         },
     },

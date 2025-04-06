@@ -11,9 +11,9 @@ import {
 } from "three"
 import { Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
-import { unpackBounds } from "./bounds"
-import { isOrthographicCamera, isPerspectiveCamera, lookAtFromQuaternion } from "./camera"
-import { tweenTransform } from "./tween"
+import { unpackBounds } from "@utility/bounds"
+import { isOrthographicCamera, isPerspectiveCamera, lookAtFromQuaternion } from "@utility/camera"
+import { tweenTransform } from "@utility/tween"
 
 // TODO: Animate camera position along a pivot arc when rotating, instead of linear path.
 // TODO: Add rotation to FSTree on panning.
