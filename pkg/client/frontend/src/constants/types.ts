@@ -8,6 +8,13 @@ export const FocusType = {
 
 export type FocusType = (typeof FocusType)[keyof typeof FocusType]
 
+export const ViewType = {
+    PLAN: "PLAN",
+    ELEVATION: "ELEVATION",
+} as const
+
+export type ViewType = (typeof ViewType)[keyof typeof ViewType]
+
 export type TweenTransform = {
     position: Vector3
     rotation: Quaternion

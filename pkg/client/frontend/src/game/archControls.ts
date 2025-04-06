@@ -1,14 +1,5 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
-import {
-    BaseEvent,
-    Box3,
-    Controls,
-    MathUtils,
-    Object3D,
-    OrthographicCamera,
-    PerspectiveCamera,
-    Quaternion,
-} from "three"
+import { BaseEvent, Box3, Controls, MathUtils, OrthographicCamera, PerspectiveCamera, Quaternion } from "three"
 import { Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
 import { unpackBounds } from "@utility/bounds"
@@ -19,37 +10,15 @@ import { tweenTransform } from "@utility/tween"
 // TODO: Add rotation to FSTree on panning.
 // TODO: Add common history between arch and target controls.
 
-export const ViewType = {
-    PLAN: "PLAN",
-    ELEVATION: "ELEVATION",
-} as const
-
-export type ViewType = (typeof ViewType)[keyof typeof ViewType]
-
-const FIT_OFFSET = {
-    [ViewType.ELEVATION]: 4,
-    [ViewType.PLAN]: 2,
-}
-
 type ArchControlsEventMap = {
     drill: {
-        targets: Object3D[]
         historyIdx: number
-        tweenGroup: TweenGroup
-    }
-    drillStart: {
-        targets: Object3D[]
-        tweenGroup: TweenGroup
-    }
-    drillEnd: {
-        targets: Object3D[]
-        tweenGroup: TweenGroup
     }
 }
 
 export type DrillEvent = BaseEvent<"drill"> & ArchControlsEventMap["drill"]
-export type DrillStartEvent = BaseEvent<"drillStart"> & ArchControlsEventMap["drillStart"]
-export type DrillEndEvent = BaseEvent<"drillEnd"> & ArchControlsEventMap["drillEnd"]
+
+// TODO: Accept tweenGroup from caller
 
 export class ArchControls extends Controls<ArchControlsEventMap> {
     private poses: [Box3[], Quaternion]
@@ -57,19 +26,11 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
     private transitioning: boolean
     private history: TweenTransform[]
     private historyIdx: number
+    public cameraOffset: number
 
     private animate(tweenTarget: TweenTransform) {
         if (!this.enabled) {
             return
-        }
-
-        if (this.viewType === ViewType.PLAN) {
-            this.dispatchEvent({
-                type: "drill",
-                targets: this.targets,
-                historyIdx: this.historyIdx,
-                tweenGroup: this.tweenGroup,
-            })
         }
 
         this.transitioning = true
@@ -84,8 +45,7 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
                 const heightToFit =
                     poseSize.x / poseSize.y < this.object.aspect ? poseSize.y : poseSize.x / this.object.aspect
                 const cameraDistance =
-                    (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) +
-                    FIT_OFFSET[this.viewType]
+                    (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + this.cameraOffset
 
                 const rotation = lookAtFromQuaternion(this.object, this.poses[1])
                 const position = poseCenter
@@ -139,17 +99,13 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
 
         this.dispatchEvent({
             type: "drill",
-            targets: this.targets,
             historyIdx: this.historyIdx,
-            tweenGroup: this.tweenGroup,
         })
 
         this.animate(this.history[this.historyIdx])
     }
 
     constructor(
-        private targets: Object3D[],
-        private viewType: ViewType,
         public object: PerspectiveCamera | OrthographicCamera,
         public domElement: HTMLElement | null = null,
     ) {
@@ -157,6 +113,7 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
 
         this.poses = [[new Box3()], new Quaternion()]
         this.tweenGroup = new TweenGroup()
+        this.cameraOffset = 4
         this.transitioning = false
         this.history = []
         this.historyIdx = -1
@@ -170,28 +127,12 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
         document.addEventListener("wheel", (event) => this.onMouseWheel(event))
     }
 
-    setTargets(targets: Object3D[], viewType: ViewType, poses: [Box3[], Quaternion]) {
-        if (viewType) {
-            this.viewType = viewType
-        }
-
-        this.targets = targets
-
-        if (!targets.length) {
-            return
-        }
-
+    setPoses(poses: [Box3[], Quaternion]) {
         this.poses = poses
 
         this.historyIdx = 0
 
         this.updateToFitScreen()
-
-        this.dispatchEvent({
-            type: viewType === ViewType.PLAN ? "drillStart" : "drillEnd",
-            targets: this.targets,
-            tweenGroup: this.tweenGroup,
-        })
 
         this.animate(this.history[this.historyIdx])
     }

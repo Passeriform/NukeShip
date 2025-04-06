@@ -1,4 +1,3 @@
-import { Group as TweenGroup } from "@tweenjs/tween.js"
 import {
     Box3,
     BufferGeometry,
@@ -63,7 +62,6 @@ export class Tree extends Object3D {
 
     constructor(
         private connectorLevels: Line[][] = [],
-        private tweenGroup: TweenGroup = new TweenGroup(),
         public levels: Mesh[][] = [],
         public levelBounds: Box3[] = [],
     ) {
@@ -136,8 +134,6 @@ export class Tree extends Object3D {
     }
 
     traverseLevelOrder(levelTransform: (mesh: Mesh | Line, levelIdx: number) => void) {
-        this.tweenGroup.removeAll()
-
         // Run transform on level nodes.
         this.levels.forEach((level, idx) =>
             level.forEach((mesh) => {
@@ -173,14 +169,5 @@ export class Tree extends Object3D {
         this.add(this.generateRenderNodes(data, 1, colorSeed))
         this.recomputeBounds()
         return this
-    }
-
-    update(time: number) {
-        this.tweenGroup.update(time)
-    }
-
-    clear() {
-        this.tweenGroup.removeAll()
-        return super.clear()
     }
 }
