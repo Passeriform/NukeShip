@@ -15,9 +15,11 @@ import { tweenTransform } from "./tween"
 
 // TODO: Use dynamic fit offset so that all nodes of the next level are visible.
 const FIT_OFFSET = 1
+// TODO: Reuse lookAtFromQuaternion and arch controls static forward quaternion.
 const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, 0).normalize())
 
-// TODO: Add resize handler
+// TODO: Remove usage of private temporary variables, instead use immutable utilities.
+// TODO: Rework according to archControls usage.
 
 export class TargetControls extends Controls<Record<never, never>> {
     private _pointer: Vector2

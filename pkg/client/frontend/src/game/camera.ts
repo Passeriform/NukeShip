@@ -1,4 +1,4 @@
-import { OrthographicCamera, PerspectiveCamera } from "three"
+import { Camera, OrthographicCamera, PerspectiveCamera, Quaternion } from "three"
 
 const ORTHO_FRUSTUM_SIZE = 10
 const PERSPECTIVE_FOV = 70
@@ -26,3 +26,6 @@ export const isPerspectiveCamera = (cam: OrthographicCamera | PerspectiveCamera)
 export const isOrthographicCamera = (cam: OrthographicCamera | PerspectiveCamera): cam is OrthographicCamera => {
     return "isOrthographicCamera" in cam && cam.isOrthographicCamera
 }
+
+export const lookAtFromQuaternion = (cam: Camera, q: Quaternion) =>
+    q.clone().multiply(new Quaternion().setFromAxisAngle(cam.up, Math.PI)).normalize()

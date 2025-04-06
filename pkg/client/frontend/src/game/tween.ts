@@ -7,8 +7,6 @@ export const tweenTransform = (group: TweenGroup, object: Object3D, to: TweenTra
         return
     }
 
-    group.removeAll()
-
     const TWEEN_TIMING = 400
 
     const qFrom = object.quaternion.clone()

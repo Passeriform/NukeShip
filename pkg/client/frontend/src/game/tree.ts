@@ -65,7 +65,7 @@ export class Tree extends Object3D {
         private connectorLevels: Line[][] = [],
         private tweenGroup: TweenGroup = new TweenGroup(),
         public levels: Mesh[][] = [],
-        public planeCenters: Vector3[] = [],
+        public levelBounds: Box3[] = [],
     ) {
         super()
     }
@@ -73,6 +73,7 @@ export class Tree extends Object3D {
     private generateRenderNodes = (node: TreeRawData, depth: number, colorSeed: number) => {
         // Node mesh
         const nodeGeometry = new SphereGeometry(0.1, 64, 64)
+        // TODO: Use InstancedMesh with changing instanceColor instead of new meshes
         const nodeMesh = new Mesh(nodeGeometry, Tree.NODE_MATERIALS[(colorSeed + depth - 1) % COLORS.length].clone())
 
         // Add level collection
@@ -134,43 +135,43 @@ export class Tree extends Object3D {
         return this.levels.length
     }
 
-    traverseLevelOrder(levelTransform: (mesh: Mesh | Line, levelIdx: number, tweenGroup: TweenGroup) => void) {
+    traverseLevelOrder(levelTransform: (mesh: Mesh | Line, levelIdx: number) => void) {
         this.tweenGroup.removeAll()
 
         // Run transform on level nodes.
         this.levels.forEach((level, idx) =>
             level.forEach((mesh) => {
-                levelTransform(mesh, idx, this.tweenGroup)
+                levelTransform(mesh, idx)
             }),
         )
 
         // Run transform on level node connectors.
         this.connectorLevels.forEach((level, idx) =>
             level.forEach((line) => {
-                levelTransform(line, idx, this.tweenGroup)
+                levelTransform(line, idx)
             }),
         )
     }
 
-    recomputePlanes() {
-        const boundingBox = new Box3()
-        const worldPosition = new Vector3()
-        this.planeCenters = this.levels.map((level) => {
-            const positions = level.map((mesh) => {
+    recomputeBounds() {
+        this.levelBounds = this.levels.map((level) => {
+            const boundingBox = new Box3()
+
+            const meshCenters = level.map((mesh) => {
+                const worldPosition = new Vector3()
                 mesh.getWorldPosition(worldPosition)
-                return worldPosition.clone()
+                return worldPosition
             })
 
-            const center = new Vector3()
-            boundingBox.setFromPoints(positions).getCenter(center)
+            boundingBox.setFromPoints(meshCenters)
 
-            return center
+            return boundingBox
         })
     }
 
     setFromRawData(data: TreeRawData, colorSeed = 0) {
         this.add(this.generateRenderNodes(data, 1, colorSeed))
-        this.recomputePlanes()
+        this.recomputeBounds()
         return this
     }
 

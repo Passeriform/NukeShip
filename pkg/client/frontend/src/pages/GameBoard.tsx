@@ -1,16 +1,15 @@
 import { useParams } from "@solidjs/router"
-import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
-import { Line, Mesh } from "three"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
-import { STATICS } from "@constants/statics"
+import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType } from "@constants/types"
-import { ArchControls, ViewType } from "@game/archControls"
+import { ArchControls, DrillEvent, ViewType } from "@game/archControls"
+import { boundsFromObjects } from "@game/bounds"
 import { createOrthographicCamera, createPerspectiveCamera } from "@game/camera"
 import { createLighting } from "@game/lighting"
 import { createScene } from "@game/scene"
@@ -35,7 +34,6 @@ const GameBoard: VoidComponent = () => {
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
 
-    const [activeLevel, setActiveLevel] = createSignal(0)
     const [view, setView] = createSignal<ViewType>(ViewType.ELEVATION)
     const [focus, setFocus] = createSignal<FocusType>(FocusType.NONE)
 
@@ -43,44 +41,18 @@ const GameBoard: VoidComponent = () => {
         event.preventDefault()
     }
 
-    const getFocusOpacity = (testIdx: number) => {
-        if (view() !== ViewType.PLAN || activeLevel() === undefined) {
-            return 1
+    const focusTransform = ({ targets: objects, historyIdx: focusIdx, tweenGroup }: Omit<DrillEvent, "type">) => {
+        const opacityMatchMap: Record<number, number> = {
+            [-1]: 0.2,
+            [1]: 0,
+            [0]: 1,
         }
 
-        switch (Math.sign(activeLevel() - testIdx)) {
-            case -1:
-                return 0.2
-            case 1:
-                return 0
-            case 0:
-                return 1
-        }
-
-        return 1
-    }
-
-    const treeFocusTransform = (mesh: Mesh | Line, idx: number, tweenGroup: TweenGroup) => {
-        tweenOpacity(tweenGroup, mesh, getFocusOpacity(idx))
-    }
-
-    // TODO: Move into PLAN view for arch controls.
-    const drillDown = () => {
-        const maxLevelIdx = (focus() === FocusType.SELF ? selfFsTree : opponentFsTree).levelCount - 1
-
-        if (activeLevel() === maxLevelIdx) {
-            return
-        }
-
-        setActiveLevel(activeLevel() + 1)
-    }
-
-    const drillUp = () => {
-        if (activeLevel() === 0) {
-            return
-        }
-
-        setActiveLevel(activeLevel() - 1)
+        ;(objects as Tree[]).forEach((tree) => {
+            tree.traverseLevelOrder((mesh, levelIdx) => {
+                tweenOpacity(tweenGroup, mesh, focusIdx === -1 ? 1 : opacityMatchMap[Math.sign(focusIdx - levelIdx)])
+            })
+        })
     }
 
     const draw = (time: number = 0) => {
@@ -114,10 +86,17 @@ const GameBoard: VoidComponent = () => {
         opponentFsTree.quaternion.copy(STATICS.OPPONENT.rotation)
         scene.add(selfFsTree)
         scene.add(opponentFsTree)
-        selfFsTree.recomputePlanes()
-        opponentFsTree.recomputePlanes()
+        selfFsTree.recomputeBounds()
+        opponentFsTree.recomputeBounds()
 
+        // Controls
+        archControls.addEventListener("drillStart", (event) => focusTransform({ ...event, historyIdx: 0 }))
+        archControls.addEventListener("drillEnd", (event) => focusTransform({ ...event, historyIdx: -1 }))
+        archControls.addEventListener("drill", focusTransform)
+
+        // Disable context menu
         window.addEventListener("contextmenu", disableContextMenu)
+
         // Resize handler
         window.addEventListener("resize", () => {
             renderer.setSize(window.innerWidth, window.innerHeight)
@@ -128,29 +107,33 @@ const GameBoard: VoidComponent = () => {
         // Set position and rotation for NONE focus.
         if (focus() === FocusType.NONE) {
             setView(ViewType.ELEVATION)
-            selfFsTree.traverseLevelOrder(treeFocusTransform)
-            opponentFsTree.traverseLevelOrder(treeFocusTransform)
-            setActiveLevel(0)
-            archControls.setTargets([selfFsTree, opponentFsTree], ViewType.ELEVATION)
+            archControls.setTargets([selfFsTree, opponentFsTree], ViewType.ELEVATION, [
+                [boundsFromObjects(selfFsTree, opponentFsTree)],
+                ELEVATION_FORWARD_QUATERNION,
+            ])
             targetControls.enabled = false
             targetControls.setTargets([])
             return
         }
 
         const targetTree = focus() === FocusType.SELF ? selfFsTree : opponentFsTree
-        targetTree.traverseLevelOrder(treeFocusTransform)
 
-        // TODO: Add targeting in plan mode as well. Pass the forward vector to controls along with targets.
         targetControls.enabled = true
         targetControls.setTargets([targetTree])
 
         switch (view()) {
             case ViewType.ELEVATION: {
-                archControls.setTargets([targetTree], ViewType.ELEVATION)
+                archControls.setTargets([targetTree], ViewType.ELEVATION, [
+                    [boundsFromObjects(targetTree)],
+                    ELEVATION_FORWARD_QUATERNION,
+                ])
                 return
             }
             case ViewType.PLAN: {
-                archControls.setTargets(targetTree.levels[activeLevel()], ViewType.PLAN)
+                archControls.setTargets([targetTree], ViewType.PLAN, [
+                    targetTree.levelBounds,
+                    targetTree.quaternion.clone(),
+                ])
                 return
             }
         }
@@ -203,12 +186,6 @@ const GameBoard: VoidComponent = () => {
                             setFocus(FocusType.NONE)
                         }}
                     />
-                </Show>
-            </section>
-            <section class="absolute left-8 top-8 flex flex-col justify-evenly gap-8">
-                <Show when={view() === ViewType.PLAN}>
-                    <Button class="p-8" text="+" onClick={drillDown} />
-                    <Button class="p-8" text="-" onClick={drillUp} />
                 </Show>
             </section>
             <NavButton class="pointer-events-none cursor-default" position="right" text={code} />
