@@ -9,10 +9,20 @@ import { tweenTransform } from "@utility/tween"
 
 const FIT_OFFSET = 1
 
+type TargetControlsEventMap = {
+    select: {
+        intersect: Object3D
+        tweenGroup: TweenGroup
+    }
+    deselect: {
+        tweenGroup: TweenGroup
+    }
+}
+
 // TODO: Remove usage of private temporary variables, instead use immutable utilities.
 // TODO: Rework according to archControls usage.
 
-export class TargetControls extends Controls<Record<never, never>> {
+export class TargetControls extends Controls<TargetControlsEventMap> {
     private _lastSelected: Object3D | undefined
     private pointer: Vector2
     private preloadedRotation: Quaternion
@@ -81,6 +91,11 @@ export class TargetControls extends Controls<Record<never, never>> {
                 this.animate(this.history[0])
             }
 
+            this.dispatchEvent({
+                type: "deselect",
+                tweenGroup: this.tweenGroup,
+            })
+
             this.resetHistory()
 
             return
@@ -117,6 +132,12 @@ export class TargetControls extends Controls<Record<never, never>> {
             const [position, rotation] = getWorldPose(this.object)
             this.history.push({ position, rotation })
             this.historyIdx = this.history.length - 1
+
+            this.dispatchEvent({
+                type: "select",
+                intersect: matched,
+                tweenGroup: this.tweenGroup,
+            })
         }
 
         this.history.push(tweenTarget)
