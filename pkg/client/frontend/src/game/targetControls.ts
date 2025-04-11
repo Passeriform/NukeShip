@@ -41,7 +41,7 @@ export class TargetControls extends Controls<Record<never, never>> {
     private animate(tweenTarget: TweenTransform) {
         this.transitioning = true
         this.tweenGroup.removeAll()
-        tweenTransform(this.tweenGroup, this.object, tweenTarget, () => (this.transitioning = false))
+        tweenTransform(this.tweenGroup, this.object, tweenTarget, { onComplete: () => (this.transitioning = false) })
     }
 
     private onMouseMove(event: MouseEvent) {

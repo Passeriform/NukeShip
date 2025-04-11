@@ -2,39 +2,54 @@ import { Easing, Tween, Group as TweenGroup } from "@tweenjs/tween.js"
 import { Line, Material, Mesh, Object3D } from "three"
 import { TweenTransform } from "@constants/types"
 
-export const tweenTransform = (group: TweenGroup, object: Object3D, to: TweenTransform, onComplete?: () => void) => {
+type TweenOptions = {
+    timing: number
+    onComplete: () => void
+}
+
+const DEFAULT_TWEEN_OPTIONS = { timing: 400 }
+
+export const tweenTransform = (
+    group: TweenGroup,
+    object: Object3D,
+    to: TweenTransform,
+    tweenOptions: Partial<TweenOptions> = DEFAULT_TWEEN_OPTIONS,
+) => {
     if (!group) {
         return
     }
-
-    const TWEEN_TIMING = 400
 
     const qFrom = object.quaternion.clone()
     const qTo = to.rotation.normalize()
 
     group.add(
         new Tween({ position: object.position.clone(), time: 0 })
-            .to({ position: to.position, time: 1 }, TWEEN_TIMING)
+            .to({ position: to.position, time: 1 }, tweenOptions.timing ?? DEFAULT_TWEEN_OPTIONS.timing)
             .easing(Easing.Cubic.InOut)
             .onUpdate(({ position, time }) => {
                 object.position.copy(position)
                 object.quaternion.slerpQuaternions(qFrom, qTo, time)
             })
-            .onComplete(onComplete)
+            .onComplete(() => {
+                tweenOptions.onComplete?.()
+            })
             .start(),
     )
 }
 
-export const tweenOpacity = (group: TweenGroup, object: Mesh | Line, to: number) => {
+export const tweenOpacity = (
+    group: TweenGroup,
+    object: Mesh | Line,
+    to: number,
+    tweenOptions: Partial<TweenOptions> = DEFAULT_TWEEN_OPTIONS,
+) => {
     if (!group) {
         return
     }
 
-    const TWEEN_TIMING = 400
-
     group.add(
         new Tween({ opacity: (object.material as Material).opacity })
-            .to({ opacity: to }, TWEEN_TIMING)
+            .to({ opacity: to }, tweenOptions.timing ?? DEFAULT_TWEEN_OPTIONS.timing)
             .easing(Easing.Cubic.InOut)
             .onStart(() => {
                 if (to !== 0) {
@@ -48,6 +63,7 @@ export const tweenOpacity = (group: TweenGroup, object: Mesh | Line, to: number)
                 if (to === 0) {
                     object.visible = false
                 }
+                tweenOptions.onComplete?.()
             })
             .start(),
     )
