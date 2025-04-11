@@ -1,32 +1,21 @@
 import { Group as TweenGroup } from "@tweenjs/tween.js"
-import {
-    Controls,
-    Object3D,
-    OrthographicCamera,
-    PerspectiveCamera,
-    Quaternion,
-    Raycaster,
-    Vector2,
-    Vector3,
-} from "three"
-import { Z_AXIS } from "@constants/statics"
+import { Controls, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion, Raycaster, Vector2 } from "three"
+import { ELEVATION_FORWARD_QUATERNION, Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
+import { lookAtFromQuaternion } from "@utility/camera"
+import { getWorldPose } from "@utility/pureTransform"
+import { averageQuaternions } from "@utility/quaternion"
 import { tweenTransform } from "@utility/tween"
 
-// TODO: Use dynamic fit offset so that all nodes of the next level are visible.
 const FIT_OFFSET = 1
-// TODO: Reuse lookAtFromQuaternion and arch controls static forward quaternion.
-const FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 1, 0, 0).normalize())
 
 // TODO: Remove usage of private temporary variables, instead use immutable utilities.
 // TODO: Rework according to archControls usage.
 
 export class TargetControls extends Controls<Record<never, never>> {
-    private _pointer: Vector2
-    private _position: Vector3
-    private _rotation: Quaternion
-    private _targetRotation: Quaternion
-    private _lastTarget: Object3D | undefined
+    private _lastSelected: Object3D | undefined
+    private pointer: Vector2
+    private preloadedRotation: Quaternion
     private tweenGroup: TweenGroup
     private raycaster: Raycaster
     private historyIdx: number
@@ -36,6 +25,12 @@ export class TargetControls extends Controls<Record<never, never>> {
     private resetHistory() {
         this.history = this.history.splice(0, this.history.length)
         this.historyIdx = -1
+    }
+
+    private loadRotation() {
+        const rotations = this.targets.map((target) => getWorldPose(target)[1])
+        this.preloadedRotation = averageQuaternions(...rotations)
+        this.preloadedRotation.slerp(lookAtFromQuaternion(this.object, ELEVATION_FORWARD_QUATERNION.clone()), 0.5)
     }
 
     private animate(tweenTarget: TweenTransform) {
@@ -49,8 +44,8 @@ export class TargetControls extends Controls<Record<never, never>> {
             return
         }
 
-        this._pointer.x = (event.clientX / window.innerWidth) * 2 - 1
-        this._pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+        this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1
+        this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
     }
 
     private onMouseWheel(event: WheelEvent) {
@@ -85,35 +80,33 @@ export class TargetControls extends Controls<Record<never, never>> {
             if (this.history.length) {
                 this.animate(this.history[0])
             }
+
             this.resetHistory()
+
             return
         }
 
-        this.raycaster.setFromCamera(this._pointer, this.object)
+        this.raycaster.setFromCamera(this.pointer, this.object)
 
         const intersects = this.raycaster.intersectObjects(this.targets, true)
-
-        if (!intersects.length) {
-            return
-        }
 
         const [matched] = intersects
             .map((intersection) => intersection.object)
             .filter((object) => "isMesh" in object && object.isMesh)
 
-        if (!matched || matched === this._lastTarget) {
+        if (!matched || matched === this._lastSelected) {
             return
         }
 
-        this._lastTarget = matched
-        matched.getWorldPosition(this._position)
+        this._lastSelected = matched
+        const [position] = getWorldPose(matched)
 
         // TODO: Make this reliant on getWorldQuaternion.
         const tweenTarget = {
-            position: this._position
-                .add(Z_AXIS.clone().applyQuaternion(this._targetRotation).multiplyScalar(FIT_OFFSET))
+            position: position
+                .add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(FIT_OFFSET))
                 .clone(),
-            rotation: this._targetRotation.clone(),
+            rotation: this.preloadedRotation.clone(),
         }
 
         if (this.historyIdx < this.history.length - 1) {
@@ -121,9 +114,8 @@ export class TargetControls extends Controls<Record<never, never>> {
         }
 
         if (this.history.length === 0) {
-            this.object.getWorldPosition(this._position)
-            this.object.getWorldQuaternion(this._rotation)
-            this.history.push({ position: this._position.clone(), rotation: this._rotation.clone() })
+            const [position, rotation] = getWorldPose(this.object)
+            this.history.push({ position, rotation })
             this.historyIdx = this.history.length - 1
         }
 
@@ -140,10 +132,8 @@ export class TargetControls extends Controls<Record<never, never>> {
     ) {
         super(object, domElement)
 
-        this._pointer = new Vector2()
-        this._position = new Vector3()
-        this._rotation = new Quaternion()
-        this._targetRotation = new Quaternion()
+        this.pointer = new Vector2()
+        this.preloadedRotation = new Quaternion()
         this.tweenGroup = new TweenGroup()
         this.raycaster = new Raycaster()
         this.history = []
@@ -161,18 +151,15 @@ export class TargetControls extends Controls<Record<never, never>> {
     }
 
     setTargets(targets: Object3D[]) {
-        this.targets = targets
-        if (targets.length) {
-            this._targetRotation = this.targets[0].quaternion.clone()
-            this.targets.slice(1).forEach((target, idx) => {
-                this._targetRotation.slerp(target.quaternion, 1 / (idx + 1))
-            })
-            this._targetRotation.invert().normalize()
-        } else {
-            this._targetRotation = FORWARD_QUATERNION.clone()
+        if (!targets.length) {
+            throw Error("At least one target is required to be assigned for target controls.")
         }
-        this._targetRotation.slerp(FORWARD_QUATERNION.clone(), 0.5)
+
+        this.targets = targets
+
         this.resetHistory()
+
+        this.loadRotation()
     }
 
     update(time?: number) {

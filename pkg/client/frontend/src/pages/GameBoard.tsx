@@ -3,8 +3,6 @@ import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
-import Stats from "stats.js"
-import { Mesh } from "three"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
@@ -103,7 +101,6 @@ const GameBoard: VoidComponent = () => {
                 })
             }),
         )
-
 
         // Disable context menu
         window.addEventListener("contextmenu", disableContextMenu)
