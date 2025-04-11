@@ -1,12 +1,15 @@
+import nodeFragmentShader from "@shaders/node.frag.glsl?raw"
+import nodeVertexShader from "@shaders/node.vert.glsl?raw"
+import { Group as TweenGroup } from "@tweenjs/tween.js"
 import {
     Box3,
     BufferGeometry,
+    Color,
     Line,
     LineBasicMaterial,
     Mesh,
-    MeshLambertMaterial,
-    Object3D,
     Group as ObjectGroup,
+    ShaderMaterial,
     SphereGeometry,
     Vector3,
 } from "three"
@@ -23,10 +26,37 @@ export type TreeRawData = {
 const DEPTH_OFFSET = 4
 const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
-const NODE_MESH_NAME = "TREE_NODE"
 
-export class Tree extends Object3D {
-    private static NODE_MATERIALS = COLORS.map((color) => new MeshLambertMaterial({ color, transparent: true }))
+export class TreeNode extends Mesh<SphereGeometry, ShaderMaterial> {
+    private static NODE_GEOMETRY = new SphereGeometry(0.1, 64, 64)
+    public static MESH_NAME = "TREE_NODE"
+
+    override name = TreeNode.MESH_NAME
+
+    constructor(color: Color) {
+        const geometry = TreeNode.NODE_GEOMETRY.clone()
+        const material = new ShaderMaterial({
+            vertexShader: nodeVertexShader,
+            fragmentShader: nodeFragmentShader,
+            uniforms: {
+                uBaseColor: { value: color },
+                uGlowColor: { value: new Color(0xffffff) },
+                uGlowIntensity: { value: 1.0 },
+                uGlowFalloff: { value: 4.0 },
+                uFresnelPower: { value: 2.0 },
+            },
+        })
+
+        super(geometry, material)
+    }
+
+    glow(value: boolean, tweenGroup: TweenGroup) {
+        this.material.uniforms.uGlowIntensity.value = value ? 1.0 : 0.0
+        // Modify uniforms for glow
+    }
+}
+
+export class Tree extends Mesh {
     private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
 
     private static splitChildrenEvenly(itemCount: number) {
@@ -63,22 +93,15 @@ export class Tree extends Object3D {
 
     constructor(
         private connectorLevels: Line[][] = [],
-        public levels: Mesh[][] = [],
+        public levels: TreeNode[][] = [],
         public levelBounds: Box3[] = [],
     ) {
         super()
     }
 
-    static isTreeNode(object: Object3D): object is Mesh {
-        return object.name === NODE_MESH_NAME
-    }
-
     private generateRenderNodes(node: TreeRawData, depth: number, colorSeed: number) {
-        // Node mesh
-        const nodeGeometry = new SphereGeometry(0.1, 64, 64)
         // TODO: Use InstancedMesh with changing instanceColor instead of new meshes
-        const nodeMesh = new Mesh(nodeGeometry, Tree.NODE_MATERIALS[(colorSeed + depth - 1) % COLORS.length].clone())
-        nodeMesh.name = ""
+        const nodeMesh = new TreeNode(new Color(COLORS[(colorSeed + depth - 1) % COLORS.length]))
 
         // Add level collection
         if (this.levels.length < depth) {
@@ -139,15 +162,13 @@ export class Tree extends Object3D {
         return this.levels.length
     }
 
-    traverseLevelOrder(levelTransform: (mesh: Mesh | Line, levelIdx: number) => void) {
-        // Run transform on level nodes.
+    traverseLevelOrder(levelTransform: (mesh: TreeNode | Line, levelIdx: number) => void) {
         this.levels.forEach((level, idx) =>
-            level.forEach((mesh) => {
-                levelTransform(mesh, idx)
+            level.forEach((node) => {
+                levelTransform(node, idx)
             }),
         )
 
-        // Run transform on level node connectors.
         this.connectorLevels.forEach((level, idx) =>
             level.forEach((line) => {
                 levelTransform(line, idx)

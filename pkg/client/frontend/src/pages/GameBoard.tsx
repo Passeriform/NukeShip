@@ -3,7 +3,7 @@ import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
-import { Mesh } from "three"
+import { Raycaster, Vector2 } from "three"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
@@ -12,7 +12,7 @@ import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType, ViewType } from "@constants/types"
 import { ArchControls } from "@game/archControls"
 import { TargetControls } from "@game/targetControls"
-import { Tree } from "@game/tree"
+import { Tree, TreeNode } from "@game/tree"
 import { boundsFromObjects } from "@utility/bounds"
 import { createOrthographicCamera, createPerspectiveCamera } from "@utility/camera"
 import { createLighting } from "@utility/lighting"
@@ -43,18 +43,60 @@ const GameBoard: VoidComponent = () => {
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
 
     const archControls = new ArchControls(camera)
-    const targetControls = new TargetControls([], camera)
+    const targetControls = new TargetControls([], camera, (mesh) => mesh.name === TreeNode.MESH_NAME)
 
     const tweenGroup = new TweenGroup()
 
     const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
     const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
 
+    const raycaster = new Raycaster()
+    let lastHoveredNode: TreeNode | undefined
+
     const [view, setView] = createSignal<ViewType>(ViewType.ELEVATION)
     const [focus, setFocus] = createSignal<FocusType>(FocusType.NONE)
 
     const disableContextMenu = (event: MouseEvent) => {
         event.preventDefault()
+    }
+
+    const handleNodeHover = (event: MouseEvent) => {
+        raycaster.setFromCamera(
+            new Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1),
+            camera,
+        )
+
+        const intersects = raycaster.intersectObjects(
+            {
+                [FocusType.NONE]: [],
+                [FocusType.SELF]: [selfFsTree],
+                [FocusType.OPPONENT]: [opponentFsTree],
+            }[focus()],
+            true,
+        )
+
+        // TODO: Change isMesh check to actual isTreeNode check.
+        const [matched] = intersects
+            .map((intersection) => intersection.object)
+            .filter((mesh) => mesh.name === TreeNode.MESH_NAME)
+            .map((obj) => obj as unknown as TreeNode)
+
+        if (!matched) {
+            if (lastHoveredNode) {
+                lastHoveredNode.glow(false, tweenGroup)
+                lastHoveredNode = undefined
+            }
+            return
+        }
+
+        if (matched !== lastHoveredNode) {
+            if (lastHoveredNode) {
+                lastHoveredNode.glow(false, tweenGroup)
+            }
+            lastHoveredNode = matched
+        }
+
+        matched.glow(true, tweenGroup)
     }
 
     const draw = (time: number = 0) => {
@@ -92,19 +134,22 @@ const GameBoard: VoidComponent = () => {
 
         // Controls
         archControls.addEventListener("drill", (event) =>
-            [selfFsTree, opponentFsTree].forEach((tree) => {
-                tree.traverseLevelOrder((mesh, levelIdx) => {
+            [selfFsTree, opponentFsTree].forEach((tree) =>
+                tree.traverseLevelOrder((mesh, levelIdx) =>
                     tweenOpacity(
                         tweenGroup,
                         mesh,
                         event.historyIdx === -1 ? 1 : PLAN_MATCH_OPACITY_MAP[Math.sign(event.historyIdx - levelIdx)],
-                    )
-                })
-            }),
+                    ),
+                ),
+            ),
         )
         targetControls.addEventListener("select", (event) => {
-            tweenOpacity(event.tweenGroup, event.intersect as unknown as Mesh, 1)
+            tweenOpacity(event.tweenGroup, event.intersect as unknown as TreeNode, 1)
         })
+
+        // Node Hover
+        window.addEventListener("mousemove", handleNodeHover)
 
         // Disable context menu
         window.addEventListener("contextmenu", disableContextMenu)
@@ -120,8 +165,8 @@ const GameBoard: VoidComponent = () => {
         // Set position and rotation for NONE focus.
         if (focus() === FocusType.NONE) {
             setView(ViewType.ELEVATION)
-            selfFsTree.traverseLevelOrder((mesh) => tweenOpacity(tweenGroup, mesh, 1))
-            opponentFsTree.traverseLevelOrder((mesh) => tweenOpacity(tweenGroup, mesh, 1))
+            selfFsTree.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
+            opponentFsTree.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
             return
         }
 
@@ -129,12 +174,12 @@ const GameBoard: VoidComponent = () => {
 
         switch (view()) {
             case ViewType.ELEVATION: {
-                targetTree.traverseLevelOrder((mesh) => tweenOpacity(tweenGroup, mesh, 1))
+                targetTree.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
                 return
             }
             case ViewType.PLAN: {
-                targetTree.traverseLevelOrder((mesh, levelIdx) =>
-                    tweenOpacity(tweenGroup, mesh, PLAN_MATCH_OPACITY_MAP[Math.sign(0 - levelIdx)]),
+                targetTree.traverseLevelOrder((node, levelIdx) =>
+                    tweenOpacity(tweenGroup, node, PLAN_MATCH_OPACITY_MAP[Math.sign(0 - levelIdx)]),
                 )
                 return
             }

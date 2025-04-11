@@ -105,9 +105,7 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
 
         const intersects = this.raycaster.intersectObjects(this.targets, true)
 
-        const [matched] = intersects
-            .map((intersection) => intersection.object)
-            .filter((object) => "isMesh" in object && object.isMesh)
+        const [matched] = intersects.map((intersection) => intersection.object).filter(this.matcher)
 
         if (!matched || matched === this._lastSelected) {
             return
@@ -143,12 +141,19 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
         this.history.push(tweenTarget)
         this.historyIdx = this.history.length - 1
 
+        this.dispatchEvent({
+            type: "select",
+            intersect: matched,
+            tweenGroup: this.tweenGroup,
+        })
+
         this.animate(tweenTarget)
     }
 
     constructor(
         private targets: Object3D[],
         public object: PerspectiveCamera | OrthographicCamera,
+        private matcher: (item: Object3D, index: number) => boolean = () => true,
         public domElement: HTMLElement | null = null,
     ) {
         super(object, domElement)
