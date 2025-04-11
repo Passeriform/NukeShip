@@ -9,6 +9,7 @@
             "@game/*": ["./src/game/*"],
             "@hooks/*": ["./src/hooks/*"],
             "@pages/*": ["./src/pages/*"],
+            "@shaders/*": ["./src/shaders/*"],
             "@utility/*": ["./src/utility/*"],
             "@wails/*": ["./wailsjs/*"]
         },

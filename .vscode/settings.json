@@ -30,6 +30,7 @@
         "Frameless",
         "Fugaz",
         "genproto",
+        "glsl",
         "GOARCH",
         "gochecknoglobals",
         "gocognit",

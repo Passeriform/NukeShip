@@ -1,12 +1,13 @@
 import path from "path"
 import { defineConfig } from "vite"
+import glsl from "vite-plugin-glsl"
 import solid from "vite-plugin-solid"
 
 export default defineConfig({
     build: {
         target: "esnext",
     },
-    plugins: [solid()],
+    plugins: [solid(), glsl()],
     resolve: {
         alias: {
             "@animations": path.resolve(__dirname, "./src/animations"),
@@ -16,6 +17,7 @@ export default defineConfig({
             "@game": path.resolve(__dirname, "./src/game"),
             "@hooks": path.resolve(__dirname, "./src/hooks"),
             "@pages": path.resolve(__dirname, "./src/pages"),
+            "@shaders": path.resolve(__dirname, "./src/shaders"),
             "@utility": path.resolve(__dirname, "./src/utility"),
             "@wails": path.resolve(__dirname, "./wailsjs"),
         },
