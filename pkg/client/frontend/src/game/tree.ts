@@ -1,5 +1,3 @@
-import nodeFragmentShader from "@shaders/node.frag.glsl?raw"
-import nodeVertexShader from "@shaders/node.vert.glsl?raw"
 import { Group as TweenGroup } from "@tweenjs/tween.js"
 import {
     Box3,
@@ -8,8 +6,8 @@ import {
     Line,
     LineBasicMaterial,
     Mesh,
+    MeshLambertMaterial,
     Group as ObjectGroup,
-    ShaderMaterial,
     SphereGeometry,
     Vector3,
 } from "three"
@@ -27,7 +25,7 @@ const DEPTH_OFFSET = 4
 const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
 
-export class TreeNode extends Mesh<SphereGeometry, ShaderMaterial> {
+export class TreeNode extends Mesh<SphereGeometry, MeshLambertMaterial> {
     private static NODE_GEOMETRY = new SphereGeometry(0.1, 64, 64)
     public static MESH_NAME = "TREE_NODE"
 
@@ -35,25 +33,12 @@ export class TreeNode extends Mesh<SphereGeometry, ShaderMaterial> {
 
     constructor(color: Color) {
         const geometry = TreeNode.NODE_GEOMETRY.clone()
-        const material = new ShaderMaterial({
-            vertexShader: nodeVertexShader,
-            fragmentShader: nodeFragmentShader,
-            uniforms: {
-                uBaseColor: { value: color },
-                uGlowColor: { value: new Color(0xffffff) },
-                uGlowIntensity: { value: 1.0 },
-                uGlowFalloff: { value: 4.0 },
-                uFresnelPower: { value: 2.0 },
-            },
-        })
+        const material = new MeshLambertMaterial({ color, transparent: true })
 
         super(geometry, material)
     }
 
-    glow(value: boolean, tweenGroup: TweenGroup) {
-        this.material.uniforms.uGlowIntensity.value = value ? 1.0 : 0.0
-        // Modify uniforms for glow
-    }
+    glow(value: boolean, tweenGroup: TweenGroup) {}
 }
 
 export class Tree extends Mesh {

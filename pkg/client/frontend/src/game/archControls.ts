@@ -34,7 +34,7 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
         }
 
         this.transitioning = true
-        tweenTransform(this.tweenGroup, this.object, tweenTarget, () => (this.transitioning = false))
+        tweenTransform(this.tweenGroup, this.object, tweenTarget, { onComplete: () => (this.transitioning = false) })
     }
 
     private updateToFitScreen() {
