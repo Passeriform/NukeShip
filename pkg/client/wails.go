@@ -21,9 +21,8 @@ var (
 
 	//go:embed frontend/src/assets/radioactive.svg
 	icon []byte
-)
 
-var (
+	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.
 	appStatesMapping = []struct {
 		Value  client.RoomState
 		TSName string
@@ -37,6 +36,7 @@ var (
 		{client.RoomStateRecovery, "RECOVERY"},
 	}
 
+	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.
 	eventsMapping = []struct {
 		Value  Event
 		TSName string
@@ -58,8 +58,8 @@ func RunApp(configCtx context.Context) {
 		OnStartup: func(wCtx context.Context) {
 			app.setAppContext(wCtx, configCtx)
 			app.initGrpcClients()
-			app.initStateMachines()
-			go app.connect()
+			app.initStateMachines(wCtx, configCtx)
+			go app.connect(wCtx, configCtx)
 		},
 		WindowStartState:                 options.Fullscreen,
 		Bind:                             []any{app},

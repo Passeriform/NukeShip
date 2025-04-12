@@ -16,7 +16,8 @@ const (
 	InitialDepth        = 0
 )
 
-var DefaultTreeGenIgnores = []string{
+//nolint:gochecknoglobals // Instantiating a var config array as const array is not supported. They must not be modified
+var DefaultTreeGenIgnores = [...]string{
 	"$Recycle.Bin",
 	"$RECYCLE.BIN",
 	"System Volume Information",
@@ -111,5 +112,7 @@ func NewFsTreeNode(label string, visibility pb.Visibility) *pb.FsTreeNode {
 func NewFsTree(root string, opts TreeGenOptions) pb.FsTree {
 	nodes := generateTree(root, opts, InitialDepth)
 
-	return pb.FsTree{Top: NewFsTreeNode(filepath.Base(root), pb.Visibility_VisibleSentinel).WithChildren(nodes)}
+	return pb.FsTree{
+		Top: NewFsTreeNode(filepath.Base(root), pb.Visibility_VisibleSentinel).WithChildren(nodes),
+	}
 }
