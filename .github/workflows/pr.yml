@@ -18,6 +18,21 @@ jobs:
               with:
                   go-version-file: ./go.mod
 
+            - name: Set up Protobuf
+              uses: arduino/setup-protoc@v3
+
+            - name: Install Protobuf-Go bindings generator
+              run: |
+                  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+                  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+            - name: Refresh protobuf definitions
+              working-directory: internal/pb
+              run: protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./*.proto
+
+            - name: Generate code
+              run: go generate -x ./...
+
             - name: Install dependencies
               run: go mod tidy
 
@@ -27,16 +42,11 @@ jobs:
                   mkdir -p dist
                   touch -f dist/ignore
 
-            # - name: Refresh protobuf definitions
-
-            - name: Generate code
-              run: go generate -x ./...
-
             - name: Run tests
               run: go test ./...
 
             - name: Lint code
-              uses: golangci/golangci-lint-action@v6
+              uses: golangci/golangci-lint-action@v7
               with:
                   version: latest
 
@@ -55,10 +65,23 @@ jobs:
               with:
                   go-version-file: ./go.mod
 
-            # - name: Refresh protobuf definitions
+            - name: Set up Protobuf
+              uses: arduino/setup-protoc@v3
+
+            - name: Install Protobuf-Go bindings generator
+              run: |
+                  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+                  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+            - name: Refresh protobuf definitions
+              working-directory: internal/pb
+              run: protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./*.proto
 
             - name: Generate code
               run: go generate -x ./...
+
+            - name: Install dependencies
+              run: go mod tidy
 
             - name: Build server
               working-directory: pkg/server
@@ -98,7 +121,17 @@ jobs:
               with:
                   go-version-file: ./go.mod
 
-            # - name: Refresh protobuf definitions
+            - name: Set up Protobuf
+              uses: arduino/setup-protoc@v3
+
+            - name: Install Protobuf-Go bindings generator
+              run: |
+                  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+                  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+            - name: Refresh protobuf definitions
+              working-directory: internal/pb
+              run: protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=. ./*.proto
 
             - name: Generate code
               run: go generate -x ./...
