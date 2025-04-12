@@ -7,8 +7,6 @@ import { getWorldPose } from "@utility/pureTransform"
 import { averageQuaternions } from "@utility/quaternion"
 import { tweenTransform } from "@utility/tween"
 
-const FIT_OFFSET = 1
-
 type TargetControlsEventMap = {
     select: {
         intersect: Object3D
@@ -31,6 +29,7 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
     private historyIdx: number
     private history: TweenTransform[]
     private transitioning: boolean
+    public cameraOffset: number
 
     private resetHistory() {
         this.history = this.history.splice(0, this.history.length)
@@ -117,7 +116,7 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
         // TODO: Make this reliant on getWorldQuaternion.
         const tweenTarget = {
             position: position
-                .add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(FIT_OFFSET))
+                .add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(this.cameraOffset))
                 .clone(),
             rotation: this.preloadedRotation.clone(),
         }
@@ -165,6 +164,7 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
         this.history = []
         this.historyIdx = -1
         this.transitioning = false
+        this.cameraOffset = 1
 
         this.connect()
         this.update()

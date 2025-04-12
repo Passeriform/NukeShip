@@ -26,6 +26,7 @@ const ARCH_CONTROLS_OFFSET = {
     [ViewType.ELEVATION]: 4,
     [ViewType.PLAN]: 2,
 }
+const TARGET_CONTROLS_OFFSET = 1
 
 const PLAN_MATCH_OPACITY_MAP: Record<number, number> = {
     [-1]: 0.2,
@@ -56,6 +57,9 @@ const GameBoard: VoidComponent = () => {
     const [view, setView] = createSignal<ViewType>(ViewType.ELEVATION)
     const [focus, setFocus] = createSignal<FocusType>(FocusType.NONE)
 
+    const getFocussedTree = () =>
+        (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
+
     const disableContextMenu = (event: MouseEvent) => {
         event.preventDefault()
     }
@@ -66,16 +70,13 @@ const GameBoard: VoidComponent = () => {
             camera,
         )
 
-        const intersects = raycaster.intersectObjects(
-            {
-                [FocusType.NONE]: [],
-                [FocusType.SELF]: [selfFsTree],
-                [FocusType.OPPONENT]: [opponentFsTree],
-            }[focus()],
-            true,
-        )
+        const targetTree = getFocussedTree()
+        if (!targetTree) {
+            return
+        }
 
-        // TODO: Change isMesh check to actual isTreeNode check.
+        const intersects = raycaster.intersectObjects([targetTree], true)
+
         const [matched] = intersects
             .map((intersection) => intersection.object)
             .filter((mesh) => mesh.name === TreeNode.MESH_NAME)
@@ -133,14 +134,14 @@ const GameBoard: VoidComponent = () => {
         opponentFsTree.recomputeBounds()
 
         // Controls
+        archControls.cameraOffset = ARCH_CONTROLS_OFFSET[view()]
+        targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
         archControls.addEventListener("drill", (event) =>
-            [selfFsTree, opponentFsTree].forEach((tree) =>
-                tree.traverseLevelOrder((mesh, levelIdx) =>
-                    tweenOpacity(
-                        tweenGroup,
-                        mesh,
-                        event.historyIdx === -1 ? 1 : PLAN_MATCH_OPACITY_MAP[Math.sign(event.historyIdx - levelIdx)],
-                    ),
+            getFocussedTree()?.traverseLevelOrder((mesh, levelIdx) =>
+                tweenOpacity(
+                    tweenGroup,
+                    mesh,
+                    event.historyIdx === -1 ? 1 : PLAN_MATCH_OPACITY_MAP[Math.sign(event.historyIdx - levelIdx)],
                 ),
             ),
         )
@@ -170,15 +171,13 @@ const GameBoard: VoidComponent = () => {
             return
         }
 
-        const targetTree = focus() === FocusType.SELF ? selfFsTree : opponentFsTree
-
         switch (view()) {
             case ViewType.ELEVATION: {
-                targetTree.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
+                getFocussedTree()?.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
                 return
             }
             case ViewType.PLAN: {
-                targetTree.traverseLevelOrder((node, levelIdx) =>
+                getFocussedTree()?.traverseLevelOrder((node, levelIdx) =>
                     tweenOpacity(tweenGroup, node, PLAN_MATCH_OPACITY_MAP[Math.sign(0 - levelIdx)]),
                 )
                 return
@@ -194,9 +193,12 @@ const GameBoard: VoidComponent = () => {
             return
         }
 
-        const targetTree = focus() === FocusType.SELF ? selfFsTree : opponentFsTree
-
         archControls.cameraOffset = ARCH_CONTROLS_OFFSET[view()]
+
+        const targetTree = getFocussedTree()
+        if (!targetTree) {
+            return
+        }
 
         // TODO: Preserve history for PLAN view when switching views.
         switch (view()) {
@@ -213,16 +215,9 @@ const GameBoard: VoidComponent = () => {
 
     // Handle target controls
     createEffect(() => {
-        if (focus() === FocusType.NONE) {
-            targetControls.enabled = false
-            targetControls.setTargets([selfFsTree, opponentFsTree])
-            return
-        }
-
-        const targetTree = focus() === FocusType.SELF ? selfFsTree : opponentFsTree
-
-        targetControls.enabled = true
-        targetControls.setTargets([targetTree])
+        const targetTree = getFocussedTree()
+        targetControls.setTargets(targetTree ? [targetTree] : [])
+        targetControls.enabled = focus() !== FocusType.NONE
     })
 
     onCleanup(() => {
