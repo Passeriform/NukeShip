@@ -35,6 +35,33 @@
             }
         },
         {
+            "label": "[Lint] Format frontend code",
+            "type": "shell",
+            "command": "npm",
+            "args": [
+                "run",
+                "lint:fix",
+            ],
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client/frontend"
+            }
+        },
+        {
+            "label": "[Lint] Format go code",
+            "type": "shell",
+            "command": "golangci-lint",
+            "args": [
+                "run",
+            ],
+            "problemMatcher": [
+                "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
             "label": "[Sanity] Ping Hosted gRPC server",
             "type": "shell",
             "command": "grpcurl",
@@ -162,7 +189,10 @@
                 "$go"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/server"
+                "cwd": "${workspaceFolder}/pkg/server",
+                "env": {
+                    "DEBUG_SKIP_ROOM": "${input:skipRoom}",
+                }
             },
             "isBackground": true,
             "dependsOrder": "sequence",
@@ -287,6 +317,16 @@
                 "localhost:50051"
             ],
             "default": "crazy-dania-passeriform-2c88993e.koyeb.app:443"
+        },
+        {
+            "id": "skipRoom",
+            "description": "[Debug] Skip room waiting",
+            "type": "pickString",
+            "options": [
+                "true",
+                "false",
+            ],
+            "default": "false"
         }
     ]
 }
