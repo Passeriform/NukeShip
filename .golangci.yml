@@ -3,6 +3,7 @@ linters:
   default: all
   disable:
     - godox
+    - funcorder
   settings:
     asasalint:
       use-builtin-exclusions: false
