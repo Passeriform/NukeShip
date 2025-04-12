@@ -9,18 +9,22 @@ import (
 )
 
 const (
-	ConnectionIDLength = 5
+	ConnectionIDLength        = 5
+	NormalModeRequiredPlayers = 2
+	SiegeModeRequiredPlayers  = 5
 )
 
 //nolint:gochecknoglobals // Holding a global map for rooms against wrapping struct.
 var roomMap = map[string]*Room{}
 
 type Room struct {
-	Clients map[string]*Connection
-	Game    game.Game
-	ID      string
+	Clients         map[string]*Connection
+	Game            *game.Game
+	ID              string
+	RequiredPlayers int
 }
 
+// TODO: Parameterize require players for siege mode.
 func NewRoom() (*Room, bool) {
 	roomID, err := randomstring.GenerateString(randomstring.GenerationOptions{
 		Length:           ConnectionIDLength,
@@ -38,8 +42,10 @@ func NewRoom() (*Room, bool) {
 	}
 
 	room = &Room{
-		ID:      roomID,
-		Clients: map[string]*Connection{},
+		ID:              roomID,
+		Game:            nil,
+		Clients:         map[string]*Connection{},
+		RequiredPlayers: NormalModeRequiredPlayers,
 	}
 
 	roomMap[roomID] = room

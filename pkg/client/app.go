@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 
@@ -26,6 +27,13 @@ import (
 const (
 	StateChangeEvent            Event = "srv:stateChange"
 	ServerConnectionChangeEvent Event = "srv:serverConnectionChange"
+
+	connMachineFireLogPattern string = "Cannot fire event %v to connection state machine: %v"
+	roomMachineFireLogPattern string = "Cannot fire event %v to room state machine: %v"
+
+	treeGenDepth           int = 8
+	treeGenWidth           int = 20
+	treeGenVisibilityDepth int = 8
 )
 
 type (
@@ -43,6 +51,7 @@ type WailsApp struct {
 	stateMachine client.RoomStateFSM
 }
 
+//nolint:fatcontext // Wails requires the context to be stored within the app struct to provide bindings.
 func (app *WailsApp) setAppContext(wailsCtx, configCtx context.Context) {
 	app.wailsCtx = wailsCtx
 	app.configCtx = configCtx
@@ -54,7 +63,7 @@ func (app *WailsApp) initGrpcClients() {
 	var creds credentials.TransportCredentials
 
 	if cCtx.EnableTLS {
-		// TODO: This TLS configuration is only for prototyping. Replace with proper 2-way TLS configuration.
+		//nolint:gosec // TODO: This configuration is only for prototyping. Replace with proper 2-way TLS configuration.
 		creds = credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})
 	} else {
 		creds = insecure.NewCredentials()
@@ -72,80 +81,112 @@ func (app *WailsApp) initGrpcClients() {
 	app.RoomClient, app.GameClient = pb.NewRoomServiceClient(conn), pb.NewGameServiceClient(conn)
 }
 
-func (app *WailsApp) initStateMachines() {
-	app.stateMachine = client.NewRoomStateFSM(func(t statemachine.Transition) {
-		if t.To() == client.RoomStateInGame.String() {
+func (app *WailsApp) initStateMachines(wailsCtx, configCtx context.Context) {
+	app.stateMachine = client.NewRoomStateFSM(func(transition statemachine.Transition) {
+		if transition.To() == client.RoomStateInGame.String() {
 			tree := game.NewFsTree("C:\\Windows", game.TreeGenOptions{
-				Ignore:          game.DefaultTreeGenIgnores,
-				VisibilityDepth: 8,
-				Depth:           8,
-				Width:           20,
+				Ignore:          game.DefaultTreeGenIgnores[:],
+				VisibilityDepth: treeGenVisibilityDepth,
+				Depth:           treeGenDepth,
+				Width:           treeGenWidth,
 			})
 
-			app.publishGameState(&tree)
+			app.publishGameState(wailsCtx, configCtx, &tree)
 		}
 
-		runtime.EventsEmit(app.wailsCtx, string(StateChangeEvent), client.MustParseRoomState(t.To()))
+		runtime.EventsEmit(
+			wailsCtx,
+			string(StateChangeEvent),
+			client.MustParseRoomState(transition.To()),
+		)
 	})
 
 	app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
-		runtime.EventsEmit(app.wailsCtx, string(ServerConnectionChangeEvent), t.To() == client.ConnectionStateConnected.String())
+		runtime.EventsEmit(
+			wailsCtx,
+			string(ServerConnectionChangeEvent),
+			t.To() == client.ConnectionStateConnected.String(),
+		)
 	})
 }
 
-func (app *WailsApp) publishGameState(tree *pb.FsTree) {
-	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+func (app *WailsApp) publishGameState(wailsCtx, configCtx context.Context, tree *pb.FsTree) {
+	unaryCtx, cancel := client.NewUnaryContext(configCtx)
 	defer cancel()
 
 	_, err := app.GameClient.AddPlayer(unaryCtx, &pb.AddPlayerRequest{Tree: tree})
 	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Could not publish player state: %v", err)
+		runtime.LogErrorf(wailsCtx, "Could not publish player state: %v", err)
 		return
 	}
 
-	runtime.LogDebug(app.wailsCtx, "Published player state")
+	runtime.LogDebug(wailsCtx, "Published player state")
 }
 
 // TODO: Add reconnection logic to recover streaming messages.
 
-func (app *WailsApp) connect() {
+//nolint:gocognit,revive // This method is currently segregated on concerns and readable.
+func (app *WailsApp) connect(wailsCtx, configCtx context.Context) {
 	defer func() {
-		app.connMachine.Fire(client.LocalEventDisconnected.String())
+		if err := app.connMachine.Fire(client.LocalEventDisconnected.String()); err != nil {
+			runtime.LogErrorf(
+				wailsCtx,
+				connMachineFireLogPattern,
+				client.LocalEventDisconnected.String(),
+				err,
+			)
+		}
 	}()
 
-	streamCtx, cancel := client.NewStreamContext(app.configCtx)
+	streamCtx, cancel := client.NewStreamContext(configCtx)
 	defer cancel()
 
 	streamClient, err := app.RoomClient.SubscribeMessages(streamCtx, &pb.SubscribeMessagesRequest{})
 	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Subscription to server messages failed: %v", err)
+		runtime.LogErrorf(wailsCtx, "Subscription to server messages failed: %v", err)
 		return
 	}
 
-	app.connMachine.Fire(client.LocalEventConnected.String())
+	if err := app.connMachine.Fire(client.LocalEventConnected.String()); err != nil {
+		runtime.LogErrorf(
+			wailsCtx,
+			connMachineFireLogPattern,
+			client.LocalEventConnected.String(),
+			err,
+		)
+	}
 
 	for {
 		update, err := streamClient.Recv()
 		if errors.Is(err, io.EOF) {
-			runtime.LogError(app.wailsCtx, "Stopped receiving updates from server.")
+			runtime.LogError(wailsCtx, "Stopped receiving updates from server.")
 			return
 		}
 
 		if err != nil {
-			runtime.LogErrorf(app.wailsCtx, "Received error frame: %v", err)
+			runtime.LogErrorf(wailsCtx, "Received error frame: %v", err)
 			return
 		}
 
-		app.stateMachine.Fire(update.GetType().String())
+		if err := app.stateMachine.Fire(update.GetType().String()); err != nil {
+			runtime.LogErrorf(
+				wailsCtx,
+				roomMachineFireLogPattern,
+				update.GetType().String(),
+				err,
+			)
+		}
 	}
 }
 
 func newWailsApp() *WailsApp {
 	app := &WailsApp{
-		wailsCtx:   nil,
-		configCtx:  nil,
-		RoomClient: nil,
-		GameClient: nil,
+		wailsCtx:     nil,
+		configCtx:    nil,
+		RoomClient:   nil,
+		GameClient:   nil,
+		connMachine:  client.ConnectionFSM{Machine: nil},
+		stateMachine: client.RoomStateFSM{Machine: nil},
 	}
 
 	return app
@@ -167,22 +208,37 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	resp, err := app.RoomClient.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
-		return false, err
+		return false, fmt.Errorf("could not update ready state: %w", err)
 	}
 
 	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
 		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
-		return false, nil
+		return false, fmt.Errorf("unable to ready as the room is invalid: %w", err)
 	}
 
 	runtime.LogDebugf(app.wailsCtx, "Updated ready state: %t", ready)
 
 	if !ready {
-		app.stateMachine.Fire(client.LocalEventSelfRevertedReady.String())
+		if err := app.stateMachine.Fire(client.LocalEventSelfRevertedReady.String()); err != nil {
+			runtime.LogErrorf(
+				app.wailsCtx,
+				roomMachineFireLogPattern,
+				client.LocalEventSelfRevertedReady.String(),
+				err,
+			)
+		}
+
 		return resp.GetStatus() == pb.ResponseStatus_Ok, nil
 	}
 
-	app.stateMachine.Fire(client.LocalEventSelfReady.String())
+	if err := app.stateMachine.Fire(client.LocalEventSelfReady.String()); err != nil {
+		runtime.LogErrorf(
+			app.wailsCtx,
+			roomMachineFireLogPattern,
+			client.LocalEventSelfReady.String(),
+			err,
+		)
+	}
 
 	return resp.GetStatus() == pb.ResponseStatus_Ok, nil
 }
@@ -194,12 +250,19 @@ func (app *WailsApp) CreateRoom() (string, error) {
 	resp, err := app.RoomClient.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not create room: %v", err)
-		return "", err
+		return "", fmt.Errorf("could not create room: %w", err)
 	}
 
 	runtime.LogDebugf(app.wailsCtx, "Room created: %s", resp.GetRoomId())
 
-	app.stateMachine.Fire(client.LocalEventSelfJoined.String())
+	if err := app.stateMachine.Fire(client.LocalEventSelfJoined.String()); err != nil {
+		runtime.LogErrorf(
+			app.wailsCtx,
+			roomMachineFireLogPattern,
+			client.LocalEventSelfJoined.String(),
+			err,
+		)
+	}
 
 	return resp.GetRoomId(), nil
 }
@@ -216,7 +279,14 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 
 	runtime.LogDebugf(app.wailsCtx, "Room joined status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(client.LocalEventSelfJoined.String())
+	if err := app.stateMachine.Fire(client.LocalEventSelfJoined.String()); err != nil {
+		runtime.LogErrorf(
+			app.wailsCtx,
+			roomMachineFireLogPattern,
+			client.LocalEventSelfJoined.String(),
+			err,
+		)
+	}
 
 	return resp.GetStatus() == pb.ResponseStatus_Ok
 }
@@ -233,7 +303,14 @@ func (app *WailsApp) LeaveRoom() bool {
 
 	runtime.LogDebugf(app.wailsCtx, "Room left status: %s", resp.GetStatus().String())
 
-	app.stateMachine.Fire(client.LocalEventSelfLeft.String())
+	if err := app.stateMachine.Fire(client.LocalEventSelfLeft.String()); err != nil {
+		runtime.LogErrorf(
+			app.wailsCtx,
+			roomMachineFireLogPattern,
+			client.LocalEventSelfLeft.String(),
+			err,
+		)
+	}
 
 	return resp.GetStatus() == pb.ResponseStatus_Ok
 }

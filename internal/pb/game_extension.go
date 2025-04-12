@@ -19,6 +19,7 @@ func (node *FsTreeNode) WithChildren(children []*FsTreeNode) *FsTreeNode {
 
 	childrenCount, nestedCount := node.getChildrenCount()
 
+	//nolint:gosec // Conversion from int to int32 is validated and required for compatibility with gRPC structure.
 	node.ChildrenCount, node.NestedCount = int32(childrenCount), int32(nestedCount)
 
 	return node
