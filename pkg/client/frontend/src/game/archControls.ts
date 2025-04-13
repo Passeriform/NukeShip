@@ -3,7 +3,7 @@ import { BaseEvent, Box3, Controls, MathUtils, OrthographicCamera, PerspectiveCa
 import { Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
 import { unpackBounds } from "@utility/bounds"
-import { isOrthographicCamera, isPerspectiveCamera, lookAtFromQuaternion } from "@utility/camera"
+import { lookAtFromQuaternion } from "@utility/camera"
 import { tweenTransform } from "@utility/tween"
 
 // TODO: Animate camera position along a pivot arc when rotating, instead of linear path.
@@ -21,7 +21,8 @@ export type DrillEvent = BaseEvent<"drill"> & ArchControlsEventMap["drill"]
 // TODO: Accept tweenGroup from caller
 
 export class ArchControls extends Controls<ArchControlsEventMap> {
-    private poses: [Box3[], Quaternion]
+    private boundSet: Box3[]
+    private preloadedRotation: Quaternion
     private tweenGroup: TweenGroup
     private transitioning: boolean
     private history: TweenTransform[]
@@ -38,39 +39,23 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
     }
 
     private updateToFitScreen() {
-        this.history = this.poses[0].map((pose) => {
-            const [poseCenter, poseSize] = unpackBounds(pose)
+        this.history = this.boundSet.map((pose) => {
+            const [center, size] = unpackBounds(pose)
 
-            if (isPerspectiveCamera(this.object)) {
-                const heightToFit =
-                    poseSize.x / poseSize.y < this.object.aspect ? poseSize.y : poseSize.x / this.object.aspect
-                const cameraDistance =
-                    (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + this.cameraOffset
+            const heightToFit = size.x / size.y < this.object.aspect ? size.y : size.x / this.object.aspect
+            const cameraDistance =
+                (heightToFit * 0.5) / Math.tan(this.object.fov * MathUtils.DEG2RAD * 0.5) + this.cameraOffset
 
-                const rotation = lookAtFromQuaternion(this.object, this.poses[1])
-                const position = poseCenter
-                    .add(Z_AXIS.clone().applyQuaternion(rotation).multiplyScalar(cameraDistance))
-                    .clone()
+            const rotation = lookAtFromQuaternion(this.object, this.preloadedRotation)
+            const position = center.add(Z_AXIS.clone().applyQuaternion(rotation).multiplyScalar(cameraDistance)).clone()
 
-                return { position, rotation }
-            } else {
-                throw Error("Orthographic camera object fitting is not implemented yet.")
-            }
+            return { position, rotation }
         })
     }
 
     // TODO: Fix resize recalculating the camera position if snapControls is enabled.
     private onResize() {
-        if (isPerspectiveCamera(this.object)) {
-            this.object.aspect = window.innerWidth / window.innerHeight
-        } else if (isOrthographicCamera(this.object)) {
-            const aspect = window.innerWidth / window.innerHeight
-            const inferredHalfFrustumSize = this.object.top
-            this.object.left = -inferredHalfFrustumSize * aspect
-            this.object.right = inferredHalfFrustumSize * aspect
-            this.object.top = inferredHalfFrustumSize
-            this.object.bottom = -inferredHalfFrustumSize
-        }
+        this.object.aspect = window.innerWidth / window.innerHeight
 
         this.object.updateProjectionMatrix()
 
@@ -106,12 +91,17 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
     }
 
     constructor(
-        public object: PerspectiveCamera | OrthographicCamera,
+        public object: PerspectiveCamera,
         public domElement: HTMLElement | null = null,
     ) {
+        if ("isOrthographicCamera" in object && (object as unknown as OrthographicCamera).isOrthographicCamera) {
+            throw Error("Arch controls currently only works for perspective camera.")
+        }
+
         super(object, domElement)
 
-        this.poses = [[new Box3()], new Quaternion()]
+        this.boundSet = []
+        this.preloadedRotation = new Quaternion()
         this.tweenGroup = new TweenGroup()
         this.cameraOffset = 4
         this.transitioning = false
@@ -127,8 +117,9 @@ export class ArchControls extends Controls<ArchControlsEventMap> {
         document.addEventListener("wheel", (event) => this.onMouseWheel(event))
     }
 
-    setPoses(poses: [Box3[], Quaternion]) {
-        this.poses = poses
+    setPoses(boundSet: Box3[], rotation: Quaternion) {
+        this.preloadedRotation = rotation
+        this.boundSet = boundSet
 
         this.historyIdx = 0
 

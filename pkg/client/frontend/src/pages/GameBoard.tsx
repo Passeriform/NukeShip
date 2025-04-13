@@ -189,7 +189,7 @@ const GameBoard: VoidComponent = () => {
     createEffect(() => {
         if (focus() === FocusType.NONE) {
             archControls.cameraOffset = ARCH_CONTROLS_OFFSET[ViewType.ELEVATION]
-            archControls.setPoses([[boundsFromObjects(selfFsTree, opponentFsTree)], ELEVATION_FORWARD_QUATERNION])
+            archControls.setPoses([boundsFromObjects(selfFsTree, opponentFsTree)], ELEVATION_FORWARD_QUATERNION)
             return
         }
 
@@ -203,11 +203,11 @@ const GameBoard: VoidComponent = () => {
         // TODO: Preserve history for PLAN view when switching views.
         switch (view()) {
             case ViewType.ELEVATION: {
-                archControls.setPoses([[boundsFromObjects(targetTree)], ELEVATION_FORWARD_QUATERNION])
+                archControls.setPoses([boundsFromObjects(targetTree)], ELEVATION_FORWARD_QUATERNION)
                 return
             }
             case ViewType.PLAN: {
-                archControls.setPoses([targetTree.levelBounds, targetTree.quaternion.clone()])
+                archControls.setPoses(targetTree.levelBounds, targetTree.quaternion.clone())
                 return
             }
         }
