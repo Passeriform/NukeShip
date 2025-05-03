@@ -1,10 +1,10 @@
 /* @refresh reload */
 import "@thisbeyond/solid-select/style.css"
 import { render } from "solid-js/web"
-import App from "./App"
+import GameBoard from "@pages/GameBoard"
 import "./assets/stylesheets/dropdown-overrides.css"
 import "./index.css"
 
 const root = document.getElementById("root")
 
-render(() => <App />, root!)
+render(() => <GameBoard />, root!)

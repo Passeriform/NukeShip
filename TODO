@@ -12,6 +12,8 @@ Line of action
     Lint
         ☐ Fix all linter issues
         ☐ Disable unused lints (remove if default satisfies)
+        ☐ Update README for frontend and move frontend to another repo
+        ☐ Make taskfile to shim frontend for go to run tests without building using Wails. Remove the step from CI pipeline
     Refactors
         ☐ Migrate to data-driven approach
         ☐ Benchmark performance for room and connection against direct data storage instead of using pointers
