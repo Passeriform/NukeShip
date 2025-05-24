@@ -1,31 +1,33 @@
-import { Group as TweenGroup } from "@tweenjs/tween.js"
-import { Controls, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion, Raycaster, Vector2 } from "three"
+import { Easing, Tween, Group as TweenGroup } from "@tweenjs/tween.js"
+import { Controls, Event, Mesh, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion } from "three"
 import { ELEVATION_FORWARD_QUATERNION, Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
 import { lookAtFromQuaternion } from "@utility/camera"
 import { getWorldPose } from "@utility/pureTransform"
 import { averageQuaternions } from "@utility/quaternion"
-import { tweenTransform } from "@utility/tween"
 
 type TargetControlsEventMap = {
     select: {
-        intersect: Object3D
+        intersect: Mesh
         tweenGroup: TweenGroup
     }
     deselect: {
         tweenGroup: TweenGroup
     }
+    change: {}
 }
+
+export type TargetControlsSelectEvent = TargetControlsEventMap["select"] & Event<"select", TargetControls>
+export type TargetControlsDeselectEvent = TargetControlsEventMap["deselect"] & Event<"deselect", TargetControls>
+export type TargetControlsChangeEvent = TargetControlsEventMap["change"] & Event<"change", TargetControls>
 
 // TODO: Remove usage of private temporary variables, instead use immutable utilities.
 // TODO: Rework according to archControls usage.
 
 export class TargetControls extends Controls<TargetControlsEventMap> {
     private _lastSelected: Object3D | undefined
-    private pointer: Vector2
     private preloadedRotation: Quaternion
     private tweenGroup: TweenGroup
-    private raycaster: Raycaster
     private historyIdx: number
     private history: TweenTransform[]
     private transitioning: boolean
@@ -36,25 +38,32 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
         this.historyIdx = -1
     }
 
-    private loadRotation() {
-        const rotations = this.targets.map((target) => getWorldPose(target)[1])
+    private loadRotation(interactables: Object3D[]) {
+        const rotations = interactables.map((target) => getWorldPose(target)[1])
         this.preloadedRotation = averageQuaternions(...rotations)
-        this.preloadedRotation.slerp(lookAtFromQuaternion(this.object, ELEVATION_FORWARD_QUATERNION.clone()), 0.5)
+        this.preloadedRotation.slerp(lookAtFromQuaternion(this.object, ELEVATION_FORWARD_QUATERNION), 0.5)
     }
 
     private animate(tweenTarget: TweenTransform) {
         this.transitioning = true
-        this.tweenGroup.removeAll()
-        tweenTransform(this.tweenGroup, this.object, tweenTarget, { onComplete: () => (this.transitioning = false) })
-    }
 
-    private onMouseMove(event: MouseEvent) {
-        if (!this.enabled) {
-            return
-        }
+        const qFrom = this.object.quaternion.clone()
+        const qTo = tweenTarget.rotation.normalize()
 
-        this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1
-        this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
+        this.tweenGroup.add(
+            new Tween({ position: this.object.position.clone(), time: 0 })
+                .to({ position: tweenTarget.position, time: 1 }, 400)
+                .easing(Easing.Cubic.InOut)
+                .onUpdate(({ position, time }) => {
+                    this.dispatchEvent({ type: "change" })
+                    this.object.position.copy(position)
+                    this.object.quaternion.slerpQuaternions(qFrom, qTo, time)
+                })
+                .onComplete(() => {
+                    this.transitioning = false
+                })
+                .start(),
+        )
     }
 
     private onMouseWheel(event: WheelEvent) {
@@ -75,7 +84,7 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
             this.historyIdx--
         }
 
-        this.animate(this.history[this.historyIdx])
+        this.animate(this.history[this.historyIdx]!)
     }
 
     private onMouseDown(event: MouseEvent) {
@@ -87,7 +96,7 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
 
         if (event.button === 2) {
             if (this.history.length) {
-                this.animate(this.history[0])
+                this.animate(this.history[0]!)
             }
 
             this.dispatchEvent({
@@ -96,22 +105,40 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
             })
 
             this.resetHistory()
+        }
+    }
 
+    constructor(
+        public override object: PerspectiveCamera | OrthographicCamera,
+        public override domElement: HTMLElement | null = null,
+    ) {
+        super(object, domElement)
+
+        this.preloadedRotation = new Quaternion()
+        this.tweenGroup = new TweenGroup()
+        this.history = []
+        this.historyIdx = -1
+        this.transitioning = false
+        this.cameraOffset = 1
+
+        if (domElement) {
+            this.connect(domElement)
+        }
+        this.update()
+    }
+
+    override connect(element: HTMLElement) {
+        element.addEventListener("mousedown", (event) => this.onMouseDown(event))
+        element.addEventListener("wheel", (event) => this.onMouseWheel(event))
+    }
+
+    pushTarget(target: Mesh) {
+        if (target === this._lastSelected) {
             return
         }
 
-        this.raycaster.setFromCamera(this.pointer, this.object)
-
-        const intersects = this.raycaster.intersectObjects(this.targets, true)
-
-        const [matched] = intersects.map((intersection) => intersection.object).filter(this.matcher)
-
-        if (!matched || matched === this._lastSelected) {
-            return
-        }
-
-        this._lastSelected = matched
-        const [position] = getWorldPose(matched)
+        this._lastSelected = target
+        const [position] = getWorldPose(target)
 
         // TODO: Make this reliant on getWorldQuaternion.
         const tweenTarget = {
@@ -132,7 +159,7 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
 
             this.dispatchEvent({
                 type: "select",
-                intersect: matched,
+                intersect: target,
                 tweenGroup: this.tweenGroup,
             })
         }
@@ -142,53 +169,22 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
 
         this.dispatchEvent({
             type: "select",
-            intersect: matched,
+            intersect: target,
             tweenGroup: this.tweenGroup,
         })
 
         this.animate(tweenTarget)
     }
 
-    constructor(
-        private targets: Object3D[],
-        public object: PerspectiveCamera | OrthographicCamera,
-        private matcher: (item: Object3D, index: number) => boolean = () => true,
-        public domElement: HTMLElement | null = null,
-    ) {
-        super(object, domElement)
-
-        this.pointer = new Vector2()
-        this.preloadedRotation = new Quaternion()
-        this.tweenGroup = new TweenGroup()
-        this.raycaster = new Raycaster()
-        this.history = []
-        this.historyIdx = -1
-        this.transitioning = false
-        this.cameraOffset = 1
-
-        this.connect()
-        this.update()
-    }
-
-    connect() {
-        document.addEventListener("mousemove", (event) => this.onMouseMove(event))
-        document.addEventListener("mousedown", (event) => this.onMouseDown(event))
-        document.addEventListener("wheel", (event) => this.onMouseWheel(event))
-    }
-
-    setTargets(targets: Object3D[]) {
-        if (!targets.length) {
-            throw Error("At least one target is required to be assigned for target controls.")
-        }
-
-        this.targets = targets
-
+    setInteractables(interactables: Object3D[]) {
         this.resetHistory()
 
-        this.loadRotation()
+        if (interactables.length) {
+            this.loadRotation(interactables)
+        }
     }
 
-    update(time?: number) {
+    override update(time?: number) {
         this.tweenGroup.update(time)
     }
 

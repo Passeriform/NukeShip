@@ -44,7 +44,7 @@ const GameBoard: VoidComponent = () => {
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
 
     const archControls = new ArchControls(camera)
-    const targetControls = new TargetControls([], camera, (mesh) => mesh.name === TreeNode.MESH_NAME)
+    const targetControls = new TargetControls(camera, renderer.domElement)
 
     const tweenGroup = new TweenGroup()
 
@@ -100,6 +100,16 @@ const GameBoard: VoidComponent = () => {
         matched.glow(true, tweenGroup)
     }
 
+    const handleNodeClick = (event: MouseEvent) => {
+        const matched = getIntersectedMesh(event)
+
+        if (!matched) {
+            return
+        }
+
+        targetControls.pushTarget(matched)
+    }
+
     const draw = (time: number = 0) => {
         archControls.update(time)
         targetControls.update(time)
@@ -135,7 +145,6 @@ const GameBoard: VoidComponent = () => {
 
         // Controls
         archControls.cameraOffset = ARCH_CONTROLS_OFFSET[view()]
-        targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
         archControls.addEventListener("drill", (event) =>
             getFocussedTree()?.traverseLevelOrder((mesh, levelIdx) =>
                 tweenOpacity(
@@ -145,12 +154,31 @@ const GameBoard: VoidComponent = () => {
                 ),
             ),
         )
+
+        targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
         targetControls.addEventListener("select", (event) => {
-            tweenOpacity(event.tweenGroup, event.intersect as unknown as TreeNode, 1)
+            const targetTree = getFocussedTree()
+
+            targetTree?.traverse((obj) => {
+                if (!obj.userData["depth"]) {
+                    return
+                }
+
+                ;(obj as Sapling).setOpacity(tweenGroup, 0.8)
+            })
+            ;(event.intersect as Sapling).setOpacity(tweenGroup, 1)
+        })
+        targetControls.addEventListener("deselect", () => {
+            const targetTree = getFocussedTree()
+
+            targetTree?.resetOpacity(tweenGroup)
         })
 
         // Node Hover
         window.addEventListener("mousemove", handleNodeHover)
+
+        // Node selection
+        window.addEventListener("click", handleNodeClick)
 
         // Disable context menu
         window.addEventListener("contextmenu", disableContextMenu)
@@ -216,7 +244,7 @@ const GameBoard: VoidComponent = () => {
     // Handle target controls
     createEffect(() => {
         const targetTree = getFocussedTree()
-        targetControls.setTargets(targetTree ? [targetTree] : [])
+        targetControls.setInteractables(targetTree ? [targetTree] : [])
         targetControls.enabled = focus() !== FocusType.NONE
     })
 
