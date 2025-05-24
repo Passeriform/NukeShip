@@ -5,7 +5,7 @@ import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onM
 import { Match } from "solid-js"
 import toast from "solid-toast"
 import { PerspectiveCamera, Raycaster, Vector2 } from "three"
-import WebGL from "three/examples/jsm/capabilities/WebGL.js"
+import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
@@ -124,8 +124,8 @@ const GameBoard: VoidComponent = () => {
     }
 
     onMount(() => {
-        if (!WebGL.isWebGL2Available()) {
-            toast.error(`WebGL is not available ${WebGL.getWebGL2ErrorMessage()}`, { duration: -1 })
+        if (!isWebGL2Available()) {
+            toast.error(`WebGL is not available ${getWebGL2ErrorMessage()}`, { duration: -1 })
             return
         }
 
