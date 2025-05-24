@@ -1,5 +1,21 @@
 {
     "compilerOptions": {
+        /* Build properties */
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        "noEmit": true,
+        "isolatedModules": true,
+        "allowImportingTsExtensions": true,
+        "allowSyntheticDefaultImports": true,
+
+        /* Solid configuration */
+        "jsx": "preserve",
+        "jsxImportSource": "solid-js",
+        "types": ["vite/client"],
+
+        /* Path resolution */
         "baseUrl": ".",
         "paths": {
             "@animations/*": ["./src/animations/*"],
@@ -13,23 +29,32 @@
             "@utility/*": ["./src/utility/*"],
             "@wails/*": ["./wailsjs/*"]
         },
-        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-        "target": "ESNext",
-        "useDefineForClassFields": true,
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "allowSyntheticDefaultImports": true,
-        "isolatedModules": true,
-        "moduleDetection": "force",
-        "noEmit": true,
-        "esModuleInterop": true,
-        "jsx": "preserve",
-        "jsxImportSource": "solid-js",
+
+        /* Linting */
         "strict": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noImplicitReturns": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
         "noUncheckedSideEffectImports": true,
-        "types": ["vite/client"]
-    }
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "exactOptionalPropertyTypes": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+        "useUnknownInCatchVariables": true,
+        "noPropertyAccessFromIndexSignature": true,
+        // "verbatimModuleSyntax": true, // Enable later
+
+        /* DX */
+        "sourceMap": true,
+        "incremental": true,
+        "noErrorTruncation": true,
+        "pretty": true,
+        "skipLibCheck": true
+    },
+    "include": ["./src/**/*"]
 }
