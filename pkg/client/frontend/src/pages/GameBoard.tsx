@@ -4,7 +4,7 @@ import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { Match } from "solid-js"
 import toast from "solid-toast"
-import { Raycaster, Vector2 } from "three"
+import { PerspectiveCamera, Raycaster, Vector2 } from "three"
 import WebGL from "three/examples/jsm/capabilities/WebGL.js"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
@@ -12,12 +12,11 @@ import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType, ViewType } from "@constants/types"
 import { TargetControls } from "@game/targetControls"
-import { Tree, TreeNode } from "@game/tree"
+import { Sapling, Tree } from "@game/tree"
 import { boundsFromObjects } from "@utility/bounds"
 import { createOrthographicCamera, createPerspectiveCamera } from "@utility/camera"
 import { createLighting } from "@utility/lighting"
 import { createScene } from "@utility/scene"
-import { tweenOpacity } from "@utility/tween"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.
@@ -48,11 +47,11 @@ const GameBoard: VoidComponent = () => {
 
     const tweenGroup = new TweenGroup()
 
-    const selfFsTree = new Tree().setFromRawData(ExampleFS, 1)
-    const opponentFsTree = new Tree().setFromRawData(ExampleFS, 2)
+    const selfFsTree = new Tree(ExampleFS, 1)
+    const opponentFsTree = new Tree(ExampleFS, 2)
 
     const raycaster = new Raycaster()
-    let lastHoveredNode: TreeNode | undefined
+    let lastHoveredNode: Sapling | undefined
 
     const [view, setView] = createSignal<ViewType>(ViewType.ELEVATION)
     const [focus, setFocus] = createSignal<FocusType>(FocusType.NONE)
@@ -64,7 +63,7 @@ const GameBoard: VoidComponent = () => {
         event.preventDefault()
     }
 
-    const handleNodeHover = (event: MouseEvent) => {
+    const getIntersectedMesh = (event: MouseEvent) => {
         raycaster.setFromCamera(
             new Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1),
             camera,
@@ -79,8 +78,15 @@ const GameBoard: VoidComponent = () => {
 
         const [matched] = intersects
             .map((intersection) => intersection.object)
-            .filter((mesh) => mesh.name === TreeNode.MESH_NAME)
-            .map((obj) => obj as unknown as TreeNode)
+            .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
+            .filter((mesh) => mesh.name === Sapling.MESH_NAME)
+            .map((obj) => obj as unknown as Sapling)
+
+        return matched
+    }
+
+    const handleNodeHover = (event: MouseEvent) => {
+        const matched = getIntersectedMesh(event)
 
         if (!matched) {
             if (lastHoveredNode) {
@@ -140,8 +146,6 @@ const GameBoard: VoidComponent = () => {
         opponentFsTree.quaternion.copy(STATICS.OPPONENT.rotation)
         scene.add(selfFsTree)
         scene.add(opponentFsTree)
-        selfFsTree.recomputeBounds()
-        opponentFsTree.recomputeBounds()
 
         // Controls
         tourControls.cameraOffset = TOUR_CONTROLS_OFFSET[view()]
@@ -198,27 +202,28 @@ const GameBoard: VoidComponent = () => {
         })
     })
 
-    // Handle tree views
+    // Handle view setting for NONE focus.
     createEffect(() => {
         // Set position and rotation for NONE focus.
         if (focus() === FocusType.NONE) {
             setView(ViewType.ELEVATION)
-            selfFsTree.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
-            opponentFsTree.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
             return
         }
+    })
 
-        switch (view()) {
-            case ViewType.ELEVATION: {
-                getFocussedTree()?.traverseLevelOrder((node) => tweenOpacity(tweenGroup, node, 1))
-                return
-            }
-            case ViewType.PLAN: {
-                getFocussedTree()?.traverseLevelOrder((node, levelIdx) =>
-                    tweenOpacity(tweenGroup, node, PLAN_MATCH_OPACITY_MAP[Math.sign(0 - levelIdx)]),
-                )
-                return
-            }
+    // Handle tree node opacity
+    createEffect(() => {
+        if (view() === ViewType.PLAN) {
+            getFocussedTree()?.traverse((obj) => {
+                if (!obj.userData["depth"]) {
+                    return
+                }
+
+                ;(obj as Sapling).setOpacity(tweenGroup, PLAN_MATCH_OPACITY_MAP[Math.sign(1 - obj.userData["depth"])]!)
+            })
+        } else {
+            selfFsTree.resetOpacity(tweenGroup)
+            opponentFsTree.resetOpacity(tweenGroup)
         }
     })
 

@@ -1,6 +1,6 @@
-import { TreeRawData } from "@game/tree"
+import { RawDataStream } from "@game/tree"
 
-export const ExampleFS: TreeRawData = {
+export const ExampleFS: RawDataStream = {
     label: "C:",
     children: [
         {

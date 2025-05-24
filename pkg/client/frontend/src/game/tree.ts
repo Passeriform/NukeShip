@@ -1,185 +1,185 @@
-import { Group as TweenGroup } from "@tweenjs/tween.js"
+import { Easing, Tween, Group as TweenGroup } from "@tweenjs/tween.js"
 import {
-    Box3,
     BufferGeometry,
-    Color,
     Line,
     LineBasicMaterial,
+    Material,
     Mesh,
     MeshLambertMaterial,
-    Group as ObjectGroup,
     SphereGeometry,
     Vector3,
+    Vector3Tuple,
 } from "three"
-import { Z_AXIS } from "@constants/statics"
+import { boundsFromMeshGeometries } from "@utility/bounds"
 
 // TODO: Fixup according to client structure.
-export type TreeRawData = {
+export type RawDataStream = {
     label: string
-    children: TreeRawData[]
+    children: RawDataStream[]
 }
 
-// TODO: Add Node as a renderable class.
-
+const NODE_RADIUS = 0.1
+const BASE_APOTHEM_RADIUS = 8
 const DEPTH_OFFSET = 4
-const LATERAL_OFFSET = 2
 const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
 
-export class TreeNode extends Mesh<SphereGeometry, MeshLambertMaterial> {
-    private static NODE_GEOMETRY = new SphereGeometry(0.1, 64, 64)
-    public static MESH_NAME = "TREE_NODE"
+// TODO: Build the positions bottom-up instead, so that nodes and connectors don't overlap.
 
-    override name = TreeNode.MESH_NAME
-
-    constructor(color: Color) {
-        const geometry = TreeNode.NODE_GEOMETRY.clone()
-        const material = new MeshLambertMaterial({ color, transparent: true })
-
-        super(geometry, material)
+const getPositions = (childCount: number, depth: number) => {
+    if (childCount === 1) {
+        return [[0, 0, DEPTH_OFFSET / depth] as Vector3Tuple]
     }
 
-    glow(value: boolean, tweenGroup: TweenGroup) {}
+    const radius = BASE_APOTHEM_RADIUS / Math.pow(1.5, depth)
+    const angle = (2 * Math.PI) / childCount
+    const offset = -Math.PI / 4
+
+    return new Array(childCount).fill(0).map((_, idx) => {
+        const unitX = (radius * Math.cos(offset + angle * idx)) / (1 + Math.sin(angle / 2))
+        const unitY = (radius * Math.sin(offset + angle * idx)) / (1 + Math.sin(angle / 2))
+        const unitZ = DEPTH_OFFSET / depth
+
+        return [unitX, unitY, unitZ] as Vector3Tuple
+    })
 }
 
-export class Tree extends Mesh {
-    private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
+type SaplingCtorOptions = Partial<{
+    depth: number
+    colorSeed: number
+    position: Vector3Tuple
+    collector: Sapling[][]
+}>
 
-    private static splitChildrenEvenly(itemCount: number) {
-        if (itemCount === 1) {
-            return [[0, 0]] as const
-        } else if (itemCount === 2) {
-            return [
-                [-1, -1],
-                [1, 1],
-            ] as const
-        } else if (itemCount <= 4) {
-            return [
-                [-1, -1],
-                [-1, 1],
-                [1, -1],
-                [1, 1],
-            ] as const
-        } else if (itemCount <= 9) {
-            return [
-                [-1, -1],
-                [-1, 1],
-                [1, -1],
-                [1, 1],
-                [-1, 0],
-                [0, -1],
-                [0, 1],
-                [1, 0],
-                [0, 0],
-            ] as const
-        } else {
-            return [[0, 0]] as const
+type AddChildSaplingOptions = Required<Pick<SaplingCtorOptions, "depth" | "colorSeed">> & {
+    withConnectors?: boolean
+    collector?: Sapling[][]
+}
+
+export class Sapling extends Mesh {
+    private static NODE_GEOMETRY = new SphereGeometry(NODE_RADIUS, 64, 64)
+    private static NODE_MATERIALS = COLORS.map(
+        (color) => new MeshLambertMaterial({ color, emissiveIntensity: 20, transparent: true }),
+    )
+    private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
+    public static MESH_NAME = "TREE_NODE" as const
+
+    public connectors: Line[] = []
+
+    private populateChildSaplings(
+        root: RawDataStream,
+        { depth, colorSeed, withConnectors = false, collector = [] }: AddChildSaplingOptions,
+    ) {
+        if (!root.children.length) {
+            return
         }
+
+        const childPositions = getPositions(root.children.length, depth)
+
+        if (withConnectors) {
+            const connectorMaterial = Sapling.CONNECTOR_MATERIALS.at(colorSeed)?.clone()
+
+            this.connectors = childPositions.map((end) => {
+                const connectorGeometry = new BufferGeometry().setFromPoints([new Vector3(), new Vector3(...end)])
+                return new Line(connectorGeometry, connectorMaterial)
+            })
+
+            this.add(...this.connectors)
+        }
+
+        const subSaplings = root.children.map(
+            (child, idx) =>
+                new Sapling(child, {
+                    colorSeed: (colorSeed + 1) % COLORS.length,
+                    depth: depth + 1,
+                    position: childPositions[idx]!,
+                    collector,
+                }),
+        )
+
+        this.add(...subSaplings)
     }
 
     constructor(
-        private connectorLevels: Line[][] = [],
-        public levels: TreeNode[][] = [],
-        public levelBounds: Box3[] = [],
+        root: RawDataStream,
+        { depth = 1, colorSeed = 0, position = [0, 0, 0], collector = [] }: SaplingCtorOptions,
     ) {
-        super()
+        super(Sapling.NODE_GEOMETRY, Sapling.NODE_MATERIALS.at(colorSeed % COLORS.length)?.clone())
+
+        this.name = Sapling.MESH_NAME
+        this.position.fromArray(position)
+        this.userData["label"] = root.label
+        this.userData["depth"] = depth
+
+        if (collector.length < depth) {
+            collector?.push([this])
+        } else {
+            collector[depth - 1]!.push(this)
+        }
+
+        if (!root.children.length) {
+            return
+        }
+
+        this.populateChildSaplings(root, { depth, colorSeed, withConnectors: true, collector })
     }
 
-    private generateRenderNodes(node: TreeRawData, depth: number, colorSeed: number) {
-        // TODO: Use InstancedMesh with changing instanceColor instead of new meshes
-        const nodeMesh = new TreeNode(new Color(COLORS[(colorSeed + depth - 1) % COLORS.length]))
+    glow(_value: boolean, _tweenGroup: TweenGroup) {}
 
-        // Add level collection
-        if (this.levels.length < depth) {
-            this.levels.push([])
-        }
-        if (this.connectorLevels.length < depth) {
-            this.connectorLevels.push([])
-        }
-
-        // Add level meshes
-        this.levels[depth - 1].push(nodeMesh)
-
-        // Children meshes
-        const childrenGroup = new ObjectGroup()
-        const childrenMeshes = node.children.map(
-            (node): ObjectGroup => this.generateRenderNodes(node, depth + 1, colorSeed),
-        )
-
-        if (childrenMeshes.length) {
-            const positions = Tree.splitChildrenEvenly(childrenMeshes.length)
-            childrenMeshes.forEach((node, idx) =>
-                node.position.set(
-                    (positions[idx][0] * LATERAL_OFFSET) / depth,
-                    (positions[idx][1] * LATERAL_OFFSET) / depth,
-                    DEPTH_OFFSET / depth,
+    setOpacity(group: TweenGroup, to: number) {
+        ;[this.material, ...this.connectors.map((line) => line.material)]
+            .map((material) => material as Material)
+            .forEach((material) =>
+                group.add(
+                    new Tween({ opacity: (this.material as Material).opacity })
+                        .to({ opacity: to }, 400)
+                        .easing(Easing.Cubic.InOut)
+                        .onStart(() => {
+                            if (to !== 0) {
+                                this.userData["ignoreRaycast"] = false
+                            }
+                        })
+                        .onUpdate(({ opacity }) => {
+                            material.opacity = opacity
+                        })
+                        .onComplete(() => {
+                            if (to === 0) {
+                                this.userData["ignoreRaycast"] = true
+                            }
+                        })
+                        .start(),
                 ),
             )
-            childrenGroup.add(...childrenMeshes)
-        }
+    }
+}
 
-        // Connector meshes
-        const connectorGroup = new ObjectGroup()
-        const connectorMaterial = Tree.CONNECTOR_MATERIALS[(colorSeed + depth - 1) % COLORS.length].clone()
-        const connectorMeshes = childrenMeshes.map((node) => {
-            const connectorGeometry = new BufferGeometry().setFromPoints([nodeMesh.position, node.position])
-            const line = new Line(connectorGeometry, connectorMaterial)
-            return line
+export class Tree extends Sapling {
+    private positionCollection: Sapling[][] = []
+
+    constructor(root: RawDataStream, colorSeed = 0) {
+        const positionCollection: Sapling[][] = []
+
+        super(root, { colorSeed, collector: positionCollection })
+
+        this.userData["root"] = true
+
+        this.positionCollection = positionCollection
+    }
+
+    get levelBounds() {
+        return this.positionCollection.map((level) => boundsFromMeshGeometries(...level))
+    }
+
+    get levels() {
+        return this.positionCollection.length
+    }
+
+    resetOpacity(tweenGroup: TweenGroup) {
+        this.traverse((child) => {
+            if (child.name !== Sapling.MESH_NAME || !child.userData["depth"]) {
+                return
+            }
+
+            ;(child as Sapling).setOpacity(tweenGroup, 1)
         })
-        if (connectorMeshes.length) {
-            connectorGroup.add(...connectorMeshes)
-        }
-
-        // Add connector level meshes
-        this.connectorLevels[depth - 1].push(...connectorMeshes)
-
-        // Parent group
-        const parent = new ObjectGroup()
-        parent.add(nodeMesh, childrenGroup, connectorGroup)
-
-        return parent
-    }
-
-    get normal() {
-        return Z_AXIS.clone().applyQuaternion(this.quaternion)
-    }
-
-    get levelCount() {
-        return this.levels.length
-    }
-
-    traverseLevelOrder(levelTransform: (mesh: TreeNode | Line, levelIdx: number) => void) {
-        this.levels.forEach((level, idx) =>
-            level.forEach((node) => {
-                levelTransform(node, idx)
-            }),
-        )
-
-        this.connectorLevels.forEach((level, idx) =>
-            level.forEach((line) => {
-                levelTransform(line, idx)
-            }),
-        )
-    }
-
-    recomputeBounds() {
-        this.levelBounds = this.levels.map((level) => {
-            const boundingBox = new Box3()
-
-            const meshCenters = level.map((mesh) => {
-                const worldPosition = new Vector3()
-                mesh.getWorldPosition(worldPosition)
-                return worldPosition
-            })
-
-            boundingBox.setFromPoints(meshCenters)
-
-            return boundingBox
-        })
-    }
-
-    setFromRawData(data: TreeRawData, colorSeed = 0) {
-        this.add(this.generateRenderNodes(data, 1, colorSeed))
-        this.recomputeBounds()
-        return this
     }
 }
