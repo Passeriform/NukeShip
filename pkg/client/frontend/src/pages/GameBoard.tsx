@@ -1,3 +1,4 @@
+import TourControls from "@passeriform/three-tour-controls"
 import { useParams } from "@solidjs/router"
 import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, Switch, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
@@ -10,7 +11,6 @@ import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType, ViewType } from "@constants/types"
-import { ArchControls } from "@game/archControls"
 import { TargetControls } from "@game/targetControls"
 import { Tree, TreeNode } from "@game/tree"
 import { boundsFromObjects } from "@utility/bounds"
@@ -22,7 +22,7 @@ import { tweenOpacity } from "@utility/tween"
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.
 
-const ARCH_CONTROLS_OFFSET = {
+const TOUR_CONTROLS_OFFSET = {
     [ViewType.ELEVATION]: 4,
     [ViewType.PLAN]: 2,
 }
@@ -43,7 +43,7 @@ const GameBoard: VoidComponent = () => {
     const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
 
-    const archControls = new ArchControls(camera)
+    const tourControls = new TourControls(camera as PerspectiveCamera, [], renderer.domElement)
     const targetControls = new TargetControls(camera, renderer.domElement)
 
     const tweenGroup = new TweenGroup()
@@ -111,7 +111,7 @@ const GameBoard: VoidComponent = () => {
     }
 
     const draw = (time: number = 0) => {
-        archControls.update(time)
+        tourControls.update(time)
         targetControls.update(time)
         tweenGroup.update(time)
         renderer.render(scene, camera)
@@ -144,16 +144,25 @@ const GameBoard: VoidComponent = () => {
         opponentFsTree.recomputeBounds()
 
         // Controls
-        archControls.cameraOffset = ARCH_CONTROLS_OFFSET[view()]
-        archControls.addEventListener("drill", (event) =>
-            getFocussedTree()?.traverseLevelOrder((mesh, levelIdx) =>
-                tweenOpacity(
+        tourControls.cameraOffset = TOUR_CONTROLS_OFFSET[view()]
+        tourControls.addEventListener("drill", (event) => {
+            const targetTree = getFocussedTree()
+
+            if (!targetTree) {
+                return
+            }
+
+            targetTree.traverse((obj) => {
+                if (!obj.userData["depth"]) {
+                    return
+                }
+
+                ;(obj as Sapling).setOpacity(
                     tweenGroup,
-                    mesh,
-                    event.historyIdx === -1 ? 1 : PLAN_MATCH_OPACITY_MAP[Math.sign(event.historyIdx - levelIdx)],
-                ),
-            ),
-        )
+                    PLAN_MATCH_OPACITY_MAP[Math.sign(event.historyIdx - obj.userData["depth"] + 1)]!,
+                )
+            })
+        })
 
         targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
         targetControls.addEventListener("select", (event) => {
@@ -174,7 +183,7 @@ const GameBoard: VoidComponent = () => {
             targetTree?.resetOpacity(tweenGroup)
         })
 
-        // Node Hover
+        // Node hover
         window.addEventListener("mousemove", handleNodeHover)
 
         // Node selection
@@ -213,15 +222,17 @@ const GameBoard: VoidComponent = () => {
         }
     })
 
-    // Handle arch controls
+    // Handle tour controls
     createEffect(() => {
         if (focus() === FocusType.NONE) {
-            archControls.cameraOffset = ARCH_CONTROLS_OFFSET[ViewType.ELEVATION]
-            archControls.setPoses([boundsFromObjects(selfFsTree, opponentFsTree)], ELEVATION_FORWARD_QUATERNION)
+            tourControls.cameraOffset = TOUR_CONTROLS_OFFSET[ViewType.ELEVATION]
+            tourControls.setBoundPoses([
+                { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
+            ])
             return
         }
 
-        archControls.cameraOffset = ARCH_CONTROLS_OFFSET[view()]
+        tourControls.cameraOffset = TOUR_CONTROLS_OFFSET[view()]
 
         const targetTree = getFocussedTree()
         if (!targetTree) {
@@ -231,11 +242,15 @@ const GameBoard: VoidComponent = () => {
         // TODO: Preserve history for PLAN view when switching views.
         switch (view()) {
             case ViewType.ELEVATION: {
-                archControls.setPoses([boundsFromObjects(targetTree)], ELEVATION_FORWARD_QUATERNION)
+                tourControls.setBoundPoses([
+                    { bounds: boundsFromObjects(targetTree), quaternion: ELEVATION_FORWARD_QUATERNION },
+                ])
                 return
             }
             case ViewType.PLAN: {
-                archControls.setPoses(targetTree.levelBounds, targetTree.quaternion.clone())
+                tourControls.setBoundPoses(
+                    targetTree.levelBounds.map((bounds) => ({ bounds, quaternion: targetTree.quaternion.clone() })),
+                )
                 return
             }
         }

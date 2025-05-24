@@ -13,6 +13,7 @@
         "lint:fix": "prettier --write ."
     },
     "dependencies": {
+        "@passeriform/three-tour-controls": "^0.1.6",
         "@solidjs/router": "^0.15.2",
         "@thisbeyond/solid-select": "^0.15.0",
         "@tweenjs/tween.js": "^25.0.0",
