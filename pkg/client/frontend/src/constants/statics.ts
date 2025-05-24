@@ -12,11 +12,11 @@ export const STATICS = {
         position: Object.freeze(new Vector3(5, 5, 5)),
     },
     SELF: {
-        position: Object.freeze(new Vector3(2, 0, 0)),
+        position: Object.freeze(new Vector3(10, 0, 0)),
         rotation: Object.freeze(new Quaternion(0, 1, 0, 1).normalize()),
     },
     OPPONENT: {
-        position: Object.freeze(new Vector3(-2, 0, 0)),
+        position: Object.freeze(new Vector3(-10, 0, 0)),
         rotation: Object.freeze(new Quaternion(0, -1, 0, 1).normalize()),
     },
 } satisfies Record<string, Partial<TweenTransform>>
