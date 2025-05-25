@@ -311,7 +311,7 @@ const GameBoard: VoidComponent = () => {
                     />
                 </Show>
             </section>
-            <NavButton class="pointer-events-none cursor-default" position="right" text={code ?? ""} />
+            <NavButton nonInteractive position="right" text={code ?? ""} />
         </>
     )
 }
