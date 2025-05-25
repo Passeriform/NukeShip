@@ -5,7 +5,7 @@ import { Show, VoidComponent, createEffect, createMemo, createSignal, on, onClea
 import toast from "solid-toast"
 import { PerspectiveCamera, Raycaster, Vector2 } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
-import Button from "@components/Button"
+import ActionButton from "@components/ActionButton"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
@@ -278,33 +278,63 @@ const GameBoard: VoidComponent = () => {
         <>
             {renderer.domElement}
             <section class="absolute bottom-8 flex flex-row justify-evenly gap-8">
-                <Show when={isBirdsEye()}>
-                    <Button
+                <Show
+                    when={!isBirdsEye()}
+                    fallback={
+                        <ActionButton
+                            class="p-8"
+                            text="⮪"
+                            hintTitle="Back"
+                            hintBody=""
+                            shortcuts={["esc", "b"]}
+                            onClick={() => {
+                                setIsBirdsEye(false)
+                            }}
+                        />
+                    }
+                >
+                    <ActionButton
                         class="p-8"
-                        text="Focus Back"
-                        onClick={() => {
-                            setIsBirdsEye(false)
-                        }}
-                    />
-                </Show>
-                <Show when={!isBirdsEye()}>
-                    <Button
-                        class="p-8"
-                        text="Switch View"
+                        text="🔄"
+                        hintTitle="Switch Views"
+                        hintBody="Switch between a side (elevation) view or top-down (plan) view"
+                        shortcuts={["q"]}
                         onClick={() => {
                             setView(view() === ViewType.PLAN ? ViewType.ELEVATION : ViewType.PLAN)
                         }}
                     />
-                    <Button
+                    <Show
+                        when={focus() === FocusType.SELF}
+                        fallback={
+                            <ActionButton
+                                class="p-8"
+                                text="⬅"
+                                hintTitle="Back"
+                                hintBody="Get back to your board"
+                                shortcuts={["esc", "r"]}
+                                onClick={() => {
+                                    setFocus(FocusType.SELF)
+                                }}
+                            />
+                        }
+                    >
+                        <ActionButton
+                            class="p-8"
+                            text="👁"
+                            hintTitle="Peek At Opponent"
+                            hintBody="Peek at the opponent's board"
+                            shortcuts={["r"]}
+                            onClick={() => {
+                                setFocus(FocusType.OPPONENT)
+                            }}
+                        />
+                    </Show>
+                    <ActionButton
                         class="p-8"
-                        text={focus() === FocusType.SELF ? "Peek Opponent" : "Back to Self"}
-                        onClick={() => {
-                            setFocus(focus() === FocusType.SELF ? FocusType.OPPONENT : FocusType.SELF)
-                        }}
-                    />
-                    <Button
-                        class="p-8"
-                        text="Bird's Eye"
+                        text="🧿"
+                        hintTitle="Bird's Eye View"
+                        hintBody="Switch to a bird's eye view of the game board."
+                        shortcuts={["b"]}
                         onClick={() => {
                             setIsBirdsEye(true)
                         }}
