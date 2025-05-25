@@ -51,7 +51,7 @@ const WaitingRoom: VoidComponent = () => {
             <VideoBackground src={waitingRoomVideo} />
             <NavButton position="left" text="🡐 Back" onClick={goBack} />
             <section class="flex flex-col items-center justify-evenly gap-4">
-                <h2 class="animate-glitch-base font-title text-xl font-bold text-dark-turquoise drop-shadow-default before:absolute before:left-4 before:top-2 before:-z-10 before:w-full-extend before:animate-glitch-alpha before:text-vivid-cerise before:content-[attr(data-text)] after:absolute after:-left-2 after:top-1 after:-z-10 after:w-full-extend after:animate-glitch-beta after:text-spiro-disco-ball after:content-[attr(data-text)]">
+                <h2 class="text-9xl animate-glitch-base font-title font-bold text-dark-turquoise drop-shadow-default before:absolute before:left-4 before:top-2 before:-z-10 before:w-full-extend before:animate-glitch-alpha before:text-vivid-cerise before:content-[attr(data-text)] after:absolute after:-left-2 after:top-1 after:-z-10 after:w-full-extend after:animate-glitch-beta after:text-spiro-disco-ball after:content-[attr(data-text)]">
                     〔 {code} 〕
                 </h2>
                 <p class="flex flex-row items-center justify-center gap-8 self-start ps-20">

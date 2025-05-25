@@ -12,10 +12,11 @@ export default {
     /* TODO: Add Light Theme */
     theme: {
         fontSize: {
+            "xs": "0.75rem",
             "base": "1rem",
-            "lg-symbol": "1.5rem",
-            "lg": "2rem",
-            "xl": "8rem",
+            "2xl": "1.5rem",
+            "4xl": "2rem",
+            "9xl": "8rem",
         },
         fontFamily: {
             title: ["Orbitron", "sans-serif"],
@@ -102,6 +103,7 @@ export default {
                 "medium-slate-blue": "#7b68ee",
                 "black-blue": "#151e29",
                 "midnight-blue": "#141b32",
+                "elderberry": "#17182b",
                 "nile-blue": "#193751",
                 "vivid-cerise": "#da1d81",
                 "spiro-disco-ball": "#0fc0fc",
