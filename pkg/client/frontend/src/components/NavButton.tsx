@@ -1,22 +1,17 @@
-import { VoidComponent, mergeProps } from "solid-js"
+import { ComponentProps, VoidComponent, mergeProps, splitProps } from "solid-js"
 import { twMerge } from "tailwind-merge"
 import Button from "./Button"
 
-interface NavButtonProps {
-    text?: string
-    class?: string
-    onClick?: (event: MouseEvent) => void
+type NavButtonProps = ComponentProps<typeof Button> & {
     position: "left" | "right"
 }
 
 const NavButton: VoidComponent<NavButtonProps> = (_props) => {
-    const props = mergeProps({ position: "left", onClick: () => undefined }, _props)
+    const [navProps, buttonProps] = splitProps(mergeProps({ position: "left" }, _props), ["position"])
 
     return (
-        <nav
-            class={twMerge(`absolute ${props.position === "left" ? "left-16" : "right-16"} top-16`, props.class ?? "")}
-        >
-            <Button class="min-h-16 min-w-32 backdrop-blur-md" text={props.text ?? ""} onClick={props.onClick} />
+        <nav class={`absolute ${navProps.position === "left" ? "left-16" : "right-16"} top-16`}>
+            <Button {...buttonProps} class={twMerge("min-h-16 min-w-32 backdrop-blur-md", buttonProps.class)} />
         </nav>
     )
 }
