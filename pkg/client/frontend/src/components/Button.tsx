@@ -6,6 +6,8 @@ interface ButtonProps {
     nonInteractive?: boolean
     class?: string
     ref?: Ref<HTMLButtonElement>
+    onMouseEnter?: (event: MouseEvent) => void
+    onMouseLeave?: (event: MouseEvent) => void
     onClick?: (event: MouseEvent) => void
 }
 
@@ -21,7 +23,9 @@ const Button: VoidComponent<ButtonProps> = (_props) => {
             )}
             tabIndex={props.nonInteractive ? -1 : 0}
             ref={props.ref}
-            on:click={props.onClick}
+            onClick={props.onClick}
+            onMouseEnter={props.onMouseEnter}
+            onMouseLeave={props.onMouseLeave}
         >
             <span class="before:absolute before:bottom-1/3 before:right-0 before:h-5 before:w-px before:translate-x-px before:bg-dark-turquoise before:transition-all before:duration-200 before:ease-in-out after:absolute after:left-0 after:top-1/3 after:h-5 after:w-px after:-translate-x-px after:bg-dark-turquoise after:transition-all after:duration-200 after:ease-in-out group-hover:before:bottom-0 group-hover:after:top-0" />
             {props.text ?? ""}
