@@ -14,15 +14,21 @@ type TargetControlsEventMap = {
     deselect: {
         tweenGroup: TweenGroup
     }
+    transitionChange: {
+        transitioning: boolean
+    }
     change: {}
 }
 
 export type TargetControlsSelectEvent = TargetControlsEventMap["select"] & Event<"select", TargetControls>
 export type TargetControlsDeselectEvent = TargetControlsEventMap["deselect"] & Event<"deselect", TargetControls>
+export type TargetControlsTransitionChangeEvent = TargetControlsEventMap["transitionChange"] &
+    Event<"transitionChange", TargetControls>
 export type TargetControlsChangeEvent = TargetControlsEventMap["change"] & Event<"change", TargetControls>
 
 // TODO: Remove usage of private temporary variables, instead use immutable utilities.
 // TODO: Rework according to archControls usage.
+// TODO: Use actual nodes to track history and return nodes instead of positions.
 
 export class TargetControls extends Controls<TargetControlsEventMap> {
     private _lastSelected: Object3D | undefined
@@ -46,6 +52,10 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
 
     private animate(tweenTarget: TweenTransform) {
         this.transitioning = true
+        this.dispatchEvent({
+            type: "transitionChange",
+            transitioning: this.transitioning,
+        })
 
         const qFrom = this.object.quaternion.clone()
         const qTo = tweenTarget.rotation.normalize()
@@ -61,6 +71,10 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
                 })
                 .onComplete(() => {
                     this.transitioning = false
+                    this.dispatchEvent({
+                        type: "transitionChange",
+                        transitioning: this.transitioning,
+                    })
                 })
                 .start(),
         )
@@ -82,6 +96,13 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
             this.historyIdx++
         } else if (event.deltaY > 0) {
             this.historyIdx--
+        }
+
+        if (this.historyIdx === 0) {
+            this.dispatchEvent({
+                type: "deselect",
+                tweenGroup: this.tweenGroup,
+            })
         }
 
         this.animate(this.history[this.historyIdx]!)

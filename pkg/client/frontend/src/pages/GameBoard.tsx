@@ -6,6 +6,7 @@ import toast from "solid-toast"
 import { PerspectiveCamera, Raycaster, Vector2 } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
 import ActionButton from "@components/ActionButton"
+import DetailsPane from "@components/DetailsPane"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
@@ -19,6 +20,7 @@ import { createScene } from "@utility/scene"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.
+// TODO: Fix regression of resizing the window not updating the renderer size.
 
 const TOUR_CONTROLS_BIRDS_EYE_OFFSET = 20
 const TOUR_CONTROLS_FOCUSSED_OFFSET = {
@@ -40,10 +42,12 @@ const GameBoard: VoidComponent = () => {
     const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
 
     const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
+    const [selectedSapling, setSelectedSapling] = createSignal<Sapling | undefined>(undefined)
+    const [cameraTransitioning, setCameraTransitioning] = createSignal<boolean>(false)
     const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
 
-    const tourControls = new TourControls(camera as PerspectiveCamera, [], renderer.domElement)
-    const targetControls = new TargetControls(camera, renderer.domElement)
+    const tourControls = new TourControls(camera as PerspectiveCamera, [], window.document.body)
+    const targetControls = new TargetControls(camera, window.document.body)
 
     const tweenGroup = new TweenGroup()
 
@@ -170,7 +174,8 @@ const GameBoard: VoidComponent = () => {
         })
 
         targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
-        targetControls.addEventListener("select", (event) => {
+        targetControls.addEventListener("select", ({ intersect }) => {
+            setSelectedSapling(intersect as Sapling)
             focussedTree()?.traverse((obj) => {
                 if (!obj.userData["depth"]) {
                     return
@@ -178,10 +183,14 @@ const GameBoard: VoidComponent = () => {
 
                 ;(obj as Sapling).setOpacity(tweenGroup, 0.8)
             })
-            ;(event.intersect as Sapling).setOpacity(tweenGroup, 1)
+            ;(intersect as Sapling).setOpacity(tweenGroup, 1)
         })
         targetControls.addEventListener("deselect", () => {
+            setSelectedSapling(undefined)
             focussedTree()?.resetOpacity(tweenGroup)
+        })
+        targetControls.addEventListener("transitionChange", ({ transitioning }) => {
+            setCameraTransitioning(transitioning)
         })
 
         // Node hover
@@ -259,10 +268,16 @@ const GameBoard: VoidComponent = () => {
     })
 
     // Handle target controls
-    createEffect(() => {
-        targetControls.setInteractables(focussedTree() ? [focussedTree()!] : [])
-        targetControls.enabled = !isBirdsEye()
-    })
+    createEffect(
+        on(
+            () => [focussedTree(), isBirdsEye(), view()],
+            () => {
+                targetControls.setInteractables(focussedTree() ? [focussedTree()!] : [])
+                targetControls.enabled = !isBirdsEye()
+                setSelectedSapling(undefined)
+            },
+        ),
+    )
 
     onCleanup(() => {
         selfFsTree.clear()
@@ -341,6 +356,12 @@ const GameBoard: VoidComponent = () => {
                     />
                 </Show>
             </section>
+            <DetailsPane
+                position={focus() === FocusType.SELF ? "left" : "right"}
+                show={Boolean(selectedSapling()) && !cameraTransitioning()}
+                title={selectedSapling()?.userData["label"]}
+                content={selectedSapling()?.userData["content"]}
+            />
             <NavButton nonInteractive position="right" text={code ?? ""} />
         </>
     )
