@@ -2,9 +2,8 @@ import { Easing, Tween, Group as TweenGroup } from "@tweenjs/tween.js"
 import { Controls, Event, Mesh, Object3D, OrthographicCamera, PerspectiveCamera, Quaternion } from "three"
 import { ELEVATION_FORWARD_QUATERNION, Z_AXIS } from "@constants/statics"
 import { TweenTransform } from "@constants/types"
-import { lookAtFromQuaternion } from "@utility/camera"
 import { getWorldPose } from "@utility/pureTransform"
-import { averageQuaternions } from "@utility/quaternion"
+import { averageQuaternions, lookAtFromQuaternion } from "@utility/quaternion"
 
 type TargetControlsEventMap = {
     select: {
@@ -30,7 +29,7 @@ export type TargetControlsChangeEvent = TargetControlsEventMap["change"] & Event
 // TODO: Rework according to archControls usage.
 // TODO: Use actual nodes to track history and return nodes instead of positions.
 
-export class TargetControls extends Controls<TargetControlsEventMap> {
+class TargetControls extends Controls<TargetControlsEventMap> {
     private _lastSelected: Object3D | undefined
     private preloadedRotation: Quaternion
     private tweenGroup: TweenGroup
@@ -215,3 +214,5 @@ export class TargetControls extends Controls<TargetControlsEventMap> {
         return
     }
 }
+
+export default TargetControls

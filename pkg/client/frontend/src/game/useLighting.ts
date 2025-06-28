@@ -1,17 +1,19 @@
+import { onCleanup } from "solid-js"
 import { AmbientLight, DirectionalLight } from "three"
 
-export const createLighting = () => {
+const useLighting = () => {
     const ambientLight = new AmbientLight(0x193751, 2)
     const directionalLight = new DirectionalLight(0xffffff, 2)
 
-    const cleanup = () => {
+    onCleanup(() => {
         directionalLight.dispose()
         ambientLight.dispose()
-    }
+    })
 
     return {
         ambientLight,
         directionalLight,
-        cleanup,
     }
 }
+
+export default useLighting

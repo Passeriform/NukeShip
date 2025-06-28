@@ -12,14 +12,33 @@ Line of action
     Lint
         ☐ Fix all linter issues
         ☐ Disable unused lints (remove if default satisfies)
+        ☐ Update README for frontend and move frontend to another repo
+        ☐ Make taskfile to shim frontend for go to run tests without building using Wails. Remove the step from CI pipeline
     Refactors
         ☐ Migrate to data-driven approach
         ☐ Benchmark performance for room and connection against direct data storage instead of using pointers
 
 Ideas
+    Story
+        The Rogue (Rogue Engineer on a task to destroy corporations)
+            ☐ Gets better prices on black market upgrades
+            ☐ Gets hit hard by innovations by corporations
+            ☐ Game begins really easy but corporations adapt really fast to the last plays
+        The CEO (CEO of a known corporation)
+            ☐ Has links to other corporations for fair discounts on upgrades
+            ☐ Has to maintain relationships by representation in selecting upgrades
+            ☐ The corporations should provide lesser benefits to balance
+            ☐ Initial gameplay loop is about getting the best alignment with other corporations
+            ☐ Late game is about maintaining the relationships with occasional backstabbing
+        The Salaryman (An employee of a corporation)
+            ☐ Can use black market upgrades but at the risk of being caught
+            ☐ Game begins with few easy rounds but shit hits the fan with targeted attacks
+
     Text Prompts
         ☐ A backdoor was installed. (Show infected area)
     Special powers
+        ☐ Sniper
+            ☐ ⟴
         ☐ DDoS
             ☐ Attacks spreads from root node and consumes almost all power from your own mainframe's nodes
             ☐ Show like an orbital laser directly hitting the node

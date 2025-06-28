@@ -54,7 +54,7 @@ const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
                         top: `${floatingResult.y ?? 0}px`,
                         left: `${floatingResult.x ?? 0}px`,
                     }}
-                    class="bg-elderberry w-72 rounded-lg border border-dark-turquoise/30 p-4 text-justify"
+                    class="w-72 rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify"
                 >
                     <h3 class="mb-4 font-title text-2xl">{actionProps.hintTitle}</h3>
                     {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}

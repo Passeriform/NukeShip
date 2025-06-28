@@ -3,7 +3,7 @@
 }
 
 .solid-select-container :is(.solid-select-input, .solid-select-single-value, .solid-select-placeholder) {
-    @apply text-4xl w-full cursor-pointer appearance-none p-4 pe-9 text-dark-turquoise/50 outline-none transition-all duration-200 ease-in-out;
+    @apply w-full cursor-pointer appearance-none p-4 pe-9 text-4xl text-dark-turquoise/50 outline-none transition-all duration-200 ease-in-out;
 }
 
 .solid-select-container:focus-within :is(.solid-select-input, .solid-select-single-value, .solid-select-placeholder) {

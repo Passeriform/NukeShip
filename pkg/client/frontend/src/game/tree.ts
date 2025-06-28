@@ -55,7 +55,7 @@ type AddChildSaplingOptions = Required<Pick<SaplingCtorOptions, "depth" | "color
     collector?: Sapling[][]
 }
 
-export class Sapling extends Mesh {
+class Sapling extends Mesh {
     private static NODE_GEOMETRY = new SphereGeometry(NODE_RADIUS, 64, 64)
     private static NODE_MATERIALS = COLORS.map(
         (color) => new MeshLambertMaterial({ color, emissiveIntensity: 20, transparent: true }),
@@ -183,3 +183,5 @@ export class Tree extends Sapling {
         })
     }
 }
+
+export default Tree

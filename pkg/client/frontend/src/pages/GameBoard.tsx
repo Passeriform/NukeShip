@@ -1,32 +1,32 @@
 import TourControls from "@passeriform/three-tour-controls"
 import { useParams } from "@solidjs/router"
 import { Group as TweenGroup } from "@tweenjs/tween.js"
-import { Show, VoidComponent, createEffect, createMemo, createSignal, on, onCleanup, onMount } from "solid-js"
+import { VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import toast from "solid-toast"
-import { PerspectiveCamera, Raycaster, Vector2 } from "three"
+import { PerspectiveCamera } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
-import ActionButton from "@components/ActionButton"
 import DetailsPane from "@components/DetailsPane"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType, ViewType } from "@constants/types"
-import { TargetControls } from "@game/targetControls"
-import { Sapling, Tree } from "@game/tree"
+import RaycastSelector from "@game/RaycastSelector"
+import TargetControls from "@game/targetControls"
+import Sapling, { Tree } from "@game/tree"
+import useCamera from "@game/useCamera"
+import useLighting from "@game/useLighting"
+import useScene from "@game/useScene"
+import useViewportToolbar from "@game/useViewportToolbar"
 import { boundsFromObjects } from "@utility/bounds"
-import { createOrthographicCamera, createPerspectiveCamera } from "@utility/camera"
-import { createLighting } from "@utility/lighting"
-import { createScene } from "@utility/scene"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.
 // TODO: Fix regression of resizing the window not updating the renderer size.
+// TODO: Target controls node change should also dispatch the changed node to the event handlers.
 
 const TOUR_CONTROLS_BIRDS_EYE_OFFSET = 20
-const TOUR_CONTROLS_FOCUSSED_OFFSET = {
-    [ViewType.ELEVATION]: 4,
-    [ViewType.PLAN]: 2,
-}
+const TOUR_CONTROLS_ELEVATION_OFFSET = 4
+const TOUR_CONTROLS_PLAN_OFFSET = 2
 const TARGET_CONTROLS_OFFSET = 1
 
 const PLAN_MATCH_OPACITY_MAP: Record<number, number> = {
@@ -38,13 +38,12 @@ const PLAN_MATCH_OPACITY_MAP: Record<number, number> = {
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
-    const { scene, renderer, cleanup: sceneCleanup } = createScene()
-    const { ambientLight, directionalLight, cleanup: lightingCleanup } = createLighting()
+    const { scene, renderer } = useScene()
+    const { ambientLight, directionalLight } = useLighting()
+    const { camera } = useCamera()
 
-    const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
     const [selectedSapling, setSelectedSapling] = createSignal<Sapling | undefined>(undefined)
     const [cameraTransitioning, setCameraTransitioning] = createSignal<boolean>(false)
-    const camera = isCameraPerspective() ? createPerspectiveCamera() : createOrthographicCamera()
 
     const tourControls = new TourControls(camera as PerspectiveCamera, [], window.document.body)
     const targetControls = new TargetControls(camera, window.document.body)
@@ -54,75 +53,27 @@ const GameBoard: VoidComponent = () => {
     const selfFsTree = new Tree(ExampleFS, 1)
     const opponentFsTree = new Tree(ExampleFS, 2)
 
-    const raycaster = new Raycaster()
-    let lastHoveredNode: Sapling | undefined
+    const { view, focus, isBirdsEye, domElement: viewportToolbar } = useViewportToolbar()
 
-    const [view, setView] = createSignal<ViewType>(ViewType.ELEVATION)
-    const [focus, setFocus] = createSignal<FocusType>(FocusType.SELF)
-    const [isBirdsEye, setIsBirdsEye] = createSignal<boolean>(false)
+    const focussedTree = () =>
+        (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
 
-    const focussedTree = createMemo(
-        () =>
-            (focus() === FocusType.SELF && selfFsTree) ||
-            (focus() === FocusType.OPPONENT && opponentFsTree) ||
-            undefined,
-    )
+    const tourBoundPoses = () =>
+        (isBirdsEye() && [
+            { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
+        ]) ||
+        (view() === ViewType.ELEVATION && [
+            { bounds: boundsFromObjects(focussedTree()!), quaternion: ELEVATION_FORWARD_QUATERNION },
+        ]) ||
+        (view() === ViewType.PLAN &&
+            focussedTree()!.levelBounds.map((bounds) => ({ bounds, quaternion: focussedTree()!.quaternion }))) ||
+        undefined
 
-    const disableContextMenu = (event: MouseEvent) => {
-        event.preventDefault()
-    }
-
-    const getIntersectedMesh = (event: MouseEvent) => {
-        raycaster.setFromCamera(
-            new Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1),
-            camera,
-        )
-
-        if (!focussedTree()) {
-            return
-        }
-
-        const intersects = raycaster.intersectObjects([focussedTree()!], true)
-
-        const [matched] = intersects
-            .map((intersection) => intersection.object)
-            .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
-            .filter((mesh) => mesh.name === Sapling.MESH_NAME)
-            .map((obj) => obj as unknown as Sapling)
-
-        return matched
-    }
-
-    const handleNodeHover = (event: MouseEvent) => {
-        const matched = getIntersectedMesh(event)
-
-        if (!matched) {
-            if (lastHoveredNode) {
-                lastHoveredNode.glow(false, tweenGroup)
-                lastHoveredNode = undefined
-            }
-            return
-        }
-
-        if (matched !== lastHoveredNode) {
-            if (lastHoveredNode) {
-                lastHoveredNode.glow(false, tweenGroup)
-            }
-            lastHoveredNode = matched
-        }
-
-        matched.glow(true, tweenGroup)
-    }
-
-    const handleNodeClick = (event: MouseEvent) => {
-        const matched = getIntersectedMesh(event)
-
-        if (!matched) {
-            return
-        }
-
-        targetControls.pushTarget(matched)
-    }
+    const tourCameraOffset = () =>
+        (isBirdsEye() && TOUR_CONTROLS_BIRDS_EYE_OFFSET) ||
+        (view() === ViewType.ELEVATION && TOUR_CONTROLS_ELEVATION_OFFSET) ||
+        (view() === ViewType.PLAN && TOUR_CONTROLS_PLAN_OFFSET) ||
+        undefined
 
     const draw = (time: number = 0) => {
         tourControls.update(time)
@@ -138,8 +89,6 @@ const GameBoard: VoidComponent = () => {
         }
 
         // Renderer
-        renderer.setPixelRatio(window.devicePixelRatio)
-        renderer.setSize(window.innerWidth, window.innerHeight)
         renderer.setAnimationLoop(draw)
 
         // Lighting
@@ -173,7 +122,6 @@ const GameBoard: VoidComponent = () => {
             })
         })
 
-        targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
         targetControls.addEventListener("select", ({ intersect }) => {
             setSelectedSapling(intersect as Sapling)
             focussedTree()?.traverse((obj) => {
@@ -193,169 +141,76 @@ const GameBoard: VoidComponent = () => {
             setCameraTransitioning(transitioning)
         })
 
-        // Node hover
-        window.addEventListener("mousemove", handleNodeHover)
-
-        // Node selection
-        window.addEventListener("click", handleNodeClick)
-
         // Disable context menu
-        window.addEventListener("contextmenu", disableContextMenu)
-
-        // Resize handler
-        window.addEventListener("resize", () => {
-            renderer.setSize(window.innerWidth, window.innerHeight)
+        window.addEventListener("contextmenu", (event) => {
+            event.preventDefault()
         })
     })
 
-    // Align view on dependent state changes.
-    createEffect(
-        on([focus, isBirdsEye], () => {
-            setView(ViewType.ELEVATION)
-        }),
-    )
-
-    // Handle tree node opacity
+    // Opacity
     createEffect(() => {
         if (view() === ViewType.PLAN) {
-            focussedTree()?.traverse((obj) => {
+            return focussedTree()?.traverse((obj) => {
                 if (!obj.userData["depth"]) {
                     return
                 }
 
                 ;(obj as Sapling).setOpacity(tweenGroup, PLAN_MATCH_OPACITY_MAP[Math.sign(1 - obj.userData["depth"])]!)
             })
-        } else {
-            selfFsTree.resetOpacity(tweenGroup)
-            opponentFsTree.resetOpacity(tweenGroup)
         }
+
+        selfFsTree.resetOpacity(tweenGroup)
+        opponentFsTree.resetOpacity(tweenGroup)
     })
 
-    // Handle tour controls
+    // Tour Controls
     createEffect(() => {
-        if (isBirdsEye()) {
-            tourControls.cameraOffset = TOUR_CONTROLS_BIRDS_EYE_OFFSET
-            tourControls.setBoundPoses([
-                { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
-            ])
-            return
-        }
-
-        tourControls.cameraOffset = TOUR_CONTROLS_FOCUSSED_OFFSET[view()]
-
-        if (!focussedTree()) {
-            return
-        }
-
-        // TODO: Preserve history for PLAN view when switching views.
-        switch (view()) {
-            case ViewType.ELEVATION: {
-                tourControls.setBoundPoses([
-                    { bounds: boundsFromObjects(focussedTree()!), quaternion: ELEVATION_FORWARD_QUATERNION },
-                ])
-                return
-            }
-            case ViewType.PLAN: {
-                tourControls.setBoundPoses(
-                    focussedTree()!.levelBounds.map((bounds) => ({
-                        bounds,
-                        quaternion: focussedTree()!.quaternion.clone(),
-                    })),
-                )
-                return
-            }
-        }
+        tourControls.setBoundPoses(tourBoundPoses() ?? [])
+        tourControls.cameraOffset = tourCameraOffset() ?? 0
     })
 
-    // Handle target controls
-    createEffect(
-        on(
-            () => [focussedTree(), isBirdsEye(), view()],
-            () => {
-                targetControls.setInteractables(focussedTree() ? [focussedTree()!] : [])
-                targetControls.enabled = !isBirdsEye()
-                setSelectedSapling(undefined)
-            },
-        ),
-    )
+    // Target Controls
+    createEffect(() => {
+        targetControls.setInteractables(focussedTree() ? [focussedTree()!] : [])
+        targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
+        targetControls.enabled = !isBirdsEye() && view() === ViewType.ELEVATION
+        setSelectedSapling(undefined)
+    })
 
     onCleanup(() => {
         selfFsTree.clear()
         opponentFsTree.clear()
         camera.clear()
-        lightingCleanup()
-        sceneCleanup()
-
-        window.removeEventListener("contextmenu", disableContextMenu)
     })
 
     return (
         <>
             {renderer.domElement}
-            <section class="absolute bottom-8 flex flex-row justify-evenly gap-8">
-                <Show
-                    when={!isBirdsEye()}
-                    fallback={
-                        <ActionButton
-                            class="p-8"
-                            text="⮪"
-                            hintTitle="Back"
-                            hintBody=""
-                            shortcuts={["esc", "b"]}
-                            onClick={() => {
-                                setIsBirdsEye(false)
-                            }}
-                        />
+            {viewportToolbar}
+            <RaycastSelector
+                camera={camera}
+                filter={(matchedMeshes) =>
+                    matchedMeshes
+                        .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
+                        .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[]
+                }
+                root={focussedTree()}
+                onClick={(mesh) => {
+                    mesh && targetControls.pushTarget(mesh)
+                }}
+                onHover={(mesh, repeat, lastNode) => {
+                    if (!mesh) {
+                        lastNode?.glow(false, tweenGroup)
+                        return
                     }
-                >
-                    <ActionButton
-                        class="p-8"
-                        text="🔄"
-                        hintTitle="Switch Views"
-                        hintBody="Switch between a side (elevation) view or top-down (plan) view"
-                        shortcuts={["q"]}
-                        onClick={() => {
-                            setView(view() === ViewType.PLAN ? ViewType.ELEVATION : ViewType.PLAN)
-                        }}
-                    />
-                    <Show
-                        when={focus() === FocusType.SELF}
-                        fallback={
-                            <ActionButton
-                                class="p-8"
-                                text="⬅"
-                                hintTitle="Back"
-                                hintBody="Get back to your board"
-                                shortcuts={["esc", "r"]}
-                                onClick={() => {
-                                    setFocus(FocusType.SELF)
-                                }}
-                            />
-                        }
-                    >
-                        <ActionButton
-                            class="p-8"
-                            text="👁"
-                            hintTitle="Peek At Opponent"
-                            hintBody="Peek at the opponent's board"
-                            shortcuts={["r"]}
-                            onClick={() => {
-                                setFocus(FocusType.OPPONENT)
-                            }}
-                        />
-                    </Show>
-                    <ActionButton
-                        class="p-8"
-                        text="🧿"
-                        hintTitle="Bird's Eye View"
-                        hintBody="Switch to a bird's eye view of the game board."
-                        shortcuts={["b"]}
-                        onClick={() => {
-                            setIsBirdsEye(true)
-                        }}
-                    />
-                </Show>
-            </section>
+
+                    if (!repeat) {
+                        lastNode?.glow(false, tweenGroup)
+                    }
+
+                    mesh.glow(true, tweenGroup)
+                }}
+            />
             <DetailsPane
                 position={focus() === FocusType.SELF ? "left" : "right"}
                 show={Boolean(selectedSapling()) && !cameraTransitioning()}
