@@ -138,12 +138,15 @@ const GameBoard: VoidComponent = () => {
     // Tour Controls
     createEffect(() => {
         const tourBoundPoses =
+            // If birds eye view or no tree is focussed, single bound pose on both trees.
             ((isBirdsEye() || !focussedTree()) && [
                 { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
             ]) ||
+            // If elevation view, single bound pose on entire focussed tree.
             (view() === ViewType.ELEVATION && [
                 { bounds: boundsFromObjects(focussedTree()!), quaternion: ELEVATION_FORWARD_QUATERNION },
             ]) ||
+            // If plan view, bound poses for each level of the focussed tree.
             (view() === ViewType.PLAN &&
                 focussedTree()!.levelBounds.map((bounds) => ({ bounds, quaternion: focussedTree()!.quaternion }))) ||
             []
@@ -189,6 +192,7 @@ const GameBoard: VoidComponent = () => {
                 }}
                 onHover={(mesh, repeat, lastNode) => {
                     if (!mesh) {
+                        document.body.style.cursor = "default"
                         lastNode?.glow(false, tweenGroup)
                         return
                     }
@@ -197,6 +201,7 @@ const GameBoard: VoidComponent = () => {
                         lastNode?.glow(false, tweenGroup)
                     }
 
+                    document.body.style.cursor = "pointer"
                     mesh.glow(true, tweenGroup)
                 }}
             />
