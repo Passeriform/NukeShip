@@ -29,12 +29,6 @@ const TOUR_CONTROLS_ELEVATION_OFFSET = 4
 const TOUR_CONTROLS_PLAN_OFFSET = 2
 const TARGET_CONTROLS_OFFSET = 1
 
-const PLAN_MATCH_OPACITY_MAP: Record<number, number> = {
-    [-1]: 0.2,
-    [1]: 0,
-    [0]: 1,
-}
-
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
@@ -43,6 +37,7 @@ const GameBoard: VoidComponent = () => {
     const { camera } = useCamera()
 
     const [selectedSapling, setSelectedSapling] = createSignal<Sapling | undefined>(undefined)
+    const [drilledDepth, setDrilledDepth] = createSignal<number | undefined>(undefined)
     const [cameraTransitioning, setCameraTransitioning] = createSignal<boolean>(false)
 
     const tourControls = new TourControls(camera as PerspectiveCamera, [], window.document.body)
@@ -57,23 +52,6 @@ const GameBoard: VoidComponent = () => {
 
     const focussedTree = () =>
         (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
-
-    const tourBoundPoses = () =>
-        (isBirdsEye() && [
-            { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
-        ]) ||
-        (view() === ViewType.ELEVATION && [
-            { bounds: boundsFromObjects(focussedTree()!), quaternion: ELEVATION_FORWARD_QUATERNION },
-        ]) ||
-        (view() === ViewType.PLAN &&
-            focussedTree()!.levelBounds.map((bounds) => ({ bounds, quaternion: focussedTree()!.quaternion }))) ||
-        undefined
-
-    const tourCameraOffset = () =>
-        (isBirdsEye() && TOUR_CONTROLS_BIRDS_EYE_OFFSET) ||
-        (view() === ViewType.ELEVATION && TOUR_CONTROLS_ELEVATION_OFFSET) ||
-        (view() === ViewType.PLAN && TOUR_CONTROLS_PLAN_OFFSET) ||
-        undefined
 
     const draw = (time: number = 0) => {
         tourControls.update(time)
@@ -105,37 +83,15 @@ const GameBoard: VoidComponent = () => {
         scene.add(opponentFsTree)
 
         // Controls
-        tourControls.addEventListener("drill", (event) => {
-            if (!focussedTree()) {
-                return
-            }
-
-            focussedTree()!.traverse((obj) => {
-                if (!obj.userData["depth"]) {
-                    return
-                }
-
-                ;(obj as Sapling).setOpacity(
-                    tweenGroup,
-                    PLAN_MATCH_OPACITY_MAP[Math.sign(event.historyIdx - obj.userData["depth"] + 1)]!,
-                )
-            })
+        tourControls.addEventListener("drill", ({ historyIdx }) => {
+            setDrilledDepth(historyIdx + 1)
         })
 
         targetControls.addEventListener("select", ({ intersect }) => {
             setSelectedSapling(intersect as Sapling)
-            focussedTree()?.traverse((obj) => {
-                if (!obj.userData["depth"]) {
-                    return
-                }
-
-                ;(obj as Sapling).setOpacity(tweenGroup, 0.8)
-            })
-            ;(intersect as Sapling).setOpacity(tweenGroup, 1)
         })
         targetControls.addEventListener("deselect", () => {
             setSelectedSapling(undefined)
-            focussedTree()?.resetOpacity(tweenGroup)
         })
         targetControls.addEventListener("transitionChange", ({ transitioning }) => {
             setCameraTransitioning(transitioning)
@@ -149,14 +105,30 @@ const GameBoard: VoidComponent = () => {
 
     // Opacity
     createEffect(() => {
-        if (view() === ViewType.PLAN) {
-            return focussedTree()?.traverse((obj) => {
+        if (selectedSapling()) {
+            focussedTree()?.traverse((obj) => {
                 if (!obj.userData["depth"]) {
                     return
                 }
 
-                ;(obj as Sapling).setOpacity(tweenGroup, PLAN_MATCH_OPACITY_MAP[Math.sign(1 - obj.userData["depth"])]!)
+                ;(obj as Sapling).setOpacity(tweenGroup, 0.8)
             })
+            selectedSapling()!.setOpacity(tweenGroup, 1)
+            return
+        }
+
+        if (view() === ViewType.PLAN && drilledDepth()) {
+            focussedTree()!.traverse((obj) => {
+                if (!obj.userData["depth"]) {
+                    return
+                }
+
+                const opacity =
+                    obj.userData["depth"] < drilledDepth()! ? 0 : obj.userData["depth"] > drilledDepth()! ? 0.2 : 1
+
+                ;(obj as Sapling).setOpacity(tweenGroup, opacity)
+            })
+            return
         }
 
         selfFsTree.resetOpacity(tweenGroup)
@@ -165,14 +137,31 @@ const GameBoard: VoidComponent = () => {
 
     // Tour Controls
     createEffect(() => {
-        tourControls.setBoundPoses(tourBoundPoses() ?? [])
-        tourControls.cameraOffset = tourCameraOffset() ?? 0
+        const tourBoundPoses =
+            ((isBirdsEye() || !focussedTree()) && [
+                { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
+            ]) ||
+            (view() === ViewType.ELEVATION && [
+                { bounds: boundsFromObjects(focussedTree()!), quaternion: ELEVATION_FORWARD_QUATERNION },
+            ]) ||
+            (view() === ViewType.PLAN &&
+                focussedTree()!.levelBounds.map((bounds) => ({ bounds, quaternion: focussedTree()!.quaternion }))) ||
+            []
+
+        const tourCameraOffset =
+            (isBirdsEye() && TOUR_CONTROLS_BIRDS_EYE_OFFSET) ||
+            (view() === ViewType.ELEVATION && TOUR_CONTROLS_ELEVATION_OFFSET) ||
+            (view() === ViewType.PLAN && TOUR_CONTROLS_PLAN_OFFSET) ||
+            0
+
+        tourControls.setBoundPoses(tourBoundPoses)
+        tourControls.setCameraOffset(tourCameraOffset)
     })
 
     // Target Controls
     createEffect(() => {
         targetControls.setInteractables(focussedTree() ? [focussedTree()!] : [])
-        targetControls.cameraOffset = TARGET_CONTROLS_OFFSET
+        targetControls.setCameraOffset(TARGET_CONTROLS_OFFSET)
         targetControls.enabled = !isBirdsEye() && view() === ViewType.ELEVATION
         setSelectedSapling(undefined)
     })

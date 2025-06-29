@@ -31,16 +31,20 @@ export type TargetControlsChangeEvent = TargetControlsEventMap["change"] & Event
 
 class TargetControls extends Controls<TargetControlsEventMap> {
     private _lastSelected: Object3D | undefined
+    private _unselectedPose: TweenTransform | undefined
     private preloadedRotation: Quaternion
     private tweenGroup: TweenGroup
-    private historyIdx: number
+    private historyIdx: number | undefined
     private history: TweenTransform[]
     private transitioning: boolean
-    public cameraOffset: number
+    private cameraOffset: number
+    public timing: number
 
     private resetHistory() {
-        this.history = this.history.splice(0, this.history.length)
-        this.historyIdx = -1
+        this.history = this.history.splice(0, 0)
+        this.historyIdx = undefined
+        this._lastSelected = undefined
+        this._unselectedPose = undefined
     }
 
     private loadRotation(interactables: Object3D[]) {
@@ -80,28 +84,39 @@ class TargetControls extends Controls<TargetControlsEventMap> {
     }
 
     private onMouseWheel(event: WheelEvent) {
-        if (!this.enabled || this.transitioning || event.deltaY === 0 || this.historyIdx === -1) {
+        if (!this.enabled || this.transitioning || event.deltaY === 0 || this.historyIdx === undefined) {
+            // Skip if controls are disabled, transitioning, or history is uninitialized.
             return
         }
 
-        if (
-            (event.deltaY < 0 && this.historyIdx === this.history.length - 1) ||
-            (event.deltaY > 0 && this.historyIdx === 0)
-        ) {
-            return
-        }
+        // Reset to unselected pose if moving back if beginning is reached.
+        if (event.deltaY > 0 && this.historyIdx === 0) {
+            if (!this._unselectedPose) {
+                throw new Error("Unselected pose is not defined.")
+            }
 
-        if (event.deltaY < 0) {
-            this.historyIdx++
-        } else if (event.deltaY > 0) {
-            this.historyIdx--
-        }
+            this.animate(this._unselectedPose)
 
-        if (this.historyIdx === 0) {
+            this.resetHistory()
+
             this.dispatchEvent({
                 type: "deselect",
                 tweenGroup: this.tweenGroup,
             })
+
+            return
+        }
+
+        // Skip if history index has reached the end.
+        if (event.deltaY < 0 && this.historyIdx === this.history.length - 1) {
+            return
+        }
+
+        // Move across history.
+        if (event.deltaY < 0) {
+            this.historyIdx++
+        } else if (event.deltaY > 0) {
+            this.historyIdx--
         }
 
         this.animate(this.history[this.historyIdx]!)
@@ -137,13 +152,14 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         this.preloadedRotation = new Quaternion()
         this.tweenGroup = new TweenGroup()
         this.history = []
-        this.historyIdx = -1
         this.transitioning = false
         this.cameraOffset = 1
+        this.timing = 400
 
         if (domElement) {
             this.connect(domElement)
         }
+
         this.update()
     }
 
@@ -158,6 +174,19 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         }
 
         this._lastSelected = target
+
+        // Store initial pose if the target is pushed is the first.
+        if (this.history.length === 0) {
+            this._unselectedPose = {
+                position: this.object.position.clone(),
+                rotation: this.object.quaternion.clone(),
+            }
+        }
+
+        // Discard later history items if a new target is pushed.
+        this.history = this.history.slice(0, (this.historyIdx ?? -1) + 1)
+
+        // Add new target to history.
         const [position] = getWorldPose(target)
 
         // TODO: Make this reliant on getWorldQuaternion.
@@ -166,22 +195,6 @@ class TargetControls extends Controls<TargetControlsEventMap> {
                 .add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(this.cameraOffset))
                 .clone(),
             rotation: this.preloadedRotation.clone(),
-        }
-
-        if (this.historyIdx < this.history.length - 1) {
-            this.history = this.history.slice(0, this.historyIdx + 1)
-        }
-
-        if (this.history.length === 0) {
-            const [position, rotation] = getWorldPose(this.object)
-            this.history.push({ position, rotation })
-            this.historyIdx = this.history.length - 1
-
-            this.dispatchEvent({
-                type: "select",
-                intersect: target,
-                tweenGroup: this.tweenGroup,
-            })
         }
 
         this.history.push(tweenTarget)
@@ -201,6 +214,14 @@ class TargetControls extends Controls<TargetControlsEventMap> {
 
         if (interactables.length) {
             this.loadRotation(interactables)
+        }
+    }
+
+    setCameraOffset(offset: number) {
+        this.cameraOffset = offset
+
+        if (this.historyIdx) {
+            this.animate(this.history[this.historyIdx]!)
         }
     }
 
