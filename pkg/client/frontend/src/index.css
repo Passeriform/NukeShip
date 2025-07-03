@@ -8,7 +8,7 @@ html {
 }
 
 :root {
-    @apply bg-black-blue font-normal text-dark-turquoise;
+    @apply bg-deep-space-black font-normal text-neon-teal;
 
     color-scheme: light dark;
 

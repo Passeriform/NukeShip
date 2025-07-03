@@ -25,7 +25,10 @@ export type RawDataStream = {
 const NODE_RADIUS = 0.1
 const BASE_APOTHEM_RADIUS = 8
 const DEPTH_OFFSET = 4
-const COLORS = [0x7b68ee, 0xda1d81, 0xcccccc, 0x193751] as const
+const COLORS = [
+    0xff00d4, 0x00f7ff, 0xff6600, 0xb300ff, 0x66ff00, 0x0088ff, 0xffff00, 0xff1493, 0x00ffd5, 0xff0033, 0x4b00ff,
+    0x00ff44,
+] as const
 
 // TODO: Build the positions bottom-up instead, so that nodes and connectors don't overlap.
 

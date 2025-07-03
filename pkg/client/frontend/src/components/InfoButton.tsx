@@ -1,7 +1,6 @@
 import { autoUpdate, offset } from "@floating-ui/dom"
 import { useFloating } from "solid-floating-ui"
 import { ComponentProps, JSX, VoidComponent, createSignal, splitProps } from "solid-js"
-import { twMerge } from "tailwind-merge"
 import Button from "./Button"
 
 type InfoButtonProps = ComponentProps<typeof Button> & {
@@ -28,7 +27,6 @@ const InfoButton: VoidComponent<InfoButtonProps> = (props) => {
         <>
             <Button
                 {...buttonProps}
-                class={twMerge("text-dark-turquoise", buttonProps.class)}
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
                 ref={setTooltipReference}
@@ -41,7 +39,7 @@ const InfoButton: VoidComponent<InfoButtonProps> = (props) => {
                         top: `${floatingResult.y ?? 0}px`,
                         left: `${floatingResult.x ?? 0}px`,
                     }}
-                    class="w-72 rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify"
+                    class="w-72 rounded-lg border border-neon-teal bg-midnight-navy p-4 text-justify"
                 >
                     <h3 class="mb-4 font-title text-2xl">{infoProps.hintTitle}</h3>
                     {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}

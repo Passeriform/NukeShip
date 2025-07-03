@@ -18,7 +18,7 @@ const Tips: VoidComponent = () => {
 
     return (
         <section class="absolute bottom-1/10 left-1/2 -translate-x-1/2">
-            <p class="text-base/relaxed font-medium uppercase italic tracking-wide text-dark-turquoise text-shadow">
+            <p class="text-base/relaxed font-medium uppercase italic tracking-wide text-shadow">
                 {getTipString(gameState())}
             </p>
         </section>

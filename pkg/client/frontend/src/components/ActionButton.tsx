@@ -12,7 +12,6 @@ import {
     onCleanup,
     splitProps,
 } from "solid-js"
-import { twMerge } from "tailwind-merge"
 import Button from "./Button"
 import Kbd from "./Kbd"
 
@@ -53,7 +52,6 @@ const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
         <>
             <Button
                 {...buttonProps}
-                class={twMerge("text-dark-turquoise", buttonProps.class)}
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
                 ref={setTooltipReference}
@@ -66,7 +64,7 @@ const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
                         top: `${floatingResult.y ?? 0}px`,
                         left: `${floatingResult.x ?? 0}px`,
                     }}
-                    class="w-72 rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify"
+                    class="w-72 rounded-lg border border-neon-teal bg-midnight-navy p-4 text-justify shadow-neon-teal/30"
                 >
                     <h3 class="mb-4 font-title text-2xl">{actionProps.hintTitle}</h3>
                     {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}

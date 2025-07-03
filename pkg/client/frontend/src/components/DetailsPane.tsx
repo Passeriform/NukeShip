@@ -35,9 +35,9 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
         <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800">
             <section
                 class={twMerge(
-                    "absolute min-w-1/4 transform rounded-lg p-4 text-white shadow-lg transition-all duration-100 ease-out transform-style-3d",
+                    "absolute min-w-1/4 transform rounded-lg p-4 shadow-lg transition-all duration-100 ease-out transform-style-3d",
                     props.position === "left" ? "left-1/8 rotate-y-30" : "right-1/8 -rotate-y-30",
-                    props.dim ? "bg-gray-800/45" : "bg-gray-800",
+                    props.dim ? "bg-midnight-navy/50" : "bg-midnight-navy",
                     props.show ? "scale-y-full opacity-100" : "pointer-events-none scale-y-0 opacity-0",
                 )}
             >
@@ -54,7 +54,7 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
                                         hintTitle={content.title}
                                         hintBody={<ContentBody content={content} />}
                                     />
-                                    <span class="ms-8 text-dark-turquoise">{value}</span>
+                                    <span class="ms-8">{value}</span>
                                 </div>
                             )}
                         </For>

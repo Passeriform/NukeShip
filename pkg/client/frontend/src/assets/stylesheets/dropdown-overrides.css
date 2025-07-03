@@ -3,17 +3,17 @@
 }
 
 .solid-select-container :is(.solid-select-input, .solid-select-single-value, .solid-select-placeholder) {
-    @apply w-full cursor-pointer appearance-none p-4 pe-9 text-4xl text-dark-turquoise/50 outline-none transition-all duration-200 ease-in-out;
+    @apply w-full cursor-pointer appearance-none p-4 pe-9 text-4xl text-neon-teal outline-none transition-all duration-200 ease-in-out;
 }
 
 .solid-select-container:focus-within :is(.solid-select-input, .solid-select-single-value, .solid-select-placeholder) {
-    @apply cursor-pointer text-dark-turquoise shadow-none text-shadow;
+    @apply cursor-pointer text-neon-teal shadow-none text-shadow;
 }
 
 .solid-select-container .solid-select-list {
-    @apply flex flex-col gap-1 rounded-lg border border-dark-turquoise/30 bg-midnight-blue/75 backdrop-blur-md;
+    @apply flex flex-col gap-1 rounded-lg border border-neon-teal bg-dark-purple backdrop-blur-md;
 }
 
 .solid-select-container .solid-select-option:is(:hover, [data-focused="true"]) {
-    @apply bg-nile-blue/75 text-dark-turquoise;
+    @apply bg-dark-purple text-neon-teal;
 }
