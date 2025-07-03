@@ -15,6 +15,10 @@ import { boundsFromMeshGeometries } from "@utility/bounds"
 // TODO: Fixup according to client structure.
 export type RawDataStream = {
     label: string
+    sentinel: boolean
+    power: number
+    shield: number
+    rechargeRate: number
     children: RawDataStream[]
 }
 
@@ -108,6 +112,10 @@ class Sapling extends Mesh {
         this.name = Sapling.MESH_NAME
         this.position.fromArray(position)
         this.userData["label"] = root.label
+        this.userData["power"] = root.power
+        this.userData["shield"] = root.shield
+        this.userData["rechargeRate"] = root.rechargeRate
+        this.userData["sentinel"] = root.sentinel
         this.userData["depth"] = depth
 
         if (collector.length < depth) {

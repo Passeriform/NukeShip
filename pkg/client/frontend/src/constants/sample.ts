@@ -1,205 +1,406 @@
 import { RawDataStream } from "@game/tree"
 
 export const ExampleFS: RawDataStream = {
-    label: "C:",
+    label: "NT",
+    sentinel: true,
+    shield: 10,
+    power: 20,
+    rechargeRate: 5,
     children: [
         {
-            label: "Windows",
+            label: "C:",
+            sentinel: true,
+            shield: 10,
+            power: 20,
+            rechargeRate: 5,
             children: [
                 {
-                    label: "System32",
+                    label: "Windows",
+                    sentinel: false,
+                    shield: 10,
+                    power: 20,
+                    rechargeRate: 5,
                     children: [
                         {
-                            label: "Microsoft",
+                            label: "System32",
+                            sentinel: false,
+                            shield: 10,
+                            power: 20,
+                            rechargeRate: 5,
                             children: [
                                 {
-                                    label: "Azure",
+                                    label: "Microsoft",
+                                    sentinel: false,
+                                    shield: 10,
+                                    power: 20,
+                                    rechargeRate: 5,
                                     children: [
                                         {
-                                            label: "Device.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "Preface.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "AzureAD.exe",
-                                            children: [],
-                                        },
-                                    ],
-                                },
-                                {
-                                    label: "Defender",
-                                    children: [
-                                        {
-                                            label: "Defense.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "NoDefense.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "TestingKPS.dll",
-                                            children: [],
-                                        },
-                                    ],
-                                },
-                            ],
-                        },
-                        {
-                            label: "Avast",
-                            children: [
-                                {
-                                    label: "Azure",
-                                    children: [
-                                        {
-                                            label: "Device.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "Preface.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "AzureAD.exe",
-                                            children: [],
-                                        },
-                                    ],
-                                },
-                                {
-                                    label: "Defender",
-                                    children: [
-                                        {
-                                            label: "Defense.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "NoDefense.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "TestingKPS.dll",
-                                            children: [],
-                                        },
-                                    ],
-                                },
-                            ],
-                        },
-                        {
-                            label: "Tiberius",
-                            children: [
-                                {
-                                    label: "Azure",
-                                    children: [
-                                        {
-                                            label: "Device.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "Preface.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "AzureAD.exe",
-                                            children: [],
-                                        },
-                                    ],
-                                },
-                                {
-                                    label: "Defender",
-                                    children: [
-                                        {
-                                            label: "Defense.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "NoDefense.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "TestingKPS.dll",
-                                            children: [],
-                                        },
-                                    ],
-                                },
-                            ],
-                        },
-                        {
-                            label: "Taurus",
-                            children: [
-                                {
-                                    label: "Azure",
-                                    children: [
-                                        {
-                                            label: "Device.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "Preface.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "AzureAD.exe",
-                                            children: [],
-                                        },
-                                    ],
-                                },
-                                {
-                                    label: "Defender",
-                                    children: [
-                                        {
-                                            label: "Defense.dll",
-                                            children: [],
-                                        },
-                                        {
-                                            label: "NoDefense",
+                                            label: "Azure",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
                                             children: [
                                                 {
-                                                    label: "Avast",
+                                                    label: "Device.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "Preface.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "AzureAD.exe",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            label: "Defender",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
+                                            children: [
+                                                {
+                                                    label: "Defense.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "NoDefense.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "TestingKPS.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                {
+                                    label: "Avast",
+                                    sentinel: false,
+                                    shield: 10,
+                                    power: 20,
+                                    rechargeRate: 5,
+                                    children: [
+                                        {
+                                            label: "Azure",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
+                                            children: [
+                                                {
+                                                    label: "Device.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "Preface.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "AzureAD.exe",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            label: "Defender",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
+                                            children: [
+                                                {
+                                                    label: "Defense.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "NoDefense.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "TestingKPS.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                {
+                                    label: "Tiberius",
+                                    sentinel: false,
+                                    shield: 10,
+                                    power: 20,
+                                    rechargeRate: 5,
+                                    children: [
+                                        {
+                                            label: "Azure",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
+                                            children: [
+                                                {
+                                                    label: "Device.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "Preface.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "AzureAD.exe",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            label: "Defender",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
+                                            children: [
+                                                {
+                                                    label: "Defense.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "NoDefense.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "TestingKPS.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                {
+                                    label: "Taurus",
+                                    sentinel: false,
+                                    shield: 10,
+                                    power: 20,
+                                    rechargeRate: 5,
+                                    children: [
+                                        {
+                                            label: "Azure",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
+                                            children: [
+                                                {
+                                                    label: "Device.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "Preface.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "AzureAD.exe",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                            ],
+                                        },
+                                        {
+                                            label: "Defender",
+                                            sentinel: false,
+                                            shield: 10,
+                                            power: 20,
+                                            rechargeRate: 5,
+                                            children: [
+                                                {
+                                                    label: "Defense.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
+                                                {
+                                                    label: "NoDefense",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
                                                     children: [
                                                         {
-                                                            label: "Azure",
+                                                            label: "Avast",
+                                                            sentinel: false,
+                                                            shield: 10,
+                                                            power: 20,
+                                                            rechargeRate: 5,
                                                             children: [
                                                                 {
-                                                                    label: "Device.dll",
-                                                                    children: [],
+                                                                    label: "Azure",
+                                                                    sentinel: false,
+                                                                    shield: 10,
+                                                                    power: 20,
+                                                                    rechargeRate: 5,
+                                                                    children: [
+                                                                        {
+                                                                            label: "Device.dll",
+                                                                            sentinel: false,
+                                                                            shield: 10,
+                                                                            power: 20,
+                                                                            rechargeRate: 5,
+                                                                            children: [],
+                                                                        },
+                                                                        {
+                                                                            label: "Preface.dll",
+                                                                            sentinel: false,
+                                                                            shield: 10,
+                                                                            power: 20,
+                                                                            rechargeRate: 5,
+                                                                            children: [],
+                                                                        },
+                                                                        {
+                                                                            label: "AzureAD.exe",
+                                                                            sentinel: false,
+                                                                            shield: 10,
+                                                                            power: 20,
+                                                                            rechargeRate: 5,
+                                                                            children: [],
+                                                                        },
+                                                                    ],
                                                                 },
                                                                 {
-                                                                    label: "Preface.dll",
-                                                                    children: [],
-                                                                },
-                                                                {
-                                                                    label: "AzureAD.exe",
-                                                                    children: [],
-                                                                },
-                                                            ],
-                                                        },
-                                                        {
-                                                            label: "Defender",
-                                                            children: [
-                                                                {
-                                                                    label: "Defense.dll",
-                                                                    children: [],
-                                                                },
-                                                                {
-                                                                    label: "NoDefense.dll",
-                                                                    children: [],
-                                                                },
-                                                                {
-                                                                    label: "TestingKPS.dll",
-                                                                    children: [],
+                                                                    label: "Defender",
+                                                                    sentinel: false,
+                                                                    shield: 10,
+                                                                    power: 20,
+                                                                    rechargeRate: 5,
+                                                                    children: [
+                                                                        {
+                                                                            label: "Defense.dll",
+                                                                            sentinel: false,
+                                                                            shield: 10,
+                                                                            power: 20,
+                                                                            rechargeRate: 5,
+                                                                            children: [],
+                                                                        },
+                                                                        {
+                                                                            label: "NoDefense.dll",
+                                                                            sentinel: false,
+                                                                            shield: 10,
+                                                                            power: 20,
+                                                                            rechargeRate: 5,
+                                                                            children: [],
+                                                                        },
+                                                                        {
+                                                                            label: "TestingKPS.dll",
+                                                                            sentinel: false,
+                                                                            shield: 10,
+                                                                            power: 20,
+                                                                            rechargeRate: 5,
+                                                                            children: [],
+                                                                        },
+                                                                    ],
                                                                 },
                                                             ],
                                                         },
                                                     ],
                                                 },
+                                                {
+                                                    label: "TestingKPS.dll",
+                                                    sentinel: false,
+                                                    shield: 10,
+                                                    power: 20,
+                                                    rechargeRate: 5,
+                                                    children: [],
+                                                },
                                             ],
-                                        },
-                                        {
-                                            label: "TestingKPS.dll",
-                                            children: [],
                                         },
                                     ],
                                 },
@@ -211,12 +412,24 @@ export const ExampleFS: RawDataStream = {
         },
         {
             label: "D:",
+            sentinel: false,
+            shield: 10,
+            power: 20,
+            rechargeRate: 5,
             children: [
                 {
                     label: "Dev",
+                    sentinel: false,
+                    shield: 10,
+                    power: 20,
+                    rechargeRate: 5,
                     children: [
                         {
                             label: "api.dll",
+                            sentinel: false,
+                            shield: 10,
+                            power: 20,
+                            rechargeRate: 5,
                             children: [],
                         },
                     ],
@@ -225,12 +438,24 @@ export const ExampleFS: RawDataStream = {
         },
         {
             label: "E:",
+            sentinel: false,
+            shield: 10,
+            power: 20,
+            rechargeRate: 5,
             children: [
                 {
                     label: "Dev",
+                    sentinel: false,
+                    shield: 10,
+                    power: 20,
+                    rechargeRate: 5,
                     children: [
                         {
                             label: "api.dll",
+                            sentinel: false,
+                            shield: 10,
+                            power: 20,
+                            rechargeRate: 5,
                             children: [],
                         },
                     ],
@@ -239,12 +464,24 @@ export const ExampleFS: RawDataStream = {
         },
         {
             label: "F:",
+            sentinel: false,
+            shield: 10,
+            power: 20,
+            rechargeRate: 5,
             children: [
                 {
                     label: "Dev",
+                    sentinel: false,
+                    shield: 10,
+                    power: 20,
+                    rechargeRate: 5,
                     children: [
                         {
                             label: "api.dll",
+                            sentinel: false,
+                            shield: 10,
+                            power: 20,
+                            rechargeRate: 5,
                             children: [],
                         },
                     ],
