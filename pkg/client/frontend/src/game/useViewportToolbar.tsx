@@ -19,7 +19,7 @@ const useViewportToolbar = () => {
                 when={!isBirdsEye()}
                 fallback={
                     <ActionButton
-                        class="p-8"
+                        class="p-8 text-4xl/tight"
                         text="⮪"
                         hintTitle="Back"
                         hintBody=""
@@ -31,7 +31,7 @@ const useViewportToolbar = () => {
                 }
             >
                 <ActionButton
-                    class="p-8"
+                    class="p-8 text-4xl/tight"
                     text="🔄"
                     hintTitle="Switch Views"
                     hintBody="Switch between a side (elevation) view or top-down (plan) view"
@@ -44,7 +44,7 @@ const useViewportToolbar = () => {
                     when={focus() === FocusType.SELF}
                     fallback={
                         <ActionButton
-                            class="p-8"
+                            class="p-8 text-4xl/tight"
                             text="⬅"
                             hintTitle="Back"
                             hintBody="Get back to your board"
@@ -56,7 +56,7 @@ const useViewportToolbar = () => {
                     }
                 >
                     <ActionButton
-                        class="p-8"
+                        class="p-8 text-4xl/tight"
                         text="👁"
                         hintTitle="Peek At Opponent"
                         hintBody="Peek at the opponent's board"
@@ -67,7 +67,7 @@ const useViewportToolbar = () => {
                     />
                 </Show>
                 <ActionButton
-                    class="p-8"
+                    class="p-8 text-4xl/tight"
                     text="🧿"
                     hintTitle="Bird's Eye View"
                     hintBody="Switch to a bird's eye view of the game board."

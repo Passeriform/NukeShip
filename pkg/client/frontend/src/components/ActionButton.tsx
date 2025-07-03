@@ -1,15 +1,27 @@
 import { autoUpdate, offset } from "@floating-ui/dom"
 import Mousetrap from "mousetrap"
 import { useFloating } from "solid-floating-ui"
-import { ComponentProps, For, Show, VoidComponent, createEffect, createSignal, onCleanup, splitProps } from "solid-js"
+import {
+    ComponentProps,
+    For,
+    JSX,
+    Show,
+    VoidComponent,
+    createEffect,
+    createSignal,
+    onCleanup,
+    splitProps,
+} from "solid-js"
 import { twMerge } from "tailwind-merge"
 import Button from "./Button"
 import Kbd from "./Kbd"
 
+// TODO: Extend InfoButton instead of Button.
+
 type ActionButtonProps = ComponentProps<typeof Button> & {
     hintTitle: string
-    hintBody: string
-    shortcuts?: string[]
+    hintBody: JSX.Element
+    shortcuts: string[]
 }
 
 const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
@@ -28,12 +40,12 @@ const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
     })
 
     createEffect(() => {
-        if (props.shortcuts?.length) {
-            Mousetrap.bind(props.shortcuts!, () => tooltipReference()?.click())
+        if (props.shortcuts.length) {
+            Mousetrap.bind(props.shortcuts, () => tooltipReference()?.click())
         }
 
         onCleanup(() => {
-            Mousetrap.unbind(props.shortcuts!)
+            Mousetrap.unbind(props.shortcuts)
         })
     })
 
@@ -41,7 +53,7 @@ const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
         <>
             <Button
                 {...buttonProps}
-                class={twMerge("text-4xl/tight text-dark-turquoise", buttonProps.class)}
+                class={twMerge("text-dark-turquoise", buttonProps.class)}
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
                 ref={setTooltipReference}
@@ -58,8 +70,12 @@ const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
                 >
                     <h3 class="mb-4 font-title text-2xl">{actionProps.hintTitle}</h3>
                     {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}
-                    <p class="mb-8">{actionProps.hintBody}</p>
-                    <Show when={props.shortcuts?.length}>
+                    {actionProps.hintBody === "string" ? (
+                        <p class="mb-8">{actionProps.hintBody}</p>
+                    ) : (
+                        actionProps.hintBody
+                    )}
+                    <Show when={props.shortcuts.length}>
                         <p class="my-4 text-xs text-gray-500">
                             <For each={props.shortcuts}>
                                 {(shortcut, shortcutIdx) => (

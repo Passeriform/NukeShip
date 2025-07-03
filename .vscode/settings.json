@@ -13,6 +13,7 @@
         "buildx",
         "bytebufferpool",
         "caarlos",
+        "Chronos",
         "containedctx",
         "copyloopvar",
         "cyclop",

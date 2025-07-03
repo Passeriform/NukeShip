@@ -30,7 +30,6 @@ export type TargetControlsChangeEvent = TargetControlsEventMap["change"] & Event
 // TODO: Use actual nodes to track history and return nodes instead of positions.
 
 class TargetControls extends Controls<TargetControlsEventMap> {
-    private _lastSelected: Object3D | undefined
     private _unselectedPose: TweenTransform | undefined
     private preloadedRotation: Quaternion
     private tweenGroup: TweenGroup
@@ -43,7 +42,6 @@ class TargetControls extends Controls<TargetControlsEventMap> {
     private resetHistory() {
         this.history = this.history.splice(0, 0)
         this.historyIdx = undefined
-        this._lastSelected = undefined
         this._unselectedPose = undefined
     }
 
@@ -97,12 +95,12 @@ class TargetControls extends Controls<TargetControlsEventMap> {
 
             this.animate(this._unselectedPose)
 
-            this.resetHistory()
-
             this.dispatchEvent({
                 type: "deselect",
                 tweenGroup: this.tweenGroup,
             })
+
+            this.resetHistory()
 
             return
         }
@@ -130,9 +128,11 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         }
 
         if (event.button === 2) {
-            if (this.history.length) {
-                this.animate(this.history[0]!)
+            if (!this._unselectedPose) {
+                throw new Error("Unselected pose is not defined.")
             }
+
+            this.animate(this._unselectedPose)
 
             this.dispatchEvent({
                 type: "deselect",
@@ -169,11 +169,13 @@ class TargetControls extends Controls<TargetControlsEventMap> {
     }
 
     pushTarget(target: Mesh) {
-        if (target === this._lastSelected) {
+        // TODO: Remove when storing targets directly.
+        const [position] = getWorldPose(target)
+        position.add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(this.cameraOffset))
+
+        if (this.historyIdx !== undefined && this.history[this.historyIdx]?.position.equals(position)) {
             return
         }
-
-        this._lastSelected = target
 
         // Store initial pose if the target is pushed is the first.
         if (this.history.length === 0) {
@@ -187,15 +189,8 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         this.history = this.history.slice(0, (this.historyIdx ?? -1) + 1)
 
         // Add new target to history.
-        const [position] = getWorldPose(target)
-
         // TODO: Make this reliant on getWorldQuaternion.
-        const tweenTarget = {
-            position: position
-                .add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(this.cameraOffset))
-                .clone(),
-            rotation: this.preloadedRotation.clone(),
-        }
+        const tweenTarget = { position, rotation: this.preloadedRotation.clone() }
 
         this.history.push(tweenTarget)
         this.historyIdx = this.history.length - 1
