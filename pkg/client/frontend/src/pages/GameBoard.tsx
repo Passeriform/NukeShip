@@ -23,6 +23,7 @@ import { boundsFromObjects } from "@utility/bounds"
 // TODO: Use actual FS data from native client.
 // TODO: Fix regression of resizing the window not updating the renderer size.
 // TODO: Target controls node change should also dispatch the changed node to the event handlers.
+// TODO: RMB click to restore camera position, camera orientation, selected sapling, and drilled depth.
 
 const TOUR_CONTROLS_BIRDS_EYE_OFFSET = 20
 const TOUR_CONTROLS_ELEVATION_OFFSET = 4
@@ -36,6 +37,7 @@ const GameBoard: VoidComponent = () => {
     const { ambientLight, directionalLight } = useLighting()
     const { camera } = useCamera()
 
+    const [hoveringSapling, setHoveringSapling] = createSignal<boolean>(false)
     const [selectedSapling, setSelectedSapling] = createSignal<Sapling | undefined>(undefined)
     const [drilledDepth, setDrilledDepth] = createSignal<number | undefined>(undefined)
     const [cameraTransitioning, setCameraTransitioning] = createSignal<boolean>(false)
@@ -135,6 +137,11 @@ const GameBoard: VoidComponent = () => {
         opponentFsTree.resetOpacity(tweenGroup)
     })
 
+    // Mouse Cursor
+    createEffect(() => {
+        document.body.style.cursor = hoveringSapling() ? "pointer" : "default"
+    })
+
     // Tour Controls
     createEffect(() => {
         const tourBoundPoses =
@@ -192,7 +199,7 @@ const GameBoard: VoidComponent = () => {
                 }}
                 onHover={(mesh, repeat, lastNode) => {
                     if (!mesh) {
-                        document.body.style.cursor = "default"
+                        setHoveringSapling(false)
                         lastNode?.glow(false, tweenGroup)
                         return
                     }
@@ -201,15 +208,19 @@ const GameBoard: VoidComponent = () => {
                         lastNode?.glow(false, tweenGroup)
                     }
 
-                    document.body.style.cursor = "pointer"
+                    setHoveringSapling(true)
                     mesh.glow(true, tweenGroup)
                 }}
             />
             <DetailsPane
                 position={focus() === FocusType.SELF ? "left" : "right"}
                 show={Boolean(selectedSapling()) && !cameraTransitioning()}
-                title={selectedSapling()?.userData["label"]}
-                content={selectedSapling()?.userData["content"]}
+                dim={hoveringSapling()}
+                label={selectedSapling()?.userData["label"]}
+                sentinel={selectedSapling()?.userData["sentinel"]}
+                power={selectedSapling()?.userData["power"]}
+                shield={selectedSapling()?.userData["shield"]}
+                rechargeRate={selectedSapling()?.userData["rechargeRate"]}
             />
             <NavButton nonInteractive position="right" text={code ?? ""} />
         </>

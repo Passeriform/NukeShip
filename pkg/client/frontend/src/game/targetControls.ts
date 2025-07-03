@@ -30,12 +30,11 @@ export type TargetControlsChangeEvent = TargetControlsEventMap["change"] & Event
 // TODO: Use actual nodes to track history and return nodes instead of positions.
 
 class TargetControls extends Controls<TargetControlsEventMap> {
-    private _lastSelected: Object3D | undefined
     private _unselectedPose: TweenTransform | undefined
     private preloadedRotation: Quaternion
     private tweenGroup: TweenGroup
     private historyIdx: number | undefined
-    private history: TweenTransform[]
+    private history: Mesh[]
     private transitioning: boolean
     private cameraOffset: number
     public timing: number
@@ -43,7 +42,6 @@ class TargetControls extends Controls<TargetControlsEventMap> {
     private resetHistory() {
         this.history = this.history.splice(0, 0)
         this.historyIdx = undefined
-        this._lastSelected = undefined
         this._unselectedPose = undefined
     }
 
@@ -51,6 +49,12 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         const rotations = interactables.map((target) => getWorldPose(target)[1])
         this.preloadedRotation = averageQuaternions(...rotations)
         this.preloadedRotation.slerp(lookAtFromQuaternion(this.object, ELEVATION_FORWARD_QUATERNION), 0.5)
+    }
+
+    private positionFromMesh(mesh: Mesh) {
+        const [position] = getWorldPose(mesh)
+        position.add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(this.cameraOffset))
+        return position
     }
 
     private animate(tweenTarget: TweenTransform) {
@@ -97,12 +101,12 @@ class TargetControls extends Controls<TargetControlsEventMap> {
 
             this.animate(this._unselectedPose)
 
-            this.resetHistory()
-
             this.dispatchEvent({
                 type: "deselect",
                 tweenGroup: this.tweenGroup,
             })
+
+            this.resetHistory()
 
             return
         }
@@ -119,7 +123,16 @@ class TargetControls extends Controls<TargetControlsEventMap> {
             this.historyIdx--
         }
 
-        this.animate(this.history[this.historyIdx]!)
+        this.dispatchEvent({
+            type: "select",
+            intersect: this.history[this.historyIdx]!,
+            tweenGroup: this.tweenGroup,
+        })
+
+        this.animate({
+            position: this.positionFromMesh(this.history[this.historyIdx]!),
+            rotation: this.preloadedRotation.clone(),
+        })
     }
 
     private onMouseDown(event: MouseEvent) {
@@ -130,9 +143,11 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         }
 
         if (event.button === 2) {
-            if (this.history.length) {
-                this.animate(this.history[0]!)
+            if (!this._unselectedPose) {
+                throw new Error("Unselected pose is not defined.")
             }
+
+            this.animate(this._unselectedPose)
 
             this.dispatchEvent({
                 type: "deselect",
@@ -169,11 +184,9 @@ class TargetControls extends Controls<TargetControlsEventMap> {
     }
 
     pushTarget(target: Mesh) {
-        if (target === this._lastSelected) {
+        if (this.historyIdx !== undefined && this.history[this.historyIdx] === target) {
             return
         }
-
-        this._lastSelected = target
 
         // Store initial pose if the target is pushed is the first.
         if (this.history.length === 0) {
@@ -187,17 +200,7 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         this.history = this.history.slice(0, (this.historyIdx ?? -1) + 1)
 
         // Add new target to history.
-        const [position] = getWorldPose(target)
-
-        // TODO: Make this reliant on getWorldQuaternion.
-        const tweenTarget = {
-            position: position
-                .add(Z_AXIS.clone().applyQuaternion(this.preloadedRotation).multiplyScalar(this.cameraOffset))
-                .clone(),
-            rotation: this.preloadedRotation.clone(),
-        }
-
-        this.history.push(tweenTarget)
+        this.history.push(target)
         this.historyIdx = this.history.length - 1
 
         this.dispatchEvent({
@@ -206,7 +209,10 @@ class TargetControls extends Controls<TargetControlsEventMap> {
             tweenGroup: this.tweenGroup,
         })
 
-        this.animate(tweenTarget)
+        this.animate({
+            position: this.positionFromMesh(this.history[this.historyIdx]!),
+            rotation: this.preloadedRotation.clone(),
+        })
     }
 
     setInteractables(interactables: Object3D[]) {
@@ -221,7 +227,10 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         this.cameraOffset = offset
 
         if (this.historyIdx) {
-            this.animate(this.history[this.historyIdx]!)
+            this.animate({
+                position: this.positionFromMesh(this.history[this.historyIdx]!),
+                rotation: this.preloadedRotation.clone(),
+            })
         }
     }
 
