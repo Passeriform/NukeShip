@@ -18,7 +18,7 @@ const Button: VoidComponent<ButtonProps> = (_props) => {
     return (
         <button
             class={twMerge(
-                "group relative cursor-pointer appearance-none rounded-lg border border-dark-turquoise/30 bg-transparent px-3 py-5 text-base/tight font-medium uppercase tracking-wide text-dark-turquoise/50 outline-none transition-all duration-200 ease-in-out hover:rounded-ee-none hover:rounded-ss-none hover:border-medium-slate-blue hover:text-dark-turquoise hover:shadow-sm hover:shadow-dark-turquoise/30 hover:text-shadow focus:rounded-ee-none focus:rounded-ss-none focus:border-medium-slate-blue focus:text-dark-turquoise focus:shadow-sm focus:shadow-dark-turquoise/30 focus:text-shadow",
+                "group relative cursor-pointer appearance-none rounded-lg border border-dark-turquoise/30 bg-transparent px-3 py-5 text-base/tight font-medium uppercase tracking-wide text-dark-turquoise/50 outline-none backdrop-blur-md transition-all duration-200 ease-in-out hover:rounded-ee-none hover:rounded-ss-none hover:border-medium-slate-blue hover:text-dark-turquoise hover:shadow-sm hover:shadow-dark-turquoise/30 hover:text-shadow focus:rounded-ee-none focus:rounded-ss-none focus:border-medium-slate-blue focus:text-dark-turquoise focus:shadow-sm focus:shadow-dark-turquoise/30 focus:text-shadow",
                 props.nonInteractive ? "pointer-events-none cursor-default" : "",
                 props.class ?? "",
             )}

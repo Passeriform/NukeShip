@@ -104,6 +104,7 @@ export default {
                 "medium-slate-blue": "#7b68ee",
                 "black-blue": "#151e29",
                 "midnight-blue": "#141b32",
+                "black-russian": "#0a001c",
                 "elderberry": "#17182b",
                 "nile-blue": "#193751",
                 "vivid-cerise": "#da1d81",
