@@ -5,8 +5,8 @@ import { VoidComponent, createEffect, createSignal, onCleanup, onMount } from "s
 import toast from "solid-toast"
 import { PerspectiveCamera } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
-import DetailsPane from "@components/DetailsPane"
 import NavButton from "@components/NavButton"
+import NodeDetails from "@components/NodeDetails"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType, ViewType } from "@constants/types"
@@ -55,7 +55,7 @@ const GameBoard: VoidComponent = () => {
     const focussedTree = () =>
         (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
 
-    const showDetailsPane = () => Boolean(selectedSapling()) && !cameraTransitioning()
+    const showNodeDetails = () => Boolean(selectedSapling()) && !cameraTransitioning()
 
     const draw = (time: number = 0) => {
         tourControls.update(time)
@@ -216,9 +216,9 @@ const GameBoard: VoidComponent = () => {
                 }}
             />
             <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800">
-                <DetailsPane
+                <NodeDetails
                     position={focus() === FocusType.SELF ? "left" : "right"}
-                    show={showDetailsPane}
+                    show={showNodeDetails}
                     transitionTiming={100}
                     label={selectedSapling()?.userData["label"]}
                     sentinel={selectedSapling()?.userData["sentinel"]}

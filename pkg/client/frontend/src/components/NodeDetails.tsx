@@ -6,14 +6,14 @@ import { RawDataStream } from "@game/tree"
 import { ContentBody } from "./ContentBody"
 import InfoButton from "./InfoButton"
 
-interface DetailsPaneProps extends Omit<RawDataStream, "children"> {
+interface NodeDetailsProps extends Omit<RawDataStream, "children"> {
     show: Accessor<boolean>
     transitionTiming?: number
     position?: "left" | "right"
     revealBehind?: (obstructingHover: boolean) => boolean
 }
 
-const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
+const NodeDetails: VoidComponent<NodeDetailsProps> = (_props) => {
     const props = mergeProps({ position: "left", transitionTiming: 400, revealBehind: () => false }, _props)
 
     const statData = () => [
@@ -92,4 +92,4 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
     )
 }
 
-export default DetailsPane
+export default NodeDetails
