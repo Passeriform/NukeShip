@@ -1,5 +1,5 @@
 import { createPresence } from "@solid-primitives/presence"
-import { Accessor, For, Show, VoidComponent, createSignal, mergeProps } from "solid-js"
+import { Accessor, For, Show, VoidComponent, createEffect, createSignal, mergeProps, untrack } from "solid-js"
 import { twMerge } from "tailwind-merge"
 import { CONTENT } from "@constants/content"
 import { RawDataStream } from "@game/tree"
@@ -8,12 +8,13 @@ import InfoButton from "./InfoButton"
 
 interface DetailsPaneProps extends Omit<RawDataStream, "children"> {
     show: Accessor<boolean>
+    transitionTiming?: number
     position?: "left" | "right"
     revealBehind?: (obstructingHover: boolean) => boolean
 }
 
 const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
-    const props = mergeProps({ position: "left", revealBehind: () => false }, _props)
+    const props = mergeProps({ position: "left", transitionTiming: 400, revealBehind: () => false }, _props)
 
     const statData = () => [
         {
@@ -31,17 +32,30 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
     ]
 
     const [hovering, setHovering] = createSignal(false)
-    const panePresence = createPresence(props.show, { transitionDuration: 100 })
+    const [debouncedPosition, setDebouncedPosition] = createSignal(props.position)
+
+    const panePresence = createPresence(props.show, { transitionDuration: props.transitionTiming })
+
+    createEffect(() => {
+        if (untrack(debouncedPosition) !== props.position) {
+            if (panePresence.isAnimating() || panePresence.isVisible()) {
+                setTimeout(() => setDebouncedPosition(props.position), props.transitionTiming)
+            } else {
+                setDebouncedPosition(props.position)
+            }
+        }
+    })
 
     return (
         <Show when={panePresence.isMounted()}>
             <section
                 class={twMerge(
-                    "pointer-events-auto absolute min-w-1/4 transform rounded-lg border border-dark-turquoise p-4 text-white shadow-lg transition-all duration-100 ease-out transform-style-3d",
-                    props.position === "left" ? "left-1/8 rotate-y-30" : "right-1/8 -rotate-y-30",
+                    "pointer-events-auto absolute min-w-1/4 transform rounded-lg border border-dark-turquoise p-4 text-white shadow-lg transition-all ease-out transform-style-3d",
+                    debouncedPosition() === "left" ? "left-1/8 rotate-y-30" : "right-1/8 -rotate-y-30",
                     props.revealBehind(hovering()) ? "" : "backdrop-blur-lg",
                     panePresence.isVisible() ? "scale-y-100" : "scale-y-0",
                 )}
+                style={{ "transition-duration": `${props.transitionTiming}ms` }}
                 onMouseEnter={() => setHovering(true)}
                 onMouseLeave={() => setHovering(false)}
             >

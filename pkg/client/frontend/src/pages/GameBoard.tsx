@@ -219,6 +219,7 @@ const GameBoard: VoidComponent = () => {
                 <DetailsPane
                     position={focus() === FocusType.SELF ? "left" : "right"}
                     show={showDetailsPane}
+                    transitionTiming={100}
                     label={selectedSapling()?.userData["label"]}
                     sentinel={selectedSapling()?.userData["sentinel"]}
                     power={selectedSapling()?.userData["power"]}
