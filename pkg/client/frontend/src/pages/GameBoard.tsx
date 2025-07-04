@@ -228,7 +228,9 @@ const GameBoard: VoidComponent = () => {
                     revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
                 />
             </div>
-            <NavButton nonInteractive position="right" text={code ?? ""} />
+            <NavButton position="right" class="pointer-events-none cursor-default" disabled>
+                {code}
+            </NavButton>
         </>
     )
 }

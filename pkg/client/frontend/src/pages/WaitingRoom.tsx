@@ -50,7 +50,9 @@ const WaitingRoom: VoidComponent = () => {
     return (
         <>
             <VideoBackground src={waitingRoomVideo} />
-            <NavButton position="left" text="🡐 Back" onClick={goBack} />
+            <NavButton position="left" onClick={goBack}>
+                🡐 Back
+            </NavButton>
             <section class="flex flex-col items-center justify-evenly gap-4">
                 <h2 class="animate-glitch-base font-title text-9xl font-bold text-dark-turquoise drop-shadow-default before:absolute before:left-4 before:top-2 before:-z-10 before:w-full-extend before:animate-glitch-alpha before:text-vivid-cerise before:content-[attr(data-text)] after:absolute after:-left-2 after:top-1 after:-z-10 after:w-full-extend after:animate-glitch-beta after:text-spiro-disco-ball after:content-[attr(data-text)]">
                     〔 {code} 〕
@@ -62,7 +64,7 @@ const WaitingRoom: VoidComponent = () => {
                     <span
                         class={twMerge(
                             "px-8 text-base/relaxed font-medium uppercase tracking-wide text-dark-turquoise text-shadow",
-                            showLoader() ? "animate-slow-blink" : "",
+                            showLoader() && "animate-slow-blink",
                         )}
                     >
                         {getMessageString(gameState())}
@@ -70,11 +72,9 @@ const WaitingRoom: VoidComponent = () => {
                 </p>
             </section>
             <Show when={showReadyButton()}>
-                <Button
-                    class="h-20 w-56"
-                    text={isReady() ? "⛌ Unready" : "✓ Ready"}
-                    onClick={() => UpdateReady(!isReady())}
-                />
+                <Button class="h-20 w-56" onClick={() => UpdateReady(!isReady())}>
+                    {isReady() ? "⛌ Unready" : "✓ Ready"}
+                </Button>
             </Show>
             <Tips />
         </>

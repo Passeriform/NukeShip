@@ -97,7 +97,9 @@ const PlayPanel: VoidComponent = () => {
                     initialValue={gameMode()}
                     onChange={setGameMode}
                 />
-                <Button class="min-h-20 min-w-56" text="Create Room" onClick={createRoom} />
+                <Button class="min-h-20 min-w-56" onClick={createRoom}>
+                    Create Room
+                </Button>
             </section>
             <div class="h-96 w-8 bg-divider" />
             <section class="flex flex-col items-center justify-evenly gap-16 p-24">
@@ -113,7 +115,9 @@ const PlayPanel: VoidComponent = () => {
                     onkeydown={setCaretToEnd}
                     onmousedown={setCaretToEnd}
                 />
-                <Button class="min-h-20 min-w-56" text="Join Room" onClick={joinRoom} />
+                <Button class="min-h-20 min-w-56" onClick={joinRoom}>
+                    Join Room
+                </Button>
             </section>
         </section>
     )

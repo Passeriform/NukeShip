@@ -52,7 +52,7 @@ const NodeDetails: VoidComponent<NodeDetailsProps> = (_props) => {
                 class={twMerge(
                     "pointer-events-auto absolute min-w-1/4 transform rounded-lg border border-dark-turquoise p-4 text-white shadow-lg transition-all ease-out transform-style-3d",
                     debouncedPosition() === "left" ? "left-1/8 rotate-y-30" : "right-1/8 -rotate-y-30",
-                    props.revealBehind(hovering()) ? "" : "backdrop-blur-lg",
+                    !props.revealBehind(hovering()) && "backdrop-blur-lg",
                     panePresence.isVisible() ? "scale-y-100" : "scale-y-0",
                 )}
                 style={{ "transition-duration": `${props.transitionTiming}ms` }}
@@ -68,10 +68,11 @@ const NodeDetails: VoidComponent<NodeDetailsProps> = (_props) => {
                                     <InfoButton
                                         class="w-16 cursor-default p-6"
                                         embellish={false}
-                                        text={content.icon}
                                         hintTitle={content.title}
                                         hintBody={<ContentBody content={content} />}
-                                    />
+                                    >
+                                        {content.icon}
+                                    </InfoButton>
                                     <span class="ms-8 text-dark-turquoise">{value}</span>
                                 </div>
                             )}
@@ -81,10 +82,11 @@ const NodeDetails: VoidComponent<NodeDetailsProps> = (_props) => {
                         <InfoButton
                             class="ms-auto w-20 cursor-default p-6"
                             embellish={false}
-                            text={CONTENT.SENTINEL.icon}
                             hintTitle={CONTENT.SENTINEL.title}
                             hintBody={<ContentBody content={CONTENT.SENTINEL} />}
-                        />
+                        >
+                            {CONTENT.SENTINEL.icon}
+                        </InfoButton>
                     </Show>
                 </article>
             </section>

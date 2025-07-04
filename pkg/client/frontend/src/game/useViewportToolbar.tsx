@@ -20,62 +20,67 @@ const useViewportToolbar = () => {
                 fallback={
                     <ActionButton
                         class="p-8 text-4xl/tight"
-                        text="⮪"
                         hintTitle="Back"
                         hintBody=""
                         shortcuts={["esc", "b"]}
                         onClick={() => {
                             setIsBirdsEye(false)
                         }}
-                    />
+                    >
+                        ⮪
+                    </ActionButton>
                 }
             >
                 <ActionButton
                     class="p-8 text-4xl/tight"
-                    text="🔄"
                     hintTitle="Switch Views"
                     hintBody="Switch between a side (elevation) view or top-down (plan) view"
                     shortcuts={["q"]}
                     onClick={() => {
                         setView(view() === ViewType.PLAN ? ViewType.ELEVATION : ViewType.PLAN)
                     }}
-                />
+                >
+                    🔄
+                </ActionButton>
                 <Show
                     when={focus() === FocusType.SELF}
                     fallback={
                         <ActionButton
                             class="p-8 text-4xl/tight"
-                            text="⬅"
                             hintTitle="Back"
                             hintBody="Get back to your board"
                             shortcuts={["esc", "r"]}
                             onClick={() => {
                                 setFocus(FocusType.SELF)
                             }}
-                        />
+                        >
+                            ⬅
+                        </ActionButton>
                     }
                 >
                     <ActionButton
                         class="p-8 text-4xl/tight"
-                        text="👁"
                         hintTitle="Peek At Opponent"
                         hintBody="Peek at the opponent's board"
                         shortcuts={["r"]}
                         onClick={() => {
                             setFocus(FocusType.OPPONENT)
                         }}
-                    />
+                    >
+                        👁
+                    </ActionButton>
                 </Show>
                 <ActionButton
                     class="p-8 text-4xl/tight"
-                    text="🧿"
                     hintTitle="Bird's Eye View"
                     hintBody="Switch to a bird's eye view of the game board."
                     shortcuts={["b"]}
                     onClick={() => {
                         setIsBirdsEye(true)
                     }}
-                />
+                >
+                    🧿
+                </ActionButton>
             </Show>
         </section>
     )

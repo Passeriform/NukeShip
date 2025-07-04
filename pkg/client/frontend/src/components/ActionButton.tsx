@@ -1,96 +1,57 @@
-import { autoUpdate, offset } from "@floating-ui/dom"
+import { combineProps } from "@solid-primitives/props"
 import Mousetrap from "mousetrap"
-import { useFloating } from "solid-floating-ui"
-import {
-    ComponentProps,
-    For,
-    JSX,
-    Show,
-    VoidComponent,
-    createEffect,
-    createSignal,
-    onCleanup,
-    splitProps,
-} from "solid-js"
-import { twMerge } from "tailwind-merge"
-import Button from "./Button"
-import Kbd from "./Kbd"
+import { Component, ComponentProps, For, Show, createEffect, createSignal, onCleanup, splitProps } from "solid-js"
+import InfoButton from "./InfoButton"
+import Shortcut from "./Shortcut"
 
-// TODO: Extend InfoButton instead of Button.
-
-type ActionButtonProps = ComponentProps<typeof Button> & {
-    hintTitle: string
-    hintBody: JSX.Element
+type ActionButtonProps = ComponentProps<typeof InfoButton> & {
     shortcuts: string[]
 }
 
-const ActionButton: VoidComponent<ActionButtonProps> = (props) => {
-    const [actionProps, buttonProps] = splitProps(props, ["hintTitle", "hintBody", "shortcuts"])
+const ActionButton: Component<ActionButtonProps> = (_props) => {
+    const [ownProps, forwardedProps] = splitProps(_props, ["shortcuts"])
 
-    // TODO: Merge ref for button with the one from buttonProps.
+    const [infoButtonReference, setInfoButtonReference] = createSignal<HTMLButtonElement>()
 
-    const [tooltipReference, setTooltipReference] = createSignal<HTMLButtonElement>()
-    const [tooltipFloating, setTooltipFloating] = createSignal<HTMLElement>()
-    const [showTooltip, setShowTooltip] = createSignal(false)
-
-    const floatingResult = useFloating(tooltipReference, tooltipFloating, {
-        placement: "top",
-        whileElementsMounted: autoUpdate,
-        middleware: [offset(20)],
-    })
+    // NOTE: Exception for any typing due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
+    const combinedProps = combineProps(forwardedProps as any, {
+        ref: setInfoButtonReference,
+    }) as unknown as typeof forwardedProps
 
     createEffect(() => {
-        if (props.shortcuts.length) {
-            Mousetrap.bind(props.shortcuts, () => tooltipReference()?.click())
+        if (ownProps.shortcuts.length) {
+            Mousetrap.bind(ownProps.shortcuts, () => infoButtonReference()?.click())
         }
 
         onCleanup(() => {
-            Mousetrap.unbind(props.shortcuts)
+            Mousetrap.unbind(ownProps.shortcuts)
         })
     })
 
     return (
         <>
-            <Button
-                {...buttonProps}
-                class={twMerge("text-dark-turquoise", buttonProps.class)}
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
-                ref={setTooltipReference}
+            <InfoButton
+                {...combinedProps}
+                hintBody={
+                    <>
+                        {combinedProps.hintBody}
+                        <Show when={ownProps.shortcuts.length}>
+                            <p class="my-4 text-xs text-gray-500">
+                                <For each={ownProps.shortcuts}>
+                                    {(shortcut, shortcutIdx) => (
+                                        <>
+                                            <Shortcut shortcut={shortcut} />
+                                            {shortcutIdx() < ownProps.shortcuts!.length - 1 && (
+                                                <span class="mx-2 text-xs">or</span>
+                                            )}
+                                        </>
+                                    )}
+                                </For>
+                            </p>
+                        </Show>
+                    </>
+                }
             />
-            {showTooltip() && (
-                <div
-                    ref={setTooltipFloating}
-                    style={{
-                        position: floatingResult.strategy,
-                        top: `${floatingResult.y ?? 0}px`,
-                        left: `${floatingResult.x ?? 0}px`,
-                    }}
-                    class="w-72 rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify"
-                >
-                    <h3 class="mb-4 font-title text-2xl">{actionProps.hintTitle}</h3>
-                    {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}
-                    {actionProps.hintBody === "string" ? (
-                        <p class="mb-8">{actionProps.hintBody}</p>
-                    ) : (
-                        actionProps.hintBody
-                    )}
-                    <Show when={props.shortcuts.length}>
-                        <p class="my-4 text-xs text-gray-500">
-                            <For each={props.shortcuts}>
-                                {(shortcut, shortcutIdx) => (
-                                    <>
-                                        <Kbd shortcut={shortcut} />
-                                        {shortcutIdx() < props.shortcuts!.length - 1 && (
-                                            <span class="mx-2 text-xs">or</span>
-                                        )}
-                                    </>
-                                )}
-                            </For>
-                        </p>
-                    </Show>
-                </div>
-            )}
         </>
     )
 }
