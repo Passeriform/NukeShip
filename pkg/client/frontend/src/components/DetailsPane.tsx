@@ -1,4 +1,5 @@
-import { For, Show, VoidComponent, mergeProps } from "solid-js"
+import { createPresence } from "@solid-primitives/presence"
+import { Accessor, For, Show, VoidComponent, createSignal, mergeProps } from "solid-js"
 import { twMerge } from "tailwind-merge"
 import { CONTENT } from "@constants/content"
 import { RawDataStream } from "@game/tree"
@@ -6,13 +7,13 @@ import { ContentBody } from "./ContentBody"
 import InfoButton from "./InfoButton"
 
 interface DetailsPaneProps extends Omit<RawDataStream, "children"> {
+    show: Accessor<boolean>
     position?: "left" | "right"
-    show?: boolean
-    dim?: boolean
+    revealBehind?: (obstructingHover: boolean) => boolean
 }
 
 const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
-    const props = mergeProps({ position: "left", show: false, dim: false }, _props)
+    const props = mergeProps({ position: "left", revealBehind: () => false }, _props)
 
     const statData = () => [
         {
@@ -29,17 +30,20 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
         },
     ]
 
-    const sharedButtonClasses = "pointer-events-auto cursor-default p-6"
+    const [hovering, setHovering] = createSignal(false)
+    const panePresence = createPresence(props.show, { transitionDuration: 100 })
 
     return (
-        <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800">
+        <Show when={panePresence.isMounted()}>
             <section
                 class={twMerge(
-                    "absolute min-w-1/4 transform rounded-lg p-4 text-white shadow-lg transition-all duration-100 ease-out transform-style-3d",
+                    "pointer-events-auto absolute min-w-1/4 transform rounded-lg border border-dark-turquoise p-4 text-white shadow-lg transition-all duration-100 ease-out transform-style-3d",
                     props.position === "left" ? "left-1/8 rotate-y-30" : "right-1/8 -rotate-y-30",
-                    props.dim ? "bg-gray-800/45" : "bg-gray-800",
-                    props.show ? "scale-y-full opacity-100" : "pointer-events-none scale-y-0 opacity-0",
+                    props.revealBehind(hovering()) ? "" : "backdrop-blur-lg",
+                    panePresence.isVisible() ? "scale-y-100" : "scale-y-0",
                 )}
+                onMouseEnter={() => setHovering(true)}
+                onMouseLeave={() => setHovering(false)}
             >
                 <article class="flex h-full flex-col gap-2">
                     <h2 class="font-title text-4xl font-bold">{props.label}</h2>
@@ -48,7 +52,7 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
                             {({ content, value }) => (
                                 <div class="flex w-full items-center p-4">
                                     <InfoButton
-                                        class={twMerge(sharedButtonClasses, "w-16")}
+                                        class="w-16 cursor-default p-6"
                                         embellish={false}
                                         text={content.icon}
                                         hintTitle={content.title}
@@ -61,7 +65,7 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
                     </div>
                     <Show when={props.sentinel}>
                         <InfoButton
-                            class={twMerge(sharedButtonClasses, "ms-auto w-20")}
+                            class="ms-auto w-20 cursor-default p-6"
                             embellish={false}
                             text={CONTENT.SENTINEL.icon}
                             hintTitle={CONTENT.SENTINEL.title}
@@ -70,7 +74,7 @@ const DetailsPane: VoidComponent<DetailsPaneProps> = (_props) => {
                     </Show>
                 </article>
             </section>
-        </div>
+        </Show>
     )
 }
 

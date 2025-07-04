@@ -55,6 +55,8 @@ const GameBoard: VoidComponent = () => {
     const focussedTree = () =>
         (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
 
+    const showDetailsPane = () => Boolean(selectedSapling()) && !cameraTransitioning()
+
     const draw = (time: number = 0) => {
         tourControls.update(time)
         targetControls.update(time)
@@ -91,6 +93,7 @@ const GameBoard: VoidComponent = () => {
 
         targetControls.addEventListener("select", ({ intersect }) => {
             setSelectedSapling(intersect as Sapling)
+            setHoveringSapling(false)
         })
         targetControls.addEventListener("deselect", () => {
             setSelectedSapling(undefined)
@@ -212,16 +215,18 @@ const GameBoard: VoidComponent = () => {
                     mesh.glow(true, tweenGroup)
                 }}
             />
-            <DetailsPane
-                position={focus() === FocusType.SELF ? "left" : "right"}
-                show={Boolean(selectedSapling()) && !cameraTransitioning()}
-                dim={hoveringSapling()}
-                label={selectedSapling()?.userData["label"]}
-                sentinel={selectedSapling()?.userData["sentinel"]}
-                power={selectedSapling()?.userData["power"]}
-                shield={selectedSapling()?.userData["shield"]}
-                rechargeRate={selectedSapling()?.userData["rechargeRate"]}
-            />
+            <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800">
+                <DetailsPane
+                    position={focus() === FocusType.SELF ? "left" : "right"}
+                    show={showDetailsPane}
+                    label={selectedSapling()?.userData["label"]}
+                    sentinel={selectedSapling()?.userData["sentinel"]}
+                    power={selectedSapling()?.userData["power"]}
+                    shield={selectedSapling()?.userData["shield"]}
+                    rechargeRate={selectedSapling()?.userData["rechargeRate"]}
+                    revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
+                />
+            </div>
             <NavButton nonInteractive position="right" text={code ?? ""} />
         </>
     )
