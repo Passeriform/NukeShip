@@ -1,5 +1,5 @@
 import { Route, Router } from "@solidjs/router"
-import { VoidComponent, createEffect, createSignal, on } from "solid-js"
+import { VoidComponent, createEffect, createSignal, untrack } from "solid-js"
 import toast, { Toaster } from "solid-toast"
 import useConnection from "@hooks/useConnection"
 import GameBoard from "@pages/GameBoard"
@@ -10,28 +10,26 @@ const App: VoidComponent = () => {
     const { connected } = useConnection()
     const [disconnectedToastId, setDisconnectedToastId] = createSignal<string | undefined>(undefined)
 
-    createEffect(
-        on(connected, () => {
-            if (connected() === undefined) {
-                return
-            }
+    createEffect(() => {
+        if (connected() === undefined) {
+            return
+        }
 
-            if (connected()) {
-                if (disconnectedToastId()) {
-                    toast.dismiss(disconnectedToastId())
-                    toast.success("Connection to the server established.")
-                }
-                setDisconnectedToastId(undefined)
-                return
+        if (connected()) {
+            if (untrack(disconnectedToastId)) {
+                toast.dismiss(untrack(disconnectedToastId))
+                toast.success("Connection to the server established.")
             }
+            setDisconnectedToastId(undefined)
+            return
+        }
 
-            setDisconnectedToastId(
-                toast.loading(`Connection to the server was broken. Attempting reconnection.`, {
-                    duration: Infinity,
-                }),
-            )
-        }),
-    )
+        setDisconnectedToastId(
+            toast.loading(`Connection to the server was broken. Attempting reconnection.`, {
+                duration: Infinity,
+            }),
+        )
+    })
 
     return (
         <>
