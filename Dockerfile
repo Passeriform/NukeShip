@@ -1,6 +1,3 @@
-ARG ENVIRONMENT=PRODUCTION
-ARG PORT=50051
-
 # --- Server Builder --- #
 
 # TODO: Add godoc server hosting
@@ -28,19 +25,14 @@ RUN protoc \
 
 WORKDIR /build
 ENV GOOS=linux GOARCH=amd64 CGO_ENABLED=0
-RUN go build -ldflags "-extldflags '-static'" -o /artifact/server ./pkg/server/.
+RUN go build -tags production -ldflags "-extldflags '-static'" -o /artifact/server ./pkg/server/.
 
 # --- Server Runner --- #
 
 FROM scratch
 LABEL maintainer="Utkarsh Bhardwaj (Passeriform) <bhardwajutkarsh.ub@gmail.com>"
 
-ARG ENVIRONMENT
-ARG PORT
-
 WORKDIR /app
 COPY --from=builder /artifact/server ./
-ENV ENVIRONMENT ${ENVIRONMENT}
-ENV PORT ${PORT}
-EXPOSE ${PORT}
+EXPOSE 443
 CMD ["./server"]

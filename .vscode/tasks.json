@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "[Protobuf] Refresh",
+            "label": "[Pre] Protobuf Refresh",
             "type": "shell",
             "command": "protoc",
             "args": [
@@ -21,7 +21,7 @@
             }
         },
         {
-            "label": "[Generate] Generate Go Code",
+            "label": "[Pre] Generate Go Code",
             "type": "shell",
             "command": "go",
             "args": [
@@ -40,7 +40,7 @@
             "command": "npm",
             "args": [
                 "run",
-                "lint:fix",
+                "lint:fix"
             ],
             "problemMatcher": [],
             "options": {
@@ -52,7 +52,7 @@
             "type": "shell",
             "command": "golangci-lint",
             "args": [
-                "run",
+                "fmt"
             ],
             "problemMatcher": [
                 "$go"
@@ -62,16 +62,16 @@
             }
         },
         {
-            "label": "[Sanity] Ping Hosted gRPC server",
+            "label": "[Misc] Ping Hosted gRPC server",
             "type": "shell",
             "command": "grpcurl",
             "args": [
                 "-proto",
-                "*.proto",
+                "room.proto",
                 "-H",
                 "client-id: abcde",
                 "${input:serverAddress}",
-                "RoomService/CreateRoom",
+                "RoomService/CreateRoom"
             ],
             "problemMatcher": [],
             "options": {
@@ -79,16 +79,16 @@
             }
         },
         {
-            "label": "[App] Post Debug Cleanup",
+            "label": "[Misc] Post Debug Cleanup",
             "type": "process",
             "hide": true,
             "command": [
                 "${command:workbench.action.tasks.terminate}",
-                "${command:workbench.action.acceptSelectedQuickOpenItem}",
-            ],
+                "${command:workbench.action.acceptSelectedQuickOpenItem}"
+            ]
         },
         {
-            "label": "[App] Build Client",
+            "label": "Build App [Dev]",
             "type": "shell",
             "command": "wails",
             "args": [
@@ -96,42 +96,54 @@
                 "-clean"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client",
-                "env": {
-                    "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}",
-                    "ENABLE_TLS": "${input:enableTls}"
-                }
+                "cwd": "${workspaceFolder}/pkg/client"
             },
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[Protobuf] Refresh",
-                "[Generate] Generate Go Code"
+                "[Pre] Protobuf Refresh",
+                "[Pre] Generate Go Code"
             ],
             "problemMatcher": [
                 "$go"
             ]
         },
         {
-            "label": "[App] Run Client",
+            "label": "Build App [Prod]",
+            "type": "shell",
+            "command": "wails",
+            "args": [
+                "build",
+                "-clean",
+                "-tags",
+                "production"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Pre] Protobuf Refresh",
+                "[Pre] Generate Go Code"
+            ],
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
+            "label": "Run App [Dev]",
             "type": "shell",
             "command": "wails",
             "args": [
                 "dev"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client",
-                "env": {
-                    "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}",
-                    "ENABLE_TLS": "${input:enableTls}"
-                }
+                "cwd": "${workspaceFolder}/pkg/client"
             },
             "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[Protobuf] Refresh",
-                "[Generate] Generate Go Code"
+                "[Pre] Protobuf Refresh",
+                "[Pre] Generate Go Code"
             ],
             "problemMatcher": [
                 {
@@ -151,7 +163,42 @@
             }
         },
         {
-            "label": "[App] Run Debugger",
+            "label": "Run App [Prod]",
+            "type": "shell",
+            "command": "wails",
+            "args": [
+                "dev",
+                "-tags",
+                "production"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            },
+            "isBackground": true,
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Pre] Protobuf Refresh",
+                "[Pre] Generate Go Code"
+            ],
+            "problemMatcher": [
+                {
+                    "owner": "custom",
+                    "pattern": {
+                        "regexp": "__________________"
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".*",
+                        "endsPattern": "To develop in the browser and call your bound Go methods from Javascript, navigate to: *"
+                    }
+                }
+            ],
+            "runOptions": {
+                "instanceLimit": 2
+            }
+        },
+        {
+            "label": "Debug App",
             "type": "shell",
             "command": "./dlv.ps1",
             "hide": true,
@@ -161,7 +208,7 @@
             "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[App] Run Client"
+                "Run App"
             ],
             "problemMatcher": [
                 {
@@ -175,10 +222,10 @@
                         "endsPattern": "API server listening at: *"
                     }
                 }
-            ],
+            ]
         },
         {
-            "label": "[Server] [Local] Run Server",
+            "label": "Run Server [Dev]",
             "type": "shell",
             "command": "go",
             "args": [
@@ -189,40 +236,40 @@
                 "$go"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/server",
-                "env": {
-                    "DEBUG_SKIP_ROOM": "${input:skipRoom}",
-                }
+                "cwd": "${workspaceFolder}/pkg/server"
             },
             "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
-                "[Protobuf] Refresh",
-                "[Generate] Generate Go Code"
+                "[Pre] Protobuf Refresh",
+                "[Pre] Generate Go Code"
             ]
         },
         {
-            "label": "[Server] [Docker] Run Server",
-            "type": "docker-compose",
-            "dockerCompose": {
-                "up": {
-                    "build": true,
-                    "services": [
-                        "server"
-                    ],
-                    "customOptions": "--force-recreate --remove-orphans"
-                },
-                "files": [
-                    "docker-compose.yml"
-                ]
-            },
+            "label": "Run Server [Prod]",
+            "type": "shell",
+            "command": "go",
+            "args": [
+                "run",
+                ".",
+                "-tags",
+                "production"
+            ],
+            "problemMatcher": [
+                "$go"
+            ],
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/pkg/server"
             },
             "isBackground": true,
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Pre] Protobuf Refresh",
+                "[Pre] Generate Go Code"
+            ]
         },
         {
-            "label": "[Cli] [Local] Run Native Client - Create Room",
+            "label": "[Misc] Test CLI - Create Room",
             "type": "shell",
             "command": "go",
             "problemMatcher": [
@@ -236,17 +283,12 @@
                 "createRoom"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client",
-                "env": {
-                    "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}",
-                    "ENABLE_TLS": "${input:enableTls}"
-                }
+                "cwd": "${workspaceFolder}/pkg/client"
             },
-            "isBackground": true,
+            "isBackground": true
         },
         {
-            "label": "[Cli] [Local] Run Native Client - Join Room",
+            "label": "[Misc] Test CLI - Join Room",
             "type": "shell",
             "command": "go",
             "problemMatcher": [
@@ -261,52 +303,12 @@
                 "-code=${input:roomCode}"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/pkg/client",
-                "env": {
-                    "SERVER_HOST": "${input:serverHost}",
-                    "SERVER_PORT": "${input:serverPort}",
-                    "ENABLE_TLS": "${input:enableTls}"
-                }
+                "cwd": "${workspaceFolder}/pkg/client"
             },
-            "isBackground": true,
+            "isBackground": true
         }
     ],
     "inputs": [
-        {
-            "id": "roomCode",
-            "description": "Room code to join",
-            "type": "promptString"
-        },
-        {
-            "id": "enableTls",
-            "description": "Enable TLS",
-            "type": "pickString",
-            "options": [
-                "true",
-                "false"
-            ],
-            "default": "false"
-        },
-        {
-            "id": "serverHost",
-            "description": "Server Host",
-            "type": "pickString",
-            "options": [
-                "localhost",
-                "crazy-dania-passeriform-2c88993e.koyeb.app"
-            ],
-            "default": "localhost"
-        },
-        {
-            "id": "serverPort",
-            "description": "Server Port",
-            "type": "pickString",
-            "options": [
-                "50051",
-                "443"
-            ],
-            "default": "50051"
-        },
         {
             "id": "serverAddress",
             "description": "Server Address",
@@ -316,17 +318,12 @@
                 "crazy-dania-passeriform-2c88993e.koyeb.app:443",
                 "localhost:50051"
             ],
-            "default": "crazy-dania-passeriform-2c88993e.koyeb.app:443"
+            "default": "nukeship.passeriform.com:443"
         },
         {
-            "id": "skipRoom",
-            "description": "[Debug] Skip room waiting",
-            "type": "pickString",
-            "options": [
-                "true",
-                "false",
-            ],
-            "default": "false"
+            "id": "roomCode",
+            "description": "Room code to join",
+            "type": "promptString"
         }
     ]
 }

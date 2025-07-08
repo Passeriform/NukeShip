@@ -4,11 +4,14 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"log"
+	"strconv"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
@@ -18,10 +21,19 @@ import (
 	"passeriform.com/nukeship/internal/pb"
 )
 
-func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
+func newClient(configCtx context.Context) (pb.RoomServiceClient, error) {
+	var creds credentials.TransportCredentials
+
+	if Config.EnableTLS {
+		//nolint:gosec // TODO: This configuration is only for prototyping. Replace with proper 2-way TLS configuration.
+		creds = credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})
+	} else {
+		creds = insecure.NewCredentials()
+	}
+
 	conn, err := grpc.NewClient(
-		client.GetServerHost(ctx)+":"+client.GetServerPort(ctx),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		Config.ServerHost+":"+strconv.Itoa(Config.ServerPort),
+		grpc.WithTransportCredentials(creds),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
 	)
 	if err != nil {
@@ -34,7 +46,12 @@ func newClient(ctx context.Context) (pb.RoomServiceClient, error) {
 	return c, nil
 }
 
-func connect(ctx context.Context, rsc pb.RoomServiceClient, handler func(pb.RoomServiceEvent), done chan<- bool) {
+func connect(
+	ctx context.Context,
+	rsc pb.RoomServiceClient,
+	handler func(pb.RoomServiceEvent),
+	done chan<- bool,
+) {
 	defer func() {
 		done <- true
 	}()

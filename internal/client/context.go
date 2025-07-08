@@ -17,13 +17,10 @@ const (
 type contextPropertyKey struct{}
 
 type Context struct {
-	ClientID   string
-	ServerHost string
-	ServerPort int
-	EnableTLS  bool
+	ClientID string
 }
 
-func NewContext(sHost string, sPort int, enableTLS bool) context.Context {
+func NewContext() context.Context {
 	clientID, err := randomstring.GenerateString(randomstring.GenerationOptions{
 		Length:           RoomIDLength,
 		DisableNumeric:   true,
@@ -33,13 +30,8 @@ func NewContext(sHost string, sPort int, enableTLS bool) context.Context {
 		log.Panicf("Error occurred while creating client id: %v", err)
 	}
 
-	log.Printf("Creating RPC context for %v:%v", sHost, sPort)
-
 	return context.WithValue(context.Background(), contextPropertyKey{}, Context{
-		ClientID:   clientID,
-		ServerHost: sHost,
-		ServerPort: sPort,
-		EnableTLS:  enableTLS,
+		ClientID: clientID,
 	})
 }
 

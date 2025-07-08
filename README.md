@@ -78,19 +78,17 @@ This project uses VSCode tooling. Supporting tasks, debugger configurations and 
 
 ### Tasks
 
-- `[Protobuf] Refresh`
-- `[App] Build Client`
-- `[App] Run Client`
-- `[Server] [Local] Run Server`
-- `[Server] [Docker] Run Server`
-- `[Cli] [Local] Run Native Client - Create Room`
-- `[Cli] [Local] Run Native Client - Join Room`
+- `Build App [Dev]`
+- `Build App [Prod]`
+- `Run App [Dev]`
+- `Run App [Prod]`
+- `Run Server`
+- `Run Server [Docker]`
 
 ### Debugging Configurations
 
-- `Run Server`
-- `Run App Client`
-- `Run Native Client`
+- `Debug App`
+- `Debug Server`
 
 ## Contributing
 

@@ -15,30 +15,11 @@
             }
         },
         {
-            "name": "Debug Native Client",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}/pkg/client/",
-            "buildFlags": [
-                "-tags",
-                "cli"
-            ],
-            "env": {
-                "GOPATH": "${workspaceFolder}",
-                "SERVER_HOST": "localhost",
-                "SERVER_PORT": "50051"
-            },
-            "args": [
-                "createRoom"
-            ]
-        },
-        {
-            "name": "Debug App Client",
+            "name": "Debug App",
             "type": "go",
             "request": "attach",
             "mode": "remote",
-            "preLaunchTask": "[App] Run Debugger",
+            "preLaunchTask": "Debug App",
             "remotePath": "${workspaceFolder}",
             "port": 65115,
             "host": "127.0.0.1",

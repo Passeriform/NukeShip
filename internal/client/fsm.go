@@ -27,7 +27,7 @@ type (
 	}
 )
 
-//nolint:funlen,revive // Allowing longer function as this contains only statemachine definition.
+//nolint:funlen,revive // Allowing longer function as this contains only state machine definition.
 func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
 	fsm := RoomStateFSM{
 		opponentReady: false,

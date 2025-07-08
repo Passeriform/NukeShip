@@ -38,6 +38,7 @@ jobs:
                   build-obfuscate: true
                   build-name: ${{ matrix.name }}
                   build-platform: ${{ matrix.platform }}
+                  build-tags: production
                   macos-artifact-name: "NukeShip"
                   wails-version: v2.9.2
 

@@ -179,4 +179,10 @@
     "editor.detectIndentation": false,
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
+    "gopls": {
+        "build.buildFlags": [
+            // "-tags=production",
+            // "-tags=cli",
+        ]
+    }
 }

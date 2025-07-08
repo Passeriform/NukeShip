@@ -58,11 +58,9 @@ func (app *WailsApp) setAppContext(wailsCtx, configCtx context.Context) {
 }
 
 func (app *WailsApp) initGrpcClients() {
-	cCtx := client.UnwrapContext(app.configCtx)
-
 	var creds credentials.TransportCredentials
 
-	if cCtx.EnableTLS {
+	if Config.EnableTLS {
 		//nolint:gosec // TODO: This configuration is only for prototyping. Replace with proper 2-way TLS configuration.
 		creds = credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})
 	} else {
@@ -70,7 +68,7 @@ func (app *WailsApp) initGrpcClients() {
 	}
 
 	conn, err := grpc.NewClient(
-		cCtx.ServerHost+":"+strconv.Itoa(cCtx.ServerPort),
+		Config.ServerHost+":"+strconv.Itoa(Config.ServerPort),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
 	)

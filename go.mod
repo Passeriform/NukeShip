@@ -7,7 +7,6 @@ toolchain go1.23.4
 require (
 	github.com/Gurpartap/statemachine-go v0.0.0-20190708030151-b27cddb816c4
 	github.com/abice/go-enum v0.6.0
-	github.com/caarlos0/env/v11 v11.3.1
 	github.com/jxskiss/mcli v0.9.5
 	github.com/necmettindev/randomstring v0.1.0
 	github.com/wailsapp/wails/v2 v2.9.2
