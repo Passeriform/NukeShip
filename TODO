@@ -30,7 +30,7 @@ Ideas
             ☐ The corporations should provide lesser benefits to balance
             ☐ Initial gameplay loop is about getting the best alignment with other corporations
             ☐ Late game is about maintaining the relationships with occasional backstabbing
-        The Salaryman (An employee of a corporation)
+        The Salary-man (An employee of a corporation)
             ☐ Can use black market upgrades but at the risk of being caught
             ☐ Game begins with few easy rounds but shit hits the fan with targeted attacks
 
@@ -93,7 +93,7 @@ Ideas
             ☐ Remove all health regeneration from the node and distribute it to parent, siblings and children
 
         ☐ Health scan
-            ☐ BFS check for any backdoors or poisoned nodes
+            ☐ BFS check for any backdoor or poisoned nodes
 
         ☐ Deep scan
             ☐ Ability to decide the scan path (greedy DFS)

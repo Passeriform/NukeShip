@@ -1,7 +1,7 @@
 # --- Server Builder --- #
 
 # TODO: Add godoc server hosting
-FROM golang:latest AS builder
+FROM golang:1.23-alpine AS builder
 LABEL maintainer="Utkarsh Bhardwaj (Passeriform) <bhardwajutkarsh.ub@gmail.com>"
 
 WORKDIR /build
@@ -11,10 +11,12 @@ RUN go mod download
 COPY pkg/server/ ./pkg/server/
 COPY internal/ ./internal/
 
-WORKDIR /build/internal/pb
-RUN apt update && apt install -y protobuf-compiler
+RUN apk add --no-cache protobuf
+
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+WORKDIR /build/internal/pb
 RUN protoc \
     --go_out=. \
     --go_opt=paths=source_relative \

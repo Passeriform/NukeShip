@@ -1,0 +1,171 @@
+{
+    "version": "0.2",
+    "dictionaries": [
+        "game-development",
+        "nukeship",
+        "personal"
+    ],
+    "dictionaryDefinitions": [
+        {
+            "name": "nukeship",
+            "description": "Nukeship Project's Dictionary",
+            "words": [
+                "Chronos",
+                "Fugaz",
+                "interactables",
+                "NukeShip",
+                "Orbitron",
+                "Passeriform",
+                "Koyeb"
+            ]
+        },
+        {
+            "name": "personal",
+            "description": "Personal Details Dictionary",
+            "words": [
+                "Utkarsh",
+                "Bhardwaj"
+            ]
+        }
+    ],
+    "ignorePaths": [
+        "cspell.json",
+        "pkg/client/frontend/wailsjs",
+        "**/go.sum",
+        "**/package-lock.json"
+    ],
+    "overrides": [
+        {
+            "filename": "**/*.go",
+            "ignoreRegExpList": [
+                "import\\s*\\((?:.|[\\r\\n])*?\\)",
+                "import\\s+\"[^\"]+\"",
+                "//\\s*go:generate.*",
+                "//\\s*nolint:.*"
+            ],
+            "words": [
+                "Debugf",
+                "exhaustruct",
+                "Frameless",
+                "mcli",
+                "statemachine"
+            ]
+        },
+        {
+            "filename": "pkg/client/(wails.json|build/windows/wails.exe.manifest)",
+            "words": [
+                "asmv3",
+                "assetdir",
+                "outputfilename",
+                "permonitor",
+                "permonitorv2"
+            ]
+        },
+        {
+            "filename": "go.mod",
+            "ignoreRegExpList": [
+                "require\\s*\\((?:.|[\\r\\n])*?\\)",
+                "replace\\s*\\((?:.|[\\r\\n])*?\\)",
+                "exclude\\s*\\((?:.|[\\r\\n])*?\\)",
+                "^require\\s+.*",
+                "^replace\\s+.*",
+                "^exclude\\s+.*"
+            ]
+        },
+        {
+            "filename": ".golangci.y?(a)ml",
+            "words": [
+                "allowInts",
+                "containedctx",
+                "copyloopvar",
+                "decorder",
+                "depguard",
+                "errcheck",
+                "errchkjson",
+                "exhaustruct",
+                "fatcontext",
+                "fieldalignment",
+                "funcorder",
+                "funlen",
+                "gochecknoglobals",
+                "gocognit",
+                "goconst",
+                "gocritic",
+                "gocyclo",
+                "godox",
+                "gofmt",
+                "gofumpt",
+                "goimports",
+                "golangci",
+                "golines",
+                "gosec",
+                "govet",
+                "iface",
+                "importas",
+                "ireturn",
+                "nestif",
+                "nilnil",
+                "njsproj",
+                "nlreturn",
+                "nolint",
+                "ntvs",
+                "perfsprint",
+                "predeclared",
+                "protoc",
+                "tagalign",
+                "testifylint",
+                "unconvert",
+                "underef",
+                "unparam",
+                "usestdlibvars",
+                "varnamelen",
+                "wailsapp",
+                "wrapcheck"
+            ]
+        },
+        {
+            "filename": "pkg/client/frontend/**/*.ts?(x)",
+            "ignoreRegExpList": [
+                "^import\\s+['\"].*['\"];?",
+                "^import\\s*(?:.|[\\r\\n])*?from\\s+['\"].*['\"];?",
+                "require\\(['\"][^'\"]+['\"]\\)"
+            ],
+            "words": [
+                "raycaster"
+            ]
+        },
+        {
+            "filename": "pkg/client/frontend/{package.json,package-lock.json}",
+            "ignoreRegExpList": [
+                "\"(dependencies|devDependencies|peerDependencies|optionalDependencies)\"\\s*:\\s*\\{(?:.|[\\r\\n])*?\\}"
+            ]
+        },
+        {
+            "filename": "pkg/client/frontend/*.{prettierrc,json,js,ts}",
+            "ignoreRegExpList": [
+                "^import\\s+['\"].*['\"];?",
+                "^import\\s*(?:.|[\\r\\n])*?from\\s+['\"].*['\"];?",
+                "require\\(['\"][^'\"]+['\"]\\)"
+            ],
+            "words": [
+                "trivago",
+                "wailsjs"
+            ]
+        },
+        {
+            "filename": "(.gitignore|Dockerfile|README.md|TODO)",
+            "dictionaries": [
+                "golang"
+            ],
+            "words": [
+                "extldflags",
+                "godoc",
+                "protoc",
+                "taskfile",
+                "wailsapp",
+                "wailsjs",
+                "backdoor"
+            ]
+        }
+    ]
+}

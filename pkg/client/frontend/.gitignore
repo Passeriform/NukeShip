@@ -9,20 +9,18 @@ lerna-debug.log*
 
 node_modules
 package.json.md5
+*.tsbuildinfo
 dist
 dist-ssr
 *.local
 
 # Wails
 wailsjs
+*.syso
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
 .idea
 .DS_Store
 *.suo
-*.ntvs*
-*.njsproj
 *.sln
 *.sw?
