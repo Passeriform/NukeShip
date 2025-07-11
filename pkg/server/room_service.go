@@ -63,10 +63,7 @@ func (*RoomService) JoinRoom(
 
 	conn.Room = room
 
-	for ID, partConn := range room.Clients {
-		if ID == clientID {
-			continue
-		}
+	for _, partConn := range room.Clients {
 		partConn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentJoined}
 	}
 
