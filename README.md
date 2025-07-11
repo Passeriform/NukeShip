@@ -78,11 +78,11 @@ This project uses VSCode tooling. Supporting tasks, debugger configurations and 
 
 ### Tasks
 
-- `Build App [Dev]`
-- `Build App [Prod]`
-- `Run App [Dev]`
-- `Run App [Prod]`
+- `Build App`
+- `Run App`
 - `Run Server`
+- `Build App [Local Server]`
+- `Run App [Local Server]`
 - `Run Server [Docker]`
 
 ### Debugging Configurations

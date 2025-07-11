@@ -27,7 +27,7 @@ RUN protoc \
 
 WORKDIR /build
 ENV GOOS=linux GOARCH=amd64 CGO_ENABLED=0
-RUN go build -tags production -ldflags "-extldflags '-static'" -o /artifact/server ./pkg/server/.
+RUN go build -ldflags "-extldflags '-static'" -o /artifact/server ./pkg/server/.
 
 # --- Server Runner --- #
 

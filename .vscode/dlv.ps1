@@ -2,7 +2,7 @@
 Import-Module PSUtil
 
 # Filter processes to find ones containing "NukeShip-dev" in their name
-$processes = Get-Process | Where-Object { $_.Name -like "*NukeShip-dev*" }
+$processes = Get-Process | Where-Object { $_.Name -like "*NukeShip*" }
 
 # Iterate through the matching processes
 foreach ($process in $processes) {

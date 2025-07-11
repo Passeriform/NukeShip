@@ -16,7 +16,6 @@ dist-ssr
 
 # Wails
 wailsjs
-*.syso
 
 # Editor directories and files
 .idea

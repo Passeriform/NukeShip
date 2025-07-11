@@ -45,6 +45,7 @@
             ],
             "words": [
                 "Debugf",
+                "Infof",
                 "exhaustruct",
                 "Frameless",
                 "mcli",
@@ -161,6 +162,7 @@
                 "extldflags",
                 "godoc",
                 "protoc",
+                "syso",
                 "taskfile",
                 "wailsapp",
                 "wailsjs",

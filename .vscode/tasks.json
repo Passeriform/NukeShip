@@ -88,34 +88,15 @@
             ]
         },
         {
-            "label": "Build App [Dev]",
-            "type": "shell",
-            "command": "wails",
-            "args": [
-                "build",
-                "-clean"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
-            },
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "[Pre] Protobuf Refresh",
-                "[Pre] Generate Go Code"
-            ],
-            "problemMatcher": [
-                "$go"
-            ]
-        },
-        {
-            "label": "Build App [Prod]",
+            "label": "Build App [Local Server]",
             "type": "shell",
             "command": "wails",
             "args": [
                 "build",
                 "-clean",
+                "-race",
                 "-tags",
-                "production"
+                "local_server"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
@@ -130,11 +111,34 @@
             ]
         },
         {
-            "label": "Run App [Dev]",
+            "label": "Build App",
             "type": "shell",
             "command": "wails",
             "args": [
-                "dev"
+                "build",
+                "-clean",
+                "-race"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/pkg/client"
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "[Pre] Protobuf Refresh",
+                "[Pre] Generate Go Code"
+            ],
+            "problemMatcher": [
+                "$go"
+            ]
+        },
+        {
+            "label": "Run App [Local Server]",
+            "type": "shell",
+            "command": "wails",
+            "args": [
+                "dev",
+                "-tags",
+                "local_server"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
@@ -163,13 +167,11 @@
             }
         },
         {
-            "label": "Run App [Prod]",
+            "label": "Run App",
             "type": "shell",
             "command": "wails",
             "args": [
                 "dev",
-                "-tags",
-                "production"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
@@ -208,7 +210,7 @@
             "isBackground": true,
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Run App"
+                "Run App [Local Server]"
             ],
             "problemMatcher": [
                 {
@@ -225,12 +227,14 @@
             ]
         },
         {
-            "label": "Run Server [Dev]",
+            "label": "Run Server [Local Server]",
             "type": "shell",
             "command": "go",
             "args": [
                 "run",
-                "."
+                ".",
+                "-tags",
+                "local_server"
             ],
             "problemMatcher": [
                 "$go"
@@ -246,14 +250,12 @@
             ]
         },
         {
-            "label": "Run Server [Prod]",
+            "label": "Run Server",
             "type": "shell",
             "command": "go",
             "args": [
                 "run",
-                ".",
-                "-tags",
-                "production"
+                "."
             ],
             "problemMatcher": [
                 "$go"

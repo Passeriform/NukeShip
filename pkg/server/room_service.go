@@ -20,7 +20,7 @@ type RoomService struct {
 	DebugSkipRoom bool
 }
 
-func DebugCreateRoom(conn *server.Connection) {
+func DebugSkipRoom(conn *server.Connection) {
 	conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentJoined}
 	conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentReady}
 }
@@ -39,7 +39,7 @@ func (srv *RoomService) CreateRoom(
 	log.Printf("Created new room: %v", room.ID)
 
 	if srv.DebugSkipRoom {
-		DebugCreateRoom(conn)
+		DebugSkipRoom(conn)
 	}
 
 	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_Ok, RoomId: room.ID}, nil
