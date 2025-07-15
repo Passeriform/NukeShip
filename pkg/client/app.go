@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -34,6 +35,13 @@ const (
 	treeGenDepth           int = 8
 	treeGenWidth           int = 20
 	treeGenVisibilityDepth int = 8
+)
+
+var (
+	KeepAliveClientParameters = keepalive.ClientParameters{
+		Time:    30 * time.Second,
+		Timeout: 10 * time.Second,
+	}
 )
 
 type (
@@ -70,7 +78,7 @@ func (app *WailsApp) initGrpcClients() {
 	conn, err := grpc.NewClient(
 		Config.ServerHost+":"+strconv.Itoa(Config.ServerPort),
 		grpc.WithTransportCredentials(creds),
-		grpc.WithKeepaliveParams(keepalive.ClientParameters{}),
+		grpc.WithKeepaliveParams(KeepAliveClientParameters),
 	)
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not connect: %v", err)

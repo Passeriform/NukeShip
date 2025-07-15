@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -15,6 +16,16 @@ import (
 
 	"passeriform.com/nukeship/internal/pb"
 	"passeriform.com/nukeship/internal/server"
+)
+
+var (
+	KeepAliveEnforcementPolicy = keepalive.EnforcementPolicy{
+		MinTime: 15 * time.Second,
+	}
+	KeepAliveServerParameters = keepalive.ServerParameters{
+		Time:    30 * time.Second,
+		Timeout: 10 * time.Second,
+	}
 )
 
 func handleQuit(cancel context.CancelFunc, srv *grpc.Server) {
@@ -39,8 +50,8 @@ func main() {
 	shutdownCtx, stop := context.WithCancel(context.Background())
 
 	srv := grpc.NewServer(
-		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{}),
-		grpc.KeepaliveParams(keepalive.ServerParameters{}),
+		grpc.KeepaliveEnforcementPolicy(KeepAliveEnforcementPolicy),
+		grpc.KeepaliveParams(KeepAliveServerParameters),
 		grpc.ChainUnaryInterceptor(
 			grpc.UnaryServerInterceptor(server.HeaderUnaryInterceptor),
 		),
