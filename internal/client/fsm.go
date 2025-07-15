@@ -17,24 +17,34 @@ type (
 )
 
 type (
+	machine statemachine.Machine
+
 	RoomStateFSM struct {
-		statemachine.Machine
+		machine
 		opponentReady bool
 	}
 
 	ConnectionFSM struct {
-		statemachine.Machine
+		machine
 	}
 )
 
+func (fsm RoomStateFSM) FireWithRollback(event string) (func() error, error) {
+	prevState := fsm.GetState()
+	return func() error {
+		return fsm.SetCurrentState(prevState)
+	}, fsm.Fire(event)
+}
+
 //nolint:funlen,revive // Allowing longer function as this contains only state machine definition.
 func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
-	fsm := RoomStateFSM{
+	roomStateFSM := RoomStateFSM{
+		machine: nil,
+		// TODO: Convert to explicit separation state instead of invisible sub-state
 		opponentReady: false,
-		Machine:       nil,
 	}
 
-	fsm.Machine = statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
+	roomStateFSM.machine = statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
 		machine.States(
 			RoomStateInit.String(),
 			RoomStateAwaitingOpponent.String(),
@@ -49,16 +59,45 @@ func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
 
 		machine.AfterTransition().Any().Do(notify)
 
-		machine.Event(LocalEventSelfJoined.String()).
-			Transition().
-			From(RoomStateInit.String()).
-			To(RoomStateAwaitingOpponent.String())
+		// Server authoritative state transitions.
 		machine.Event(pb.RoomServiceEvent_OpponentJoined.String()).
 			Transition().
 			From(RoomStateAwaitingOpponent.String()).
 			To(RoomStateRoomFilled.String())
+		machine.Event(pb.RoomServiceEvent_OpponentReady.String()).
+			Choice(&roomStateFSM.opponentReady).
+			OnTrue(func(e statemachine.EventBuilder) {
+				e.Transition().
+					From(RoomStateAwaitingReady.String()).
+					To(RoomStateAwaitingGameStart.String())
+			}).
+			OnFalse(func(_ statemachine.EventBuilder) {
+				roomStateFSM.opponentReady = true
+			})
+		machine.Event(pb.RoomServiceEvent_GameStarted.String()).
+			Transition().
+			FromAny().
+			To(RoomStateInGame.String())
+		machine.Event(pb.RoomServiceEvent_OpponentRevertedReady.String()).
+			Transition().
+			From(RoomStateAwaitingGameStart.String()).
+			To(RoomStateAwaitingReady.String())
+		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).
+			Transition().
+			From(RoomStateRoomFilled.String(), RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String()).
+			To(RoomStateAwaitingOpponent.String())
+		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).
+			Transition().
+			From(RoomStateInGame.String()).
+			To(RoomStateRecovery.String())
+
+		// Local event state transition (only for UI usage).
+		machine.Event(LocalEventSelfJoined.String()).
+			Transition().
+			From(RoomStateInit.String()).
+			To(RoomStateAwaitingOpponent.String())
 		machine.Event(LocalEventSelfReady.String()).
-			Choice(&fsm.opponentReady).
+			Choice(&roomStateFSM.opponentReady).
 			OnTrue(func(e statemachine.EventBuilder) {
 				e.Transition().
 					From(RoomStateAwaitingReady.String()).
@@ -69,20 +108,6 @@ func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
 					From(RoomStateRoomFilled.String()).
 					To(RoomStateAwaitingReady.String())
 			})
-		machine.Event(pb.RoomServiceEvent_OpponentReady.String()).
-			Choice(&fsm.opponentReady).
-			OnTrue(func(e statemachine.EventBuilder) {
-				e.Transition().
-					From(RoomStateAwaitingReady.String()).
-					To(RoomStateAwaitingGameStart.String())
-			}).
-			OnFalse(func(_ statemachine.EventBuilder) {
-				fsm.opponentReady = true
-			})
-		machine.Event(pb.RoomServiceEvent_GameStarted.String()).
-			Transition().
-			FromAny().
-			To(RoomStateInGame.String())
 		machine.Event(LocalEventSelfLeft.String()).
 			Transition().
 			From(
@@ -97,26 +122,14 @@ func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
 			Transition().
 			From(RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String()).
 			To(RoomStateRoomFilled.String())
-		machine.Event(pb.RoomServiceEvent_OpponentRevertedReady.String()).
-			Transition().
-			From(RoomStateAwaitingGameStart.String()).
-			To(RoomStateAwaitingReady.String())
-		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).
-			Transition().
-			From(RoomStateRoomFilled.String(), RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String()).
-			To(RoomStateAwaitingOpponent.String())
-		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).
-			Transition().
-			From(RoomStateInGame.String()).
-			To(RoomStateRecovery.String())
 	})
 
-	return fsm
+	return roomStateFSM
 }
 
 func NewConnectionFSM(notify func(t statemachine.Transition)) ConnectionFSM {
 	return ConnectionFSM{
-		Machine: statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
+		statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
 			machine.States(ConnectionStateConnected.String(), LocalEventDisconnected.String())
 
 			machine.InitialState(ConnectionStateConnected.String())

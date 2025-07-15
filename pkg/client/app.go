@@ -29,8 +29,9 @@ const (
 	StateChangeEvent            Event = "srv:stateChange"
 	ServerConnectionChangeEvent Event = "srv:serverConnectionChange"
 
-	connMachineFireLogPattern string = "Cannot fire event %v to connection state machine: %v"
-	roomMachineFireLogPattern string = "Cannot fire event %v to room state machine: %v"
+	connMachineFireLogPattern   string = "Cannot fire event %v to connection state machine: %v"
+	roomMachineFireLogPattern   string = "Cannot fire event %v to room state machine: %v"
+	machineRollbackErrorPattern string = "Rolling back state transition: %v"
 
 	treeGenDepth           int = 8
 	treeGenWidth           int = 20
@@ -191,8 +192,8 @@ func newWailsApp() *WailsApp {
 		configCtx:    nil,
 		RoomClient:   nil,
 		GameClient:   nil,
-		connMachine:  client.ConnectionFSM{Machine: nil},
-		stateMachine: client.RoomStateFSM{Machine: nil},
+		connMachine:  client.ConnectionFSM{},
+		stateMachine: client.RoomStateFSM{},
 	}
 
 	return app
@@ -207,25 +208,10 @@ func (app *WailsApp) GetConnectionState() bool {
 }
 
 func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
-	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
-	defer cancel()
-
-	// TODO: Use error codes middleware to handle RPC errors properly.
-	resp, err := app.RoomClient.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
-	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
-		return false, fmt.Errorf("could not update ready state: %w", err)
-	}
-
-	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
-		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
-		return false, fmt.Errorf("unable to ready as the room is invalid: %w", err)
-	}
-
-	runtime.LogDebugf(app.wailsCtx, "Updated ready state: %t", ready)
-
+	var rollback func() error
 	if !ready {
-		if err := app.stateMachine.Fire(client.LocalEventSelfRevertedReady.String()); err != nil {
+		rb, err := app.stateMachine.FireWithRollback(client.LocalEventSelfRevertedReady.String())
+		if err != nil {
 			runtime.LogErrorf(
 				app.wailsCtx,
 				roomMachineFireLogPattern,
@@ -233,35 +219,95 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 				err,
 			)
 		}
-
-		return resp.GetStatus() == pb.ResponseStatus_Ok, nil
+		rollback = rb
+	} else {
+		rb, err := app.stateMachine.FireWithRollback(client.LocalEventSelfReady.String())
+		if err != nil {
+			runtime.LogErrorf(
+				app.wailsCtx,
+				roomMachineFireLogPattern,
+				client.LocalEventSelfReady.String(),
+				err,
+			)
+		}
+		rollback = rb
 	}
 
-	if err := app.stateMachine.Fire(client.LocalEventSelfReady.String()); err != nil {
-		runtime.LogErrorf(
-			app.wailsCtx,
-			roomMachineFireLogPattern,
-			client.LocalEventSelfReady.String(),
-			err,
-		)
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+	defer cancel()
+
+	// TODO: Use error codes middleware to handle RPC errors properly.
+	resp, err := app.RoomClient.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
+	if err != nil {
+		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
+
+		if err := rollback(); err != nil {
+			runtime.LogFatalf(
+				app.wailsCtx,
+				machineRollbackErrorPattern,
+				err,
+			)
+		}
+
+		return false, fmt.Errorf("could not update ready state: %w", err)
 	}
+
+	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
+		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
+
+		if err := rollback(); err != nil {
+			runtime.LogFatalf(
+				app.wailsCtx,
+				machineRollbackErrorPattern,
+				err,
+			)
+		}
+
+		return false, fmt.Errorf("unable to ready as the room is invalid: %w", err)
+	}
+
+	runtime.LogDebugf(app.wailsCtx, "Updated ready state: %t", ready)
 
 	return resp.GetStatus() == pb.ResponseStatus_Ok, nil
 }
 
 func (app *WailsApp) CreateRoom() (string, error) {
+	rollback, err := app.stateMachine.FireWithRollback(client.LocalEventSelfJoined.String())
+	if err != nil {
+		runtime.LogErrorf(
+			app.wailsCtx,
+			roomMachineFireLogPattern,
+			client.LocalEventSelfJoined.String(),
+			err,
+		)
+	}
+
 	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
 	resp, err := app.RoomClient.CreateRoom(unaryCtx, &pb.CreateRoomRequest{})
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not create room: %v", err)
+
+		if err := rollback(); err != nil {
+			runtime.LogFatalf(
+				app.wailsCtx,
+				machineRollbackErrorPattern,
+				err,
+			)
+		}
+
 		return "", fmt.Errorf("could not create room: %w", err)
 	}
 
 	runtime.LogDebugf(app.wailsCtx, "Room created: %s", resp.GetRoomId())
 
-	if err := app.stateMachine.Fire(client.LocalEventSelfJoined.String()); err != nil {
+	return resp.GetRoomId(), nil
+}
+
+func (app *WailsApp) JoinRoom(roomCode string) bool {
+	rollback, err := app.stateMachine.FireWithRollback(client.LocalEventSelfJoined.String())
+	if err != nil {
 		runtime.LogErrorf(
 			app.wailsCtx,
 			roomMachineFireLogPattern,
@@ -270,46 +316,32 @@ func (app *WailsApp) CreateRoom() (string, error) {
 		)
 	}
 
-	return resp.GetRoomId(), nil
-}
-
-func (app *WailsApp) JoinRoom(roomCode string) bool {
 	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
 	defer cancel()
 
 	resp, err := app.RoomClient.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not join room with id %v: %v", roomCode, err)
+
+		if err := rollback(); err != nil {
+			runtime.LogFatalf(
+				app.wailsCtx,
+				machineRollbackErrorPattern,
+				err,
+			)
+		}
+
 		return false
 	}
 
 	runtime.LogDebugf(app.wailsCtx, "Room joined status: %s", resp.GetStatus().String())
 
-	if err := app.stateMachine.Fire(client.LocalEventSelfJoined.String()); err != nil {
-		runtime.LogErrorf(
-			app.wailsCtx,
-			roomMachineFireLogPattern,
-			client.LocalEventSelfJoined.String(),
-			err,
-		)
-	}
-
 	return resp.GetStatus() == pb.ResponseStatus_Ok
 }
 
 func (app *WailsApp) LeaveRoom() bool {
-	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
-	defer cancel()
-
-	resp, err := app.RoomClient.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
+	rollback, err := app.stateMachine.FireWithRollback(client.LocalEventSelfLeft.String())
 	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Could not leave room: %v", err)
-		return false
-	}
-
-	runtime.LogDebugf(app.wailsCtx, "Room left status: %s", resp.GetStatus().String())
-
-	if err := app.stateMachine.Fire(client.LocalEventSelfLeft.String()); err != nil {
 		runtime.LogErrorf(
 			app.wailsCtx,
 			roomMachineFireLogPattern,
@@ -317,6 +349,26 @@ func (app *WailsApp) LeaveRoom() bool {
 			err,
 		)
 	}
+
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+	defer cancel()
+
+	resp, err := app.RoomClient.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
+	if err != nil {
+		runtime.LogErrorf(app.wailsCtx, "Could not leave room: %v", err)
+
+		if err := rollback(); err != nil {
+			runtime.LogFatalf(
+				app.wailsCtx,
+				machineRollbackErrorPattern,
+				err,
+			)
+		}
+
+		return false
+	}
+
+	runtime.LogDebugf(app.wailsCtx, "Room left status: %s", resp.GetStatus().String())
 
 	return resp.GetStatus() == pb.ResponseStatus_Ok
 }

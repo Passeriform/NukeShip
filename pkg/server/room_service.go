@@ -39,6 +39,7 @@ func (srv *RoomService) CreateRoom(
 	log.Printf("Created new room: %v", room.ID)
 
 	if srv.DebugSkipRoom {
+		log.Println("Skipping room join check. DEBUG_SKIP_ROOM is enabled.")
 		DebugSkipRoom(conn)
 	}
 
