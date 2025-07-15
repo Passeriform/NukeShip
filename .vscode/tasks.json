@@ -94,7 +94,6 @@
             "args": [
                 "build",
                 "-clean",
-                "-race",
                 "-tags",
                 "local_server"
             ],
@@ -117,7 +116,6 @@
             "args": [
                 "build",
                 "-clean",
-                "-race"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/pkg/client"
@@ -232,9 +230,9 @@
             "command": "go",
             "args": [
                 "run",
-                ".",
                 "-tags",
-                "local_server"
+                "local_server",
+                "."
             ],
             "problemMatcher": [
                 "$go"

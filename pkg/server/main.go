@@ -19,9 +19,11 @@ import (
 )
 
 var (
+	//nolint:gochecknoglobals,mnd // Configuration only kept at the time of first initialization.
 	KeepAliveEnforcementPolicy = keepalive.EnforcementPolicy{
 		MinTime: 15 * time.Second,
 	}
+	//nolint:gochecknoglobals,mnd // Configuration only kept at the time of first initialization.
 	KeepAliveServerParameters = keepalive.ServerParameters{
 		Time:    30 * time.Second,
 		Timeout: 10 * time.Second,

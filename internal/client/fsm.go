@@ -31,16 +31,21 @@ type (
 
 func (fsm RoomStateFSM) FireWithRollback(event string) (func() error, error) {
 	prevState := fsm.GetState()
+
+	if err := fsm.Fire(event); err != nil {
+		return nil, err
+	}
+
 	return func() error {
 		return fsm.SetCurrentState(prevState)
-	}, fsm.Fire(event)
+	}, nil
 }
 
 //nolint:funlen,revive // Allowing longer function as this contains only state machine definition.
 func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
 	roomStateFSM := RoomStateFSM{
 		machine: nil,
-		// TODO: Convert to explicit separation state instead of invisible sub-state
+		// TODO: Convert to explicit separation state instead of invisible sub-state.
 		opponentReady: false,
 	}
 

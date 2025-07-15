@@ -98,7 +98,7 @@ func (*RoomService) LeaveRoom(
 	return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_Ok}, nil
 }
 
-//nolint:gocognit,revive // TODO: Split and remodel using FSM.
+//nolint:gocognit // TODO: Split and remodel using FSM.
 func (*RoomService) UpdateReady(
 	ctx context.Context,
 	in *pb.UpdateReadyRequest,

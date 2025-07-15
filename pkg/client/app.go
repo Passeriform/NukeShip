@@ -38,12 +38,11 @@ const (
 	treeGenVisibilityDepth int = 8
 )
 
-var (
-	KeepAliveClientParameters = keepalive.ClientParameters{
-		Time:    30 * time.Second,
-		Timeout: 10 * time.Second,
-	}
-)
+//nolint:gochecknoglobals,mnd // Configuration only kept at the time of first initialization.
+var KeepAliveClientParameters = keepalive.ClientParameters{
+	Time:    30 * time.Second,
+	Timeout: 10 * time.Second,
+}
 
 type (
 	Event string
@@ -208,29 +207,21 @@ func (app *WailsApp) GetConnectionState() bool {
 }
 
 func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
-	var rollback func() error
-	if !ready {
-		rb, err := app.stateMachine.FireWithRollback(client.LocalEventSelfRevertedReady.String())
-		if err != nil {
-			runtime.LogErrorf(
-				app.wailsCtx,
-				roomMachineFireLogPattern,
-				client.LocalEventSelfRevertedReady.String(),
-				err,
-			)
-		}
-		rollback = rb
+	var event client.LocalEvent
+	if ready {
+		event = client.LocalEventSelfReady
 	} else {
-		rb, err := app.stateMachine.FireWithRollback(client.LocalEventSelfReady.String())
-		if err != nil {
-			runtime.LogErrorf(
-				app.wailsCtx,
-				roomMachineFireLogPattern,
-				client.LocalEventSelfReady.String(),
-				err,
-			)
-		}
-		rollback = rb
+		event = client.LocalEventSelfRevertedReady
+	}
+
+	rollback, err := app.stateMachine.FireWithRollback(event.String())
+	if err != nil {
+		runtime.LogErrorf(
+			app.wailsCtx,
+			roomMachineFireLogPattern,
+			event.String(),
+			err,
+		)
 	}
 
 	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
@@ -241,11 +232,11 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
 
-		if err := rollback(); err != nil {
+		if rbErr := rollback(); rbErr != nil {
 			runtime.LogFatalf(
 				app.wailsCtx,
 				machineRollbackErrorPattern,
-				err,
+				rbErr,
 			)
 		}
 
@@ -255,11 +246,11 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
 		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
 
-		if err := rollback(); err != nil {
+		if rbErr := rollback(); rbErr != nil {
 			runtime.LogFatalf(
 				app.wailsCtx,
 				machineRollbackErrorPattern,
-				err,
+				rbErr,
 			)
 		}
 
@@ -289,11 +280,11 @@ func (app *WailsApp) CreateRoom() (string, error) {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not create room: %v", err)
 
-		if err := rollback(); err != nil {
+		if rbErr := rollback(); rbErr != nil {
 			runtime.LogFatalf(
 				app.wailsCtx,
 				machineRollbackErrorPattern,
-				err,
+				rbErr,
 			)
 		}
 
@@ -323,11 +314,11 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not join room with id %v: %v", roomCode, err)
 
-		if err := rollback(); err != nil {
+		if rbErr := rollback(); rbErr != nil {
 			runtime.LogFatalf(
 				app.wailsCtx,
 				machineRollbackErrorPattern,
-				err,
+				rbErr,
 			)
 		}
 
@@ -357,11 +348,11 @@ func (app *WailsApp) LeaveRoom() bool {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not leave room: %v", err)
 
-		if err := rollback(); err != nil {
+		if rbErr := rollback(); rbErr != nil {
 			runtime.LogFatalf(
 				app.wailsCtx,
 				machineRollbackErrorPattern,
-				err,
+				rbErr,
 			)
 		}
 
