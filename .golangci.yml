@@ -3,7 +3,6 @@ linters:
   default: all
   disable:
     - godox
-    - funcorder
   settings:
     asasalint:
       use-builtin-exclusions: false
@@ -45,7 +44,7 @@ linters:
       exclude-functions:
         - encoding/json.Marshal
         - encoding/json.MarshalIndent
-        - (github.com/Gurpartap/statemachine-go.statemachine.Machine).Fire
+        - (*github.com/looplab/fsm.FSM).Event
     errchkjson:
       check-error-free-encoding: true
       report-no-exported: true
@@ -183,7 +182,7 @@ linters:
         - fmt.Errorf(
         - google.golang.org/grpc/status.Error(
         - google.golang.org/grpc/status.Errorf(
-        - (github.com/Gurpartap/statemachine-go.Machine).Fire(
+        - (*github.com/looplab/fsm.FSM).Event(
     wsl:
       strict-append: true
       allow-assign-and-call: false
@@ -201,6 +200,10 @@ linters:
           - unused
         path: .go
         text: var _ is unused
+      - linters:
+          - lll
+          - revive
+        source: "// ENUM\\("
       - linters:
           - revive
         path: _test/.go

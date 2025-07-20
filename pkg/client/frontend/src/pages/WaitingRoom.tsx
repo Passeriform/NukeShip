@@ -16,7 +16,8 @@ import { client } from "@wails/go/models"
 const messageMapping = {
     [client.RoomState.AWAITING_OPPONENT]: "Waiting for an opponent to join...",
     [client.RoomState.ROOM_FILLED]: "The playground is set!",
-    [client.RoomState.AWAITING_READY]: "Waiting for your opponent to get ready...",
+    [client.RoomState.AWAITING_SELF_READY]: "The playground is set!",
+    [client.RoomState.AWAITING_OPPONENT_READY]: "Waiting for your opponent to get ready...",
     [client.RoomState.AWAITING_GAME_START]: "Let the show begin!",
 } satisfies Partial<Record<client.RoomState, string>>
 
@@ -29,12 +30,19 @@ const WaitingRoom: VoidComponent = () => {
     const { gameState } = useGameState()
 
     const showLoader = () =>
-        [client.RoomState.AWAITING_OPPONENT, client.RoomState.AWAITING_READY, client.RoomState].includes(
-            gameState() as client.RoomState,
-        )
+        [
+            client.RoomState.AWAITING_OPPONENT,
+            client.RoomState.AWAITING_SELF_READY,
+            client.RoomState.AWAITING_OPPONENT_READY,
+            client.RoomState.AWAITING_GAME_START,
+        ].includes(gameState() as client.RoomState)
     const showReadyButton = () =>
-        [client.RoomState.ROOM_FILLED, client.RoomState.AWAITING_READY].includes(gameState() as client.RoomState)
-    const isReady = () => gameState() === client.RoomState.AWAITING_READY
+        [
+            client.RoomState.ROOM_FILLED,
+            client.RoomState.AWAITING_SELF_READY,
+            client.RoomState.AWAITING_OPPONENT_READY,
+        ].includes(gameState() as client.RoomState)
+    const isReady = () => gameState() !== client.RoomState.AWAITING_SELF_READY
 
     const goBack = () => {
         LeaveRoom()

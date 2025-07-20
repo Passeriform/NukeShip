@@ -16,13 +16,35 @@ import (
 type RoomService struct {
 	pb.UnimplementedRoomServiceServer `exhaustruct:"optional"`
 	//nolint:containedctx // Carrying shutdown context for in-request client cancellation.
-	ShutdownCtx   context.Context
-	DebugSkipRoom bool
+	ShutdownCtx context.Context
 }
 
-func DebugSkipRoom(conn *server.Connection) {
+func checkSkipRoomCeremony(conn *server.Connection) {
 	conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentJoined}
 	conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentReady}
+}
+
+func checkGameStart(room *server.Room) {
+	requiredPlayers := room.RequiredPlayers
+
+	if Config.DebugSkipRoom {
+		requiredPlayers = 1
+	}
+
+	startGameFlag := len(room.Clients) == requiredPlayers
+
+	for _, partConn := range room.Clients {
+		startGameFlag = startGameFlag && partConn.Ready
+	}
+
+	if startGameFlag {
+		newGame := game.NewGame()
+		room.Game = &newGame
+
+		for _, c := range room.Clients {
+			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_GameStarted}
+		}
+	}
 }
 
 func (srv *RoomService) CreateRoom(
@@ -38,10 +60,7 @@ func (srv *RoomService) CreateRoom(
 
 	log.Printf("Created new room: %v", room.ID)
 
-	if srv.DebugSkipRoom {
-		log.Println("Skipping room join check. DEBUG_SKIP_ROOM is enabled.")
-		DebugSkipRoom(conn)
-	}
+	checkSkipRoomCeremony(conn)
 
 	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_Ok, RoomId: room.ID}, nil
 }
@@ -116,11 +135,7 @@ func (*RoomService) UpdateReady(
 
 	conn.Ready = ready
 
-	startGameFlag := len(room.Clients) == room.RequiredPlayers
-
 	for ID, partConn := range room.Clients {
-		startGameFlag = startGameFlag && partConn.Ready
-
 		if ID == clientID {
 			continue
 		}
@@ -132,14 +147,7 @@ func (*RoomService) UpdateReady(
 		}
 	}
 
-	if startGameFlag {
-		newGame := game.NewGame()
-		room.Game = &newGame
-
-		for _, c := range room.Clients {
-			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_GameStarted}
-		}
-	}
+	checkGameStart(room)
 
 	log.Printf("Client set ready state to: %t", ready)
 

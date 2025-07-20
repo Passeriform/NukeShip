@@ -1,7 +1,9 @@
 package client
 
 import (
-	"github.com/Gurpartap/statemachine-go"
+	"context"
+
+	"github.com/looplab/fsm"
 
 	"passeriform.com/nukeship/internal/pb"
 )
@@ -10,145 +12,157 @@ import (
 type (
 	// ENUM(SelfJoined, SelfLeft, SelfReady, SelfRevertedReady, Connected, Disconnected)
 	LocalEvent string
-	// ENUM(Init, AwaitingOpponent, RoomFilled, AwaitingReady, AwaitingGameStart, InGame, Recovery)
+	// ENUM(Init, AwaitingOpponent, RoomFilled, AwaitingSelfReady, AwaitingOpponentReady, AwaitingGameStart, InGame, Recovery)
 	RoomState string
 	// ENUM(Connected, Disconnected)
 	ConnectionState string
 )
 
 type (
-	machine statemachine.Machine
-
 	RoomStateFSM struct {
-		machine
-		opponentReady bool
+		*fsm.FSM
 	}
 
 	ConnectionFSM struct {
-		machine
+		*fsm.FSM
 	}
 )
 
-func (fsm RoomStateFSM) FireWithRollback(event string) (func() error, error) {
-	prevState := fsm.GetState()
+func (machine RoomStateFSM) EventWithRollback(ctx context.Context, event string) (func(), error) {
+	prevState := machine.Current()
 
-	if err := fsm.Fire(event); err != nil {
+	if err := machine.Event(ctx, event); err != nil {
 		return nil, err
 	}
 
-	return func() error {
-		return fsm.SetCurrentState(prevState)
+	return func() {
+		machine.SetState(prevState)
 	}, nil
 }
 
 //nolint:funlen,revive // Allowing longer function as this contains only state machine definition.
-func NewRoomStateFSM(notify func(t statemachine.Transition)) RoomStateFSM {
-	roomStateFSM := RoomStateFSM{
-		machine: nil,
-		// TODO: Convert to explicit separation state instead of invisible sub-state.
-		opponentReady: false,
-	}
-
-	roomStateFSM.machine = statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
-		machine.States(
-			RoomStateInit.String(),
-			RoomStateAwaitingOpponent.String(),
-			RoomStateRoomFilled.String(),
-			RoomStateAwaitingReady.String(),
-			RoomStateAwaitingGameStart.String(),
-			RoomStateInGame.String(),
-			RoomStateRecovery.String(),
-		)
-
-		machine.InitialState(RoomStateInit.String())
-
-		machine.AfterTransition().Any().Do(notify)
-
-		// Server authoritative state transitions.
-		machine.Event(pb.RoomServiceEvent_OpponentJoined.String()).
-			Transition().
-			From(RoomStateAwaitingOpponent.String()).
-			To(RoomStateRoomFilled.String())
-		machine.Event(pb.RoomServiceEvent_OpponentReady.String()).
-			Choice(&roomStateFSM.opponentReady).
-			OnTrue(func(e statemachine.EventBuilder) {
-				e.Transition().
-					From(RoomStateAwaitingReady.String()).
-					To(RoomStateAwaitingGameStart.String())
-			}).
-			OnFalse(func(_ statemachine.EventBuilder) {
-				roomStateFSM.opponentReady = true
-			})
-		machine.Event(pb.RoomServiceEvent_GameStarted.String()).
-			Transition().
-			FromAny().
-			To(RoomStateInGame.String())
-		machine.Event(pb.RoomServiceEvent_OpponentRevertedReady.String()).
-			Transition().
-			From(RoomStateAwaitingGameStart.String()).
-			To(RoomStateAwaitingReady.String())
-		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).
-			Transition().
-			From(RoomStateRoomFilled.String(), RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String()).
-			To(RoomStateAwaitingOpponent.String())
-		machine.Event(pb.RoomServiceEvent_OpponentLeft.String()).
-			Transition().
-			From(RoomStateInGame.String()).
-			To(RoomStateRecovery.String())
-
-		// Local event state transition (only for UI usage).
-		machine.Event(LocalEventSelfJoined.String()).
-			Transition().
-			From(RoomStateInit.String()).
-			To(RoomStateAwaitingOpponent.String())
-		machine.Event(LocalEventSelfReady.String()).
-			Choice(&roomStateFSM.opponentReady).
-			OnTrue(func(e statemachine.EventBuilder) {
-				e.Transition().
-					From(RoomStateAwaitingReady.String()).
-					To(RoomStateAwaitingGameStart.String())
-			}).
-			OnFalse(func(e statemachine.EventBuilder) {
-				e.Transition().
-					From(RoomStateRoomFilled.String()).
-					To(RoomStateAwaitingReady.String())
-			})
-		machine.Event(LocalEventSelfLeft.String()).
-			Transition().
-			From(
+func NewRoomStateFSM(callbacks fsm.Callbacks) RoomStateFSM {
+	return RoomStateFSM{fsm.NewFSM(
+		RoomStateInit.String(),
+		fsm.Events{
+			{
+				Name: LocalEventSelfJoined.String(),
+				Src:  []string{RoomStateInit.String(), RoomStateAwaitingOpponent.String()},
+				Dst:  RoomStateAwaitingOpponent.String(),
+			},
+			{
+				Name: LocalEventSelfJoined.String(),
+				Src:  []string{RoomStateRoomFilled.String()},
+				Dst:  RoomStateRoomFilled.String(),
+			},
+			{
+				Name: pb.RoomServiceEvent_OpponentJoined.String(),
+				Src:  []string{RoomStateAwaitingOpponent.String(), RoomStateRoomFilled.String()},
+				Dst:  RoomStateRoomFilled.String(),
+			},
+			{Name: LocalEventSelfLeft.String(), Src: []string{
+				RoomStateInit.String(),
 				RoomStateAwaitingOpponent.String(),
 				RoomStateRoomFilled.String(),
-				RoomStateAwaitingReady.String(),
+				RoomStateAwaitingSelfReady.String(),
+				RoomStateAwaitingOpponentReady.String(),
 				RoomStateAwaitingGameStart.String(),
 				RoomStateInGame.String(),
-			).
-			To(RoomStateInit.String())
-		machine.Event(LocalEventSelfRevertedReady.String()).
-			Transition().
-			From(RoomStateAwaitingReady.String(), RoomStateAwaitingGameStart.String()).
-			To(RoomStateRoomFilled.String())
-	})
-
-	return roomStateFSM
+			}, Dst: RoomStateInit.String()},
+			{Name: pb.RoomServiceEvent_OpponentLeft.String(), Src: []string{
+				RoomStateAwaitingOpponent.String(),
+				RoomStateRoomFilled.String(),
+				RoomStateAwaitingSelfReady.String(),
+				RoomStateAwaitingOpponentReady.String(),
+				RoomStateAwaitingGameStart.String(),
+			}, Dst: RoomStateAwaitingGameStart.String()},
+			{
+				Name: LocalEventSelfReady.String(),
+				Src: []string{
+					RoomStateRoomFilled.String(),
+					RoomStateAwaitingOpponentReady.String(),
+				},
+				Dst: RoomStateAwaitingOpponentReady.String(),
+			},
+			{
+				Name: LocalEventSelfReady.String(),
+				Src:  []string{RoomStateAwaitingSelfReady.String()},
+				Dst:  RoomStateAwaitingGameStart.String(),
+			},
+			{
+				Name: pb.RoomServiceEvent_OpponentReady.String(),
+				Src:  []string{RoomStateRoomFilled.String(), RoomStateAwaitingSelfReady.String()},
+				Dst:  RoomStateAwaitingSelfReady.String(),
+			},
+			{
+				Name: pb.RoomServiceEvent_OpponentReady.String(),
+				Src:  []string{RoomStateAwaitingOpponentReady.String()},
+				Dst:  RoomStateAwaitingGameStart.String(),
+			},
+			{
+				Name: LocalEventSelfRevertedReady.String(),
+				Src: []string{
+					RoomStateRoomFilled.String(),
+					RoomStateAwaitingOpponentReady.String(),
+				},
+				Dst: RoomStateRoomFilled.String(),
+			},
+			{
+				Name: LocalEventSelfRevertedReady.String(),
+				Src:  []string{RoomStateAwaitingSelfReady.String()},
+				Dst:  RoomStateAwaitingSelfReady.String(),
+			},
+			{
+				Name: LocalEventSelfRevertedReady.String(),
+				Src:  []string{RoomStateAwaitingGameStart.String()},
+				Dst:  RoomStateInit.String(),
+			},
+			{
+				Name: pb.RoomServiceEvent_OpponentRevertedReady.String(),
+				Src:  []string{RoomStateRoomFilled.String(), RoomStateAwaitingSelfReady.String()},
+				Dst:  RoomStateRoomFilled.String(),
+			},
+			{
+				Name: pb.RoomServiceEvent_OpponentRevertedReady.String(),
+				Src:  []string{RoomStateAwaitingOpponentReady.String()},
+				Dst:  RoomStateAwaitingOpponentReady.String(),
+			},
+			{
+				Name: pb.RoomServiceEvent_OpponentRevertedReady.String(),
+				Src:  []string{RoomStateAwaitingGameStart.String()},
+				Dst:  RoomStateInit.String(),
+			},
+			{
+				Name: pb.RoomServiceEvent_GameStarted.String(),
+				Src:  []string{RoomStateAwaitingGameStart.String()},
+				Dst:  RoomStateInGame.String(),
+			},
+		},
+		callbacks,
+	)}
 }
 
-func NewConnectionFSM(notify func(t statemachine.Transition)) ConnectionFSM {
-	return ConnectionFSM{
-		statemachine.BuildNewMachine(func(machine statemachine.MachineBuilder) {
-			machine.States(ConnectionStateConnected.String(), LocalEventDisconnected.String())
-
-			machine.InitialState(ConnectionStateConnected.String())
-
-			machine.AfterTransition().Any().Do(notify)
-
-			machine.Event(LocalEventConnected.String()).
-				Transition().
-				From(ConnectionStateDisconnected.String()).
-				To(ConnectionStateConnected.String())
-			machine.Event(LocalEventDisconnected.String()).
-				Transition().
-				From(ConnectionStateConnected.String()).
-				To(LocalEventDisconnected.String())
-		}),
-	}
+func NewConnectionFSM(callbacks fsm.Callbacks) ConnectionFSM {
+	return ConnectionFSM{fsm.NewFSM(
+		ConnectionStateDisconnected.String(),
+		fsm.Events{
+			{
+				Name: LocalEventConnected.String(),
+				Src: []string{
+					ConnectionStateConnected.String(),
+					ConnectionStateDisconnected.String(),
+				},
+				Dst: ConnectionStateConnected.String(),
+			},
+			{
+				Name: LocalEventDisconnected.String(),
+				Src: []string{
+					ConnectionStateConnected.String(),
+					ConnectionStateDisconnected.String(),
+				},
+				Dst: ConnectionStateDisconnected.String(),
+			},
+		},
+		callbacks,
+	)}
 }

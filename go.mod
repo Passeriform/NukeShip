@@ -5,11 +5,11 @@ go 1.23.0
 toolchain go1.23.4
 
 require (
-	github.com/Gurpartap/statemachine-go v0.0.0-20190708030151-b27cddb816c4
 	github.com/abice/go-enum v0.6.0
 	github.com/jxskiss/mcli v0.9.5
+	github.com/looplab/fsm v1.0.3
 	github.com/necmettindev/randomstring v0.1.0
-	github.com/wailsapp/wails/v2 v2.9.2
+	github.com/wailsapp/wails/v2 v2.10.2
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
 )
@@ -25,6 +25,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect

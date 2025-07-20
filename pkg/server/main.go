@@ -71,7 +71,7 @@ func main() {
 
 	pb.RegisterRoomServiceServer(
 		srv,
-		&RoomService{ShutdownCtx: shutdownCtx, DebugSkipRoom: Config.DebugSkipRoom},
+		&RoomService{ShutdownCtx: shutdownCtx},
 	)
 	pb.RegisterGameServiceServer(srv, &GameService{ShutdownCtx: shutdownCtx})
 

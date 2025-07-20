@@ -18,7 +18,7 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"github.com/Gurpartap/statemachine-go"
+	"github.com/looplab/fsm"
 
 	"passeriform.com/nukeship/internal/client"
 	"passeriform.com/nukeship/internal/game"
@@ -29,9 +29,8 @@ const (
 	StateChangeEvent            Event = "srv:stateChange"
 	ServerConnectionChangeEvent Event = "srv:serverConnectionChange"
 
-	connMachineFireLogPattern   string = "Cannot fire event %v to connection state machine: %v"
-	roomMachineFireLogPattern   string = "Cannot fire event %v to room state machine: %v"
-	machineRollbackErrorPattern string = "Rolling back state transition: %v"
+	connMachineFireLogPattern string = "Cannot fire event %v to connection state machine with current state %v: %v"
+	roomMachineFireLogPattern string = "Cannot fire event %v to room state machine with current state %v: %v"
 
 	treeGenDepth           int = 8
 	treeGenWidth           int = 20
@@ -88,8 +87,8 @@ func (app *WailsApp) initGrpcClients() {
 }
 
 func (app *WailsApp) initStateMachines(wailsCtx, configCtx context.Context) {
-	app.stateMachine = client.NewRoomStateFSM(func(transition statemachine.Transition) {
-		if transition.To() == client.RoomStateInGame.String() {
+	app.stateMachine = client.NewRoomStateFSM(fsm.Callbacks{
+		"enter_" + client.RoomStateInGame.String(): func(_ context.Context, _ *fsm.Event) {
 			tree := game.NewFsTree("C:\\Windows", game.TreeGenOptions{
 				Ignore:          game.DefaultTreeGenIgnores[:],
 				VisibilityDepth: treeGenVisibilityDepth,
@@ -98,21 +97,24 @@ func (app *WailsApp) initStateMachines(wailsCtx, configCtx context.Context) {
 			})
 
 			app.publishGameState(wailsCtx, configCtx, &tree)
-		}
-
-		runtime.EventsEmit(
-			wailsCtx,
-			string(StateChangeEvent),
-			client.MustParseRoomState(transition.To()),
-		)
+		},
+		"enter_state": func(_ context.Context, e *fsm.Event) {
+			runtime.EventsEmit(
+				wailsCtx,
+				string(StateChangeEvent),
+				client.MustParseRoomState(e.Dst),
+			)
+		},
 	})
 
-	app.connMachine = client.NewConnectionFSM(func(t statemachine.Transition) {
-		runtime.EventsEmit(
-			wailsCtx,
-			string(ServerConnectionChangeEvent),
-			t.To() == client.ConnectionStateConnected.String(),
-		)
+	app.connMachine = client.NewConnectionFSM(fsm.Callbacks{
+		"enter_state": func(_ context.Context, e *fsm.Event) {
+			runtime.EventsEmit(
+				wailsCtx,
+				string(ServerConnectionChangeEvent),
+				e.Dst == client.ConnectionStateConnected.String(),
+			)
+		},
 	})
 }
 
@@ -134,11 +136,12 @@ func (app *WailsApp) publishGameState(wailsCtx, configCtx context.Context, tree 
 //nolint:gocognit,revive // This method is currently segregated on concerns and readable.
 func (app *WailsApp) connect(wailsCtx, configCtx context.Context) {
 	defer func() {
-		if err := app.connMachine.Fire(client.LocalEventDisconnected.String()); err != nil {
+		if err := app.connMachine.Event(wailsCtx, client.LocalEventDisconnected.String()); err != nil {
 			runtime.LogErrorf(
 				wailsCtx,
 				connMachineFireLogPattern,
 				client.LocalEventDisconnected.String(),
+				app.connMachine.Current(),
 				err,
 			)
 		}
@@ -153,11 +156,12 @@ func (app *WailsApp) connect(wailsCtx, configCtx context.Context) {
 		return
 	}
 
-	if err := app.connMachine.Fire(client.LocalEventConnected.String()); err != nil {
+	if err := app.connMachine.Event(wailsCtx, client.LocalEventConnected.String()); err != nil {
 		runtime.LogErrorf(
 			wailsCtx,
 			connMachineFireLogPattern,
 			client.LocalEventConnected.String(),
+			app.connMachine.Current(),
 			err,
 		)
 	}
@@ -174,11 +178,12 @@ func (app *WailsApp) connect(wailsCtx, configCtx context.Context) {
 			return
 		}
 
-		if err := app.stateMachine.Fire(update.GetType().String()); err != nil {
+		if err := app.stateMachine.Event(wailsCtx, update.GetType().String()); err != nil {
 			runtime.LogErrorf(
 				wailsCtx,
 				roomMachineFireLogPattern,
 				update.GetType().String(),
+				app.stateMachine.Current(),
 				err,
 			)
 		}
@@ -191,19 +196,19 @@ func newWailsApp() *WailsApp {
 		configCtx:    nil,
 		RoomClient:   nil,
 		GameClient:   nil,
-		connMachine:  client.ConnectionFSM{},
-		stateMachine: client.RoomStateFSM{},
+		connMachine:  client.ConnectionFSM{FSM: nil},
+		stateMachine: client.RoomStateFSM{FSM: nil},
 	}
 
 	return app
 }
 
 func (app *WailsApp) GetAppState() client.RoomState {
-	return client.MustParseRoomState(app.stateMachine.GetState())
+	return client.MustParseRoomState(app.stateMachine.Current())
 }
 
 func (app *WailsApp) GetConnectionState() bool {
-	return app.connMachine.GetState() == client.ConnectionStateConnected.String()
+	return app.connMachine.Current() == client.ConnectionStateConnected.String()
 }
 
 func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
@@ -214,12 +219,13 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 		event = client.LocalEventSelfRevertedReady
 	}
 
-	rollback, err := app.stateMachine.FireWithRollback(event.String())
+	rollback, err := app.stateMachine.EventWithRollback(context.Background(), event.String())
 	if err != nil {
 		runtime.LogErrorf(
 			app.wailsCtx,
 			roomMachineFireLogPattern,
 			event.String(),
+			app.stateMachine.Current(),
 			err,
 		)
 	}
@@ -232,13 +238,7 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
 
-		if rbErr := rollback(); rbErr != nil {
-			runtime.LogFatalf(
-				app.wailsCtx,
-				machineRollbackErrorPattern,
-				rbErr,
-			)
-		}
+		rollback()
 
 		return false, fmt.Errorf("could not update ready state: %w", err)
 	}
@@ -246,13 +246,7 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
 		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
 
-		if rbErr := rollback(); rbErr != nil {
-			runtime.LogFatalf(
-				app.wailsCtx,
-				machineRollbackErrorPattern,
-				rbErr,
-			)
-		}
+		rollback()
 
 		return false, fmt.Errorf("unable to ready as the room is invalid: %w", err)
 	}
@@ -263,12 +257,16 @@ func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
 }
 
 func (app *WailsApp) CreateRoom() (string, error) {
-	rollback, err := app.stateMachine.FireWithRollback(client.LocalEventSelfJoined.String())
+	rollback, err := app.stateMachine.EventWithRollback(
+		context.Background(),
+		client.LocalEventSelfJoined.String(),
+	)
 	if err != nil {
 		runtime.LogErrorf(
 			app.wailsCtx,
 			roomMachineFireLogPattern,
 			client.LocalEventSelfJoined.String(),
+			app.stateMachine.Current(),
 			err,
 		)
 	}
@@ -280,13 +278,7 @@ func (app *WailsApp) CreateRoom() (string, error) {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not create room: %v", err)
 
-		if rbErr := rollback(); rbErr != nil {
-			runtime.LogFatalf(
-				app.wailsCtx,
-				machineRollbackErrorPattern,
-				rbErr,
-			)
-		}
+		rollback()
 
 		return "", fmt.Errorf("could not create room: %w", err)
 	}
@@ -297,12 +289,16 @@ func (app *WailsApp) CreateRoom() (string, error) {
 }
 
 func (app *WailsApp) JoinRoom(roomCode string) bool {
-	rollback, err := app.stateMachine.FireWithRollback(client.LocalEventSelfJoined.String())
+	rollback, err := app.stateMachine.EventWithRollback(
+		context.Background(),
+		client.LocalEventSelfJoined.String(),
+	)
 	if err != nil {
 		runtime.LogErrorf(
 			app.wailsCtx,
 			roomMachineFireLogPattern,
 			client.LocalEventSelfJoined.String(),
+			app.stateMachine.Current(),
 			err,
 		)
 	}
@@ -314,13 +310,7 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not join room with id %v: %v", roomCode, err)
 
-		if rbErr := rollback(); rbErr != nil {
-			runtime.LogFatalf(
-				app.wailsCtx,
-				machineRollbackErrorPattern,
-				rbErr,
-			)
-		}
+		rollback()
 
 		return false
 	}
@@ -331,12 +321,16 @@ func (app *WailsApp) JoinRoom(roomCode string) bool {
 }
 
 func (app *WailsApp) LeaveRoom() bool {
-	rollback, err := app.stateMachine.FireWithRollback(client.LocalEventSelfLeft.String())
+	rollback, err := app.stateMachine.EventWithRollback(
+		context.Background(),
+		client.LocalEventSelfLeft.String(),
+	)
 	if err != nil {
 		runtime.LogErrorf(
 			app.wailsCtx,
 			roomMachineFireLogPattern,
 			client.LocalEventSelfLeft.String(),
+			app.stateMachine.Current(),
 			err,
 		)
 	}
@@ -348,13 +342,7 @@ func (app *WailsApp) LeaveRoom() bool {
 	if err != nil {
 		runtime.LogErrorf(app.wailsCtx, "Could not leave room: %v", err)
 
-		if rbErr := rollback(); rbErr != nil {
-			runtime.LogFatalf(
-				app.wailsCtx,
-				machineRollbackErrorPattern,
-				rbErr,
-			)
-		}
+		rollback()
 
 		return false
 	}
