@@ -1,16 +1,22 @@
 import { autoUpdate, offset } from "@floating-ui/dom"
 import { combineProps } from "@solid-primitives/props"
 import { useFloating } from "solid-floating-ui"
-import { Component, ComponentProps, JSX, createSignal, splitProps } from "solid-js"
+import { Component, ComponentProps, JSX, createSignal, mergeProps, splitProps } from "solid-js"
+import { twMerge } from "tailwind-merge"
 import Button from "./Button"
 
 type InfoButtonProps = ComponentProps<typeof Button> & {
     hintTitle: string
     hintBody: JSX.Element
+    hintClass?: string
 }
 
 const InfoButton: Component<InfoButtonProps> = (_props) => {
-    const [ownProps, forwardedProps] = splitProps(_props, ["hintTitle", "hintBody"])
+    const [ownProps, forwardedProps] = splitProps(mergeProps({ hintClass: "" }, _props), [
+        "hintTitle",
+        "hintBody",
+        "hintClass",
+    ])
 
     const [tooltipReference, setTooltipReference] = createSignal<HTMLButtonElement>()
     const [tooltipFloating, setTooltipFloating] = createSignal<HTMLElement>()
@@ -40,7 +46,10 @@ const InfoButton: Component<InfoButtonProps> = (_props) => {
                         top: `${floatingResult.y ?? 0}px`,
                         left: `${floatingResult.x ?? 0}px`,
                     }}
-                    class="w-72 rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify"
+                    class={twMerge(
+                        "w-72 rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify",
+                        ownProps.hintClass,
+                    )}
                 >
                     <h3 class="mb-4 font-title text-2xl">{ownProps.hintTitle}</h3>
                     {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}

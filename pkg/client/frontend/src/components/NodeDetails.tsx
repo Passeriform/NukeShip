@@ -1,12 +1,24 @@
 import { createPresence } from "@solid-primitives/presence"
-import { Accessor, For, Show, VoidComponent, createEffect, createSignal, mergeProps, untrack } from "solid-js"
+import {
+    Accessor,
+    For,
+    JSX,
+    Show,
+    VoidComponent,
+    createEffect,
+    createSignal,
+    mergeProps,
+    splitProps,
+    untrack,
+} from "solid-js"
 import { twMerge } from "tailwind-merge"
 import { CONTENT } from "@constants/content"
-import { RawDataStream } from "@game/tree"
+import { SaplingMetadata } from "@game/tree"
 import { ContentBody } from "./ContentBody"
 import InfoButton from "./InfoButton"
 
-interface NodeDetailsProps extends Omit<RawDataStream, "children"> {
+interface NodeDetailsProps extends JSX.HTMLAttributes<HTMLElement> {
+    data: SaplingMetadata
     show: Accessor<boolean>
     transitionTiming?: number
     position?: "left" | "right"
@@ -14,34 +26,37 @@ interface NodeDetailsProps extends Omit<RawDataStream, "children"> {
 }
 
 const NodeDetails: VoidComponent<NodeDetailsProps> = (_props) => {
-    const props = mergeProps({ position: "left", transitionTiming: 400, revealBehind: () => false }, _props)
+    const [ownProps, forwardedProps] = splitProps(
+        mergeProps({ position: "left", transitionTiming: 400, revealBehind: () => false }, _props),
+        ["show", "transitionTiming", "position", "revealBehind", "data"],
+    )
 
     const statData = () => [
         {
             content: CONTENT.POWER,
-            value: "█  ".repeat(props.power / 5),
+            value: "█  ".repeat(ownProps.data.power / 5),
         },
         {
             content: CONTENT.SHIELD,
-            value: "█  ".repeat(props.shield / 5),
+            value: "█  ".repeat(ownProps.data.shield / 5),
         },
         {
             content: CONTENT.RECHARGE_RATE,
-            value: "█  ".repeat(props.rechargeRate / 5) + "/s",
+            value: "█  ".repeat(ownProps.data.rechargeRate / 5) + "/s",
         },
     ]
 
     const [hovering, setHovering] = createSignal(false)
-    const [debouncedPosition, setDebouncedPosition] = createSignal(props.position)
+    const [debouncedPosition, setDebouncedPosition] = createSignal(ownProps.position)
 
-    const panePresence = createPresence(props.show, { transitionDuration: props.transitionTiming })
+    const panePresence = createPresence(ownProps.show, { transitionDuration: ownProps.transitionTiming })
 
     createEffect(() => {
-        if (untrack(debouncedPosition) !== props.position) {
+        if (untrack(debouncedPosition) !== ownProps.position) {
             if (panePresence.isAnimating() || panePresence.isVisible()) {
-                setTimeout(() => setDebouncedPosition(props.position), props.transitionTiming)
+                setTimeout(() => setDebouncedPosition(ownProps.position), ownProps.transitionTiming)
             } else {
-                setDebouncedPosition(props.position)
+                setDebouncedPosition(ownProps.position)
             }
         }
     })
@@ -50,40 +65,60 @@ const NodeDetails: VoidComponent<NodeDetailsProps> = (_props) => {
         <Show when={panePresence.isMounted()}>
             <section
                 class={twMerge(
-                    "pointer-events-auto absolute min-w-1/4 transform rounded-lg border border-dark-turquoise p-4 text-white shadow-lg transition-all ease-out transform-style-3d",
+                    "absolute min-w-1/4 transform rounded-lg border border-dark-turquoise p-4 text-white shadow-lg transition-all ease-out transform-style-3d",
                     debouncedPosition() === "left" ? "left-1/8 rotate-y-30" : "right-1/8 -rotate-y-30",
-                    !props.revealBehind(hovering()) && "backdrop-blur-lg",
+                    !ownProps.revealBehind(hovering()) && "backdrop-blur-lg",
                     panePresence.isVisible() ? "scale-y-100" : "scale-y-0",
+                    forwardedProps.class,
                 )}
-                style={{ "transition-duration": `${props.transitionTiming}ms` }}
+                style={{ "transition-duration": `${ownProps.transitionTiming}ms` }}
                 onMouseEnter={() => setHovering(true)}
                 onMouseLeave={() => setHovering(false)}
             >
                 <article class="flex h-full flex-col gap-2">
-                    <h2 class="font-title text-4xl font-bold">{props.label}</h2>
+                    <h2 class="font-title text-4xl font-bold">{ownProps.data.label}</h2>
                     <div class="my-2 flex flex-col gap-2">
                         <For each={statData()}>
                             {({ content, value }) => (
-                                <div class="flex w-full items-center p-4">
+                                <div
+                                    class={twMerge(
+                                        "flex w-full items-center p-4",
+                                        debouncedPosition() === "left" ? "flex-row" : "flex-row-reverse",
+                                    )}
+                                >
                                     <InfoButton
                                         class="w-16 cursor-default p-6"
                                         embellish={false}
                                         hintTitle={content.title}
                                         hintBody={<ContentBody content={content} />}
+                                        onMouseEnter={() => setHovering(false)}
+                                        onMouseLeave={() => setHovering(true)}
                                     >
                                         {content.icon}
                                     </InfoButton>
-                                    <span class="ms-8 text-dark-turquoise">{value}</span>
+                                    <span
+                                        class={twMerge(
+                                            "text-dark-turquoise",
+                                            debouncedPosition() === "left" ? "ms-8" : "me-8",
+                                        )}
+                                    >
+                                        {value}
+                                    </span>
                                 </div>
                             )}
                         </For>
                     </div>
-                    <Show when={props.sentinel}>
+                    <Show when={ownProps.data.sentinel}>
                         <InfoButton
-                            class="ms-auto w-20 cursor-default p-6"
+                            class={twMerge(
+                                "w-20 cursor-default p-6",
+                                debouncedPosition() === "left" ? "ms-auto" : "me-auto",
+                            )}
                             embellish={false}
                             hintTitle={CONTENT.SENTINEL.title}
                             hintBody={<ContentBody content={CONTENT.SENTINEL} />}
+                            onMouseEnter={() => setHovering(false)}
+                            onMouseLeave={() => setHovering(true)}
                         >
                             {CONTENT.SENTINEL.icon}
                         </InfoButton>

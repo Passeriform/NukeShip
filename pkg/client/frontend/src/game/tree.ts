@@ -13,12 +13,7 @@ import {
 import { boundsFromMeshGeometries } from "@utility/bounds"
 
 // TODO: Fixup according to client structure.
-export type RawDataStream = {
-    label: string
-    sentinel: boolean
-    power: number
-    shield: number
-    rechargeRate: number
+export type RawDataStream = SaplingMetadata & {
     children: RawDataStream[]
 }
 
@@ -59,7 +54,23 @@ type AddChildSaplingOptions = Required<Pick<SaplingCtorOptions, "depth" | "color
     collector?: Sapling[][]
 }
 
+export type SaplingMetadata = {
+    label: string
+    sentinel: boolean
+    power: number
+    shield: number
+    rechargeRate: number
+}
+
+type SaplingInternalData = {
+    root: boolean
+    depth: number
+    ignoreRaycast: boolean
+}
+
 class Sapling extends Mesh {
+    declare userData: SaplingMetadata & SaplingInternalData
+
     private static NODE_GEOMETRY = new SphereGeometry(NODE_RADIUS, 64, 64)
     private static NODE_MATERIALS = COLORS.map(
         (color) => new MeshLambertMaterial({ color, emissiveIntensity: 20, transparent: true }),

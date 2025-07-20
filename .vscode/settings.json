@@ -39,6 +39,11 @@
             // "-tags=cli",
         ]
     },
+    "tailwindCSS.classAttributes": [
+        "class",
+        "className",
+        "hintClass"
+    ],
     "css.customData": [
         ".vscode/tailwind.json"
     ]

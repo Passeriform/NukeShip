@@ -215,16 +215,13 @@ const GameBoard: VoidComponent = () => {
                     mesh.glow(true, tweenGroup)
                 }}
             />
-            <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800">
+            <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800 transform-style-3d">
                 <NodeDetails
+                    class="pointer-events-auto"
                     position={focus() === FocusType.SELF ? "left" : "right"}
                     show={showNodeDetails}
                     transitionTiming={100}
-                    label={selectedSapling()?.userData["label"]}
-                    sentinel={selectedSapling()?.userData["sentinel"]}
-                    power={selectedSapling()?.userData["power"]}
-                    shield={selectedSapling()?.userData["shield"]}
-                    rechargeRate={selectedSapling()?.userData["rechargeRate"]}
+                    data={selectedSapling()?.userData!}
                     revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
                 />
             </div>
