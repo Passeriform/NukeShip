@@ -2,6 +2,7 @@ import { autoUpdate, offset } from "@floating-ui/dom"
 import { combineProps } from "@solid-primitives/props"
 import { useFloating } from "solid-floating-ui"
 import { Component, ComponentProps, JSX, createSignal, mergeProps, splitProps } from "solid-js"
+import { Portal } from "solid-js/web"
 import { twMerge } from "tailwind-merge"
 import Button from "./Button"
 
@@ -39,22 +40,24 @@ const InfoButton: Component<InfoButtonProps> = (_props) => {
         <>
             <Button {...combinedProps} />
             {showTooltip() && (
-                <div
-                    ref={setTooltipFloating}
-                    style={{
-                        position: floatingResult.strategy,
-                        top: `${floatingResult.y ?? 0}px`,
-                        left: `${floatingResult.x ?? 0}px`,
-                    }}
-                    class={twMerge(
-                        "w-72 rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify",
-                        ownProps.hintClass,
-                    )}
-                >
-                    <h3 class="mb-4 font-title text-2xl">{ownProps.hintTitle}</h3>
-                    {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}
-                    {ownProps.hintBody === "string" ? <p class="mb-8">{ownProps.hintBody}</p> : ownProps.hintBody}
-                </div>
+                <Portal>
+                    <div
+                        ref={setTooltipFloating}
+                        style={{
+                            position: floatingResult.strategy,
+                            top: `${floatingResult.y ?? 0}px`,
+                            left: `${floatingResult.x ?? 0}px`,
+                        }}
+                        class={twMerge(
+                            "rounded-lg border border-dark-turquoise/30 bg-elderberry p-4 text-justify",
+                            ownProps.hintClass,
+                        )}
+                    >
+                        <h3 class="mb-4 font-title text-2xl">{ownProps.hintTitle}</h3>
+                        {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}
+                        {ownProps.hintBody === "string" ? <p class="mb-8">{ownProps.hintBody}</p> : ownProps.hintBody}
+                    </div>
+                </Portal>
             )}
         </>
     )
