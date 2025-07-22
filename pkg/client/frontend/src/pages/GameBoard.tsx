@@ -1,7 +1,7 @@
 import TourControls from "@passeriform/three-tour-controls"
 import { useParams } from "@solidjs/router"
 import { Group as TweenGroup } from "@tweenjs/tween.js"
-import { VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
+import { Show, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import toast from "solid-toast"
 import { PerspectiveCamera } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
@@ -216,14 +216,16 @@ const GameBoard: VoidComponent = () => {
                 }}
             />
             <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800 transform-style-3d">
-                <NodeDetails
-                    class="pointer-events-auto"
-                    position={focus() === FocusType.SELF ? "left" : "right"}
-                    show={showNodeDetails}
-                    transitionTiming={100}
-                    data={selectedSapling()?.userData!}
-                    revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
-                />
+                <Show when={selectedSapling()}>
+                    <NodeDetails
+                        class="pointer-events-auto"
+                        position={focus() === FocusType.SELF ? "left" : "right"}
+                        show={showNodeDetails}
+                        transitionTiming={100}
+                        data={selectedSapling()!.userData}
+                        revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
+                    />
+                </Show>
             </div>
             <NavButton position="right" class="pointer-events-none cursor-default" disabled>
                 {code}
