@@ -7,4 +7,5 @@ var Config = ClientConfig{
 	ServerHost: "localhost",
 	ServerPort: 50051,
 	EnableTLS:  false,
+	DebugRoom:  true,
 }

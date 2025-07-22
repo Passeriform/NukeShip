@@ -10,9 +10,13 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/pkg/server/",
+            "buildFlags": [
+                "-tags",
+                "local_server"
+            ],
             "env": {
                 "GOPATH": "${workspaceFolder}"
-            }
+            },
         },
         {
             "name": "Debug App",

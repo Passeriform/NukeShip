@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"passeriform.com/nukeship/internal/game"
 	"passeriform.com/nukeship/internal/pb"
 	"passeriform.com/nukeship/internal/server"
 )
@@ -19,48 +18,34 @@ type RoomService struct {
 	ShutdownCtx context.Context
 }
 
-func checkSkipRoomCeremony(conn *server.Connection) {
-	conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentJoined}
-	conn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentReady}
-}
-
-func checkGameStart(room *server.Room) {
-	requiredPlayers := room.RequiredPlayers
-
-	if Config.DebugSkipRoom {
-		requiredPlayers = 1
+func dispatchEvents(room *server.Room, e string) {
+	var roomState pb.RoomState
+	switch e {
+	case server.RoomStateAwaitingPlayers.String():
+		roomState = pb.RoomState_RoomFilled
+	case server.RoomStateAwaitingReady.String():
+		roomState = pb.RoomState_AwaitingReady
+	case server.RoomStateInGame.String():
+		roomState = pb.RoomState_GameStarted
 	}
-
-	startGameFlag := len(room.Clients) == requiredPlayers
 
 	for _, partConn := range room.Clients {
-		startGameFlag = startGameFlag && partConn.Ready
-	}
-
-	if startGameFlag {
-		newGame := game.NewGame()
-		room.Game = &newGame
-
-		for _, c := range room.Clients {
-			c.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_GameStarted}
-		}
+		partConn.MsgChan <- &pb.MessageStreamResponse{Type: roomState}
 	}
 }
 
 func (srv *RoomService) CreateRoom(
 	ctx context.Context,
-	_ *pb.CreateRoomRequest,
+	in *pb.CreateRoomRequest,
 ) (*pb.CreateRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 	conn := server.GetConnection(clientID)
-	room, _ := server.NewRoom()
+	room, _ := server.NewRoom(in.RoomType, dispatchEvents)
 	room.AddConnection(conn)
 
 	conn.Room = room
 
-	log.Printf("Created new room: %v", room.ID)
-
-	checkSkipRoomCeremony(conn)
+	log.Printf("Created new room %v", room.ID)
 
 	return &pb.CreateRoomResponse{Status: pb.ResponseStatus_Ok, RoomId: room.ID}, nil
 }
@@ -83,10 +68,6 @@ func (*RoomService) JoinRoom(
 
 	conn.Room = room
 
-	for _, partConn := range room.Clients {
-		partConn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentJoined}
-	}
-
 	log.Printf("Client joined room: %v", room.ID)
 
 	return &pb.JoinRoomResponse{Status: pb.ResponseStatus_Ok}, nil
@@ -107,10 +88,6 @@ func (*RoomService) LeaveRoom(
 	room := conn.Room
 
 	room.RemoveConnection(conn.ID)
-
-	for _, partConn := range room.Clients {
-		partConn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentLeft}
-	}
 
 	log.Printf("Client left room: %v", room.ID)
 
@@ -133,21 +110,7 @@ func (*RoomService) UpdateReady(
 
 	room := conn.Room
 
-	conn.Ready = ready
-
-	for ID, partConn := range room.Clients {
-		if ID == clientID {
-			continue
-		}
-
-		if ready {
-			partConn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentReady}
-		} else {
-			partConn.MsgChan <- &pb.MessageStreamResponse{Type: pb.RoomServiceEvent_OpponentRevertedReady}
-		}
-	}
-
-	checkGameStart(room)
+	room.SetReady(conn.ID, ready)
 
 	log.Printf("Client set ready state to: %t", ready)
 
@@ -181,23 +144,4 @@ func (srv *RoomService) SubscribeMessages(
 			return status.Errorf(codes.Unavailable, "Server is shutting down")
 		}
 	}
-}
-
-func (*RoomService) AddPlayer(
-	ctx context.Context,
-	in *pb.AddPlayerRequest,
-) *pb.AddPlayerResponse {
-	clientID, _ := server.ExtractClientIDMetadata(ctx)
-	conn := server.GetConnection(clientID)
-	tree := in.GetTree()
-
-	if conn.Room == nil {
-		return &pb.AddPlayerResponse{Status: pb.ResponseStatus_NoRoomJoinedYet}
-	}
-
-	room := conn.Room
-
-	room.Game.AddPlayerState(clientID, tree)
-
-	return &pb.AddPlayerResponse{Status: pb.ResponseStatus_Ok}
 }

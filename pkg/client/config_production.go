@@ -7,4 +7,5 @@ var Config = ClientConfig{
 	ServerHost: "nukeship.passeriform.com",
 	ServerPort: 443,
 	EnableTLS:  true,
+	DebugRoom:  false,
 }

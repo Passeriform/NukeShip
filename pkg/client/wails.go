@@ -12,7 +12,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 
-	"passeriform.com/nukeship/internal/client"
+	"passeriform.com/nukeship/internal/pb"
 )
 
 var (
@@ -23,22 +23,26 @@ var (
 	icon []byte
 
 	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.
-	appStatesMapping = []struct {
-		Value  client.RoomState
+	roomTypeMapping = []struct {
+		Value  pb.RoomType
 		TSName string
 	}{
-		{client.RoomStateInit, "INIT"},
-		{client.RoomStateAwaitingOpponent, "AWAITING_OPPONENT"},
-		{client.RoomStateRoomFilled, "ROOM_FILLED"},
-		{client.RoomStateAwaitingSelfReady, "AWAITING_SELF_READY"},
-		{client.RoomStateAwaitingOpponentReady, "AWAITING_OPPONENT_READY"},
-		{client.RoomStateAwaitingGameStart, "AWAITING_GAME_START"},
-		{client.RoomStateInGame, "IN_GAME"},
-		{client.RoomStateRecovery, "RECOVERY"},
+		{pb.RoomType_Regular, "REGULAR"},
+		{pb.RoomType_Siege, "SIEGE"},
 	}
 
 	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.
-	eventsMapping = []struct {
+	roomStateMapping = []struct {
+		Value  pb.RoomState
+		TSName string
+	}{
+		{pb.RoomState_RoomFilled, "ROOM_FILLED"},
+		{pb.RoomState_AwaitingReady, "AWAITING_READY"},
+		{pb.RoomState_GameStarted, "GAME_STARTED"},
+	}
+
+	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.
+	eventMapping = []struct {
 		Value  Event
 		TSName string
 	}{
@@ -59,12 +63,11 @@ func RunApp(configCtx context.Context) {
 		OnStartup: func(wCtx context.Context) {
 			app.setAppContext(wCtx, configCtx)
 			app.initGrpcClients()
-			app.initStateMachines(wCtx, configCtx)
 			go app.connect(wCtx, configCtx)
 		},
 		WindowStartState:                 options.Fullscreen,
 		Bind:                             []any{app},
-		EnumBind:                         []any{appStatesMapping, eventsMapping},
+		EnumBind:                         []any{roomTypeMapping, roomStateMapping, eventMapping},
 		EnableDefaultContextMenu:         false,
 		EnableFraudulentWebsiteDetection: false,
 		Mac: &mac.Options{

@@ -4,31 +4,27 @@ import { VoidComponent, createSignal } from "solid-js"
 import toast from "solid-toast"
 import Button from "@components/Button"
 import { CreateRoom, JoinRoom } from "@wails/go/main/WailsApp"
+import { pb } from "@wails/go/models"
 
 // TODO: Get GAME_TYPE and MAX_ROOM_CODE_LENGTH from go app instead
 
 const MAX_ROOM_CODE_LENGTH = 5
 
-const GAME_TYPE = {
-    REGULAR: "Regular",
-    SIEGE: "Siege",
-} as const
-
-type GAME_TYPE = (typeof GAME_TYPE)[keyof typeof GAME_TYPE]
-
-const gameOptions = Object.values(GAME_TYPE)
-
 const promisifyValue = <T,>(value: T) => (value ? Promise.resolve(value) : Promise.reject())
 
+const roomTypeValues = Object.keys(pb.RoomType).filter((key) => isNaN(Number(key))) as (keyof typeof pb.RoomType)[]
+
 const PlayPanel: VoidComponent = () => {
-    const [gameMode, setGameMode] = createSignal<GAME_TYPE>(GAME_TYPE.REGULAR)
+    const [gameMode, setGameMode] = createSignal<keyof typeof pb.RoomType>(
+        pb.RoomType[pb.RoomType.REGULAR] as keyof typeof pb.RoomType,
+    )
     const [roomCode, setRoomCode] = createSignal("")
     const [inputRef, setInputRef] = createSignal<HTMLInputElement>()
     const navigate = useNavigate()
 
     const createRoom = async () => {
         const code = await toast.promise(
-            CreateRoom().then(promisifyValue),
+            CreateRoom(pb.RoomType[gameMode()]).then(promisifyValue),
             {
                 loading: `Creating a new room.`,
                 error: `Cannot create the room.`,
@@ -93,7 +89,7 @@ const PlayPanel: VoidComponent = () => {
             <section class="flex flex-col items-center justify-evenly gap-16 p-24">
                 <Select
                     class="after:text-2xl/relaxed-symbol relative m-0 min-h-20 min-w-56 rounded-lg border border-dark-turquoise/30 bg-transparent p-0 text-center text-4xl/tight-symbol font-medium uppercase tracking-wide text-dark-turquoise/50 transition-all duration-200 ease-in-out after:pointer-events-none after:absolute after:right-0 after:top-0 after:p-5 after:px-4 after:py-7 after:font-title after:text-dark-turquoise/50 after:content-['˅'] focus-within:border-medium-slate-blue focus-within:shadow-sm focus-within:shadow-dark-turquoise/30 focus-within:after:text-shadow"
-                    options={gameOptions}
+                    options={roomTypeValues}
                     initialValue={gameMode()}
                     onChange={setGameMode}
                 />

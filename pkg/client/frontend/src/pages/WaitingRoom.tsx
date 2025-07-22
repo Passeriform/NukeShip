@@ -1,48 +1,41 @@
 import { useNavigate, useParams } from "@solidjs/router"
-import { Show, VoidComponent, createEffect } from "solid-js"
+import { Show, VoidComponent, createEffect, createSignal } from "solid-js"
 import { Grid } from "solid-spinner"
 import { twMerge } from "tailwind-merge"
 import waitingRoomVideo from "@assets/waiting_room.mp4"
 import Button from "@components/Button"
 import NavButton from "@components/NavButton"
-import Tips from "@components/Tips"
 import VideoBackground from "@components/VideoBackground"
 import useGameState from "@hooks/useGameState"
 import { LeaveRoom, UpdateReady } from "@wails/go/main/WailsApp"
-import { client } from "@wails/go/models"
+import { pb } from "@wails/go/models"
 
 // TODO: Disable all controls when server is disconnected.
-
-const messageMapping = {
-    [client.RoomState.AWAITING_OPPONENT]: "Waiting for an opponent to join...",
-    [client.RoomState.ROOM_FILLED]: "The playground is set!",
-    [client.RoomState.AWAITING_SELF_READY]: "The playground is set!",
-    [client.RoomState.AWAITING_OPPONENT_READY]: "Waiting for your opponent to get ready...",
-    [client.RoomState.AWAITING_GAME_START]: "Let the show begin!",
-} satisfies Partial<Record<client.RoomState, string>>
-
-const getMessageString = (state: client.RoomState | undefined) =>
-    messageMapping[state as keyof typeof messageMapping] || ""
 
 const WaitingRoom: VoidComponent = () => {
     const { code } = useParams()
     const navigate = useNavigate()
     const { gameState } = useGameState()
 
-    const showLoader = () =>
-        [
-            client.RoomState.AWAITING_OPPONENT,
-            client.RoomState.AWAITING_SELF_READY,
-            client.RoomState.AWAITING_OPPONENT_READY,
-            client.RoomState.AWAITING_GAME_START,
-        ].includes(gameState() as client.RoomState)
-    const showReadyButton = () =>
-        [
-            client.RoomState.ROOM_FILLED,
-            client.RoomState.AWAITING_SELF_READY,
-            client.RoomState.AWAITING_OPPONENT_READY,
-        ].includes(gameState() as client.RoomState)
-    const isReady = () => gameState() !== client.RoomState.AWAITING_SELF_READY
+    const [ready, setReady] = createSignal(false)
+
+    const messageString = () =>
+        (gameState() === undefined && "Waiting for an opponent to join...") ||
+        (gameState() === pb.RoomState.ROOM_FILLED && "The playground is set!") ||
+        (gameState() === pb.RoomState.AWAITING_READY && ready() && "Waiting for an opponent to ready...") ||
+        (gameState() === pb.RoomState.AWAITING_READY && !ready() && "The playground is set!") ||
+        (gameState() === pb.RoomState.GAME_STARTED && "Let the show begin!")
+
+    const tipString = () =>
+        (gameState() === undefined && "Share the above room code with an opponent.") ||
+        (gameState() === pb.RoomState.ROOM_FILLED && "Click on ready to begin the game.") ||
+        (gameState() === pb.RoomState.AWAITING_READY &&
+            ready() &&
+            "Grab a coffee. Things are about to get interesting...") ||
+        (gameState() === pb.RoomState.AWAITING_READY && !ready() && "Click on ready to begin the game.") ||
+        (gameState() === pb.RoomState.GAME_STARTED && "The game has started! Good luck!")
+
+    const showLoader = () => gameState() === undefined || gameState() === pb.RoomState.AWAITING_READY
 
     const goBack = () => {
         LeaveRoom()
@@ -50,7 +43,7 @@ const WaitingRoom: VoidComponent = () => {
     }
 
     createEffect(() => {
-        if (gameState() == client.RoomState.IN_GAME) {
+        if (gameState() == pb.RoomState.GAME_STARTED) {
             navigate(`/game/${code}`)
         }
     })
@@ -75,16 +68,28 @@ const WaitingRoom: VoidComponent = () => {
                             showLoader() && "animate-slow-blink",
                         )}
                     >
-                        {getMessageString(gameState())}
+                        {messageString()}
                     </span>
                 </p>
             </section>
-            <Show when={showReadyButton()}>
-                <Button class="h-20 w-56" onClick={() => UpdateReady(!isReady())}>
-                    {isReady() ? "⛌ Unready" : "✓ Ready"}
+            <Show when={[pb.RoomState.ROOM_FILLED, pb.RoomState.AWAITING_READY].includes(gameState()!)}>
+                <Button
+                    class="h-20 w-56"
+                    onClick={async () => {
+                        const succeeded = await UpdateReady(!ready())
+                        if (succeeded) {
+                            setReady(!ready())
+                        }
+                    }}
+                >
+                    {ready() ? "⛌ Unready" : "✓ Ready"}
                 </Button>
             </Show>
-            <Tips />
+            <section class="absolute bottom-1/10 left-1/2 -translate-x-1/2">
+                <p class="text-base/relaxed font-medium uppercase italic tracking-wide text-dark-turquoise text-shadow">
+                    {tipString()}
+                </p>
+            </section>
         </>
     )
 }

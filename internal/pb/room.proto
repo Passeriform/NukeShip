@@ -4,12 +4,16 @@ option go_package = "passeriform.com/nukeship/pb";
 
 import "common.proto";
 
-enum RoomServiceEvent {
-    OpponentJoined = 0;
-    OpponentReady = 1;
+enum RoomState {
+    RoomFilled = 0;
+    AwaitingReady = 1;
     GameStarted = 2;
-    OpponentLeft = 3;
-    OpponentRevertedReady = 4;
+}
+
+enum RoomType {
+    Regular = 0;
+    Siege = 1;
+    Debug = 2;
 }
 
 service RoomService {
@@ -23,10 +27,12 @@ service RoomService {
 message SubscribeMessagesRequest { }
 
 message MessageStreamResponse {
-    RoomServiceEvent type = 1;
+    RoomState type = 1;
 }
 
-message CreateRoomRequest { }
+message CreateRoomRequest {
+    RoomType room_type = 1;
+}
 
 message CreateRoomResponse {
     ResponseStatus status = 1;
