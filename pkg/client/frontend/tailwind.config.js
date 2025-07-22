@@ -80,7 +80,7 @@ export default {
             },
             spacing: {
                 "1/10": "10%",
-                "1/4": "25%",
+                "114": "28.5rem",
             },
             keyframes: {
                 "flicker": flicker,

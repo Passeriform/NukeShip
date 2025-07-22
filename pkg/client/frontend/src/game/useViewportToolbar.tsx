@@ -22,6 +22,7 @@ const useViewportToolbar = () => {
                         class="p-8 text-4xl/tight"
                         hintTitle="Back"
                         hintBody=""
+                        hintClass="w-72"
                         shortcuts={["esc", "b"]}
                         onClick={() => {
                             setIsBirdsEye(false)
@@ -35,6 +36,7 @@ const useViewportToolbar = () => {
                     class="p-8 text-4xl/tight"
                     hintTitle="Switch Views"
                     hintBody="Switch between a side (elevation) view or top-down (plan) view"
+                    hintClass="w-72"
                     shortcuts={["q"]}
                     onClick={() => {
                         setView(view() === ViewType.PLAN ? ViewType.ELEVATION : ViewType.PLAN)
@@ -49,6 +51,7 @@ const useViewportToolbar = () => {
                             class="p-8 text-4xl/tight"
                             hintTitle="Back"
                             hintBody="Get back to your board"
+                            hintClass="w-72"
                             shortcuts={["esc", "r"]}
                             onClick={() => {
                                 setFocus(FocusType.SELF)
@@ -62,6 +65,7 @@ const useViewportToolbar = () => {
                         class="p-8 text-4xl/tight"
                         hintTitle="Peek At Opponent"
                         hintBody="Peek at the opponent's board"
+                        hintClass="w-72"
                         shortcuts={["r"]}
                         onClick={() => {
                             setFocus(FocusType.OPPONENT)
@@ -74,6 +78,7 @@ const useViewportToolbar = () => {
                     class="p-8 text-4xl/tight"
                     hintTitle="Bird's Eye View"
                     hintBody="Switch to a bird's eye view of the game board."
+                    hintClass="w-72"
                     shortcuts={["b"]}
                     onClick={() => {
                         setIsBirdsEye(true)
