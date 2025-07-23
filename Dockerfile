@@ -28,5 +28,5 @@ LABEL maintainer="Utkarsh Bhardwaj (Passeriform) <bhardwajutkarsh.ub@gmail.com>"
 
 WORKDIR /app
 COPY --from=builder /artifact/server ./
-EXPOSE 443
+EXPOSE 80
 CMD ["./server"]

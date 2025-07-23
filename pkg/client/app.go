@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -61,8 +60,7 @@ func (app *WailsApp) initGrpcClients() {
 	var creds credentials.TransportCredentials
 
 	if Config.EnableTLS {
-		//nolint:gosec // TODO: This configuration is only for prototyping. Replace with proper 2-way TLS configuration.
-		creds = credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})
+		creds = credentials.NewClientTLSFromCert(nil, "")
 	} else {
 		creds = insecure.NewCredentials()
 	}
