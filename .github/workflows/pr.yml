@@ -5,7 +5,7 @@ on:
             - "*"
 
 jobs:
-    sanity:
+    server-sanity:
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -13,12 +13,7 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - uses: passeriform/go-grpc-bootstrap-action@latest
-              with:
-                  protobuf-directory: internal/pb
-                  generate-code: true
-
-            - name: Shim frontend
+            - name: Shim embedding
               working-directory: pkg/client/frontend
               run: |
                   mkdir -p dist
@@ -31,6 +26,27 @@ jobs:
               uses: golangci/golangci-lint-action@v7
               with:
                   version: latest
+
+    client-sanity:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        env:
+            working-directory: pkg/client/frontend
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup node
+              uses: actions/setup-node@v4
+
+            - name: Run frontend tests
+              working-directory: ${{ env.working-directory}}
+              run: npm run test
+
+            - name: Lint frontend tests
+              working-directory: ${{ env.working-directory}}
+              run: npm run lint
 
     build-server:
         runs-on: ubuntu-latest

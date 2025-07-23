@@ -4,7 +4,6 @@ import (
 	"github.com/looplab/fsm"
 )
 
-//go:generate go run github.com/abice/go-enum -f=$GOFILE --mustparse --values --output-suffix _generated
 type (
 	// ENUM(AttemptReadyPhase, AttemptGameStart, ResetToLobby)
 	RoomEvent string
@@ -42,3 +41,5 @@ func NewRoomFSM(callbacks fsm.Callbacks) RoomFSM {
 		callbacks,
 	)}
 }
+
+//go:generate go run github.com/abice/go-enum -f=$GOFILE --mustparse --values --output-suffix _generated
