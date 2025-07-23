@@ -244,45 +244,6 @@
             "dependsOn": [
                 "[Pre] Generate Go Code"
             ]
-        },
-        {
-            "label": "[Misc] Test CLI - Create Room",
-            "type": "shell",
-            "command": "go",
-            "problemMatcher": [
-                "$go"
-            ],
-            "args": [
-                "run",
-                "-tags",
-                "cli",
-                ".",
-                "createRoom"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
-            },
-            "isBackground": true
-        },
-        {
-            "label": "[Misc] Test CLI - Join Room",
-            "type": "shell",
-            "command": "go",
-            "problemMatcher": [
-                "$go"
-            ],
-            "args": [
-                "run",
-                "-tags",
-                "cli",
-                ".",
-                "joinRoom",
-                "-code=${input:roomCode}"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/pkg/client"
-            },
-            "isBackground": true
         }
     ],
     "inputs": [
@@ -296,11 +257,6 @@
                 "localhost:50051"
             ],
             "default": "nukeship.passeriform.com:443"
-        },
-        {
-            "id": "roomCode",
-            "description": "Room code to join",
-            "type": "promptString"
         }
     ]
 }

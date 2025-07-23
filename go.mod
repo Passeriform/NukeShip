@@ -1,8 +1,6 @@
 module passeriform.com/nukeship
 
-go 1.24
-
-toolchain go1.24
+go 1.24.5
 
 require (
 	github.com/looplab/fsm v1.0.3
