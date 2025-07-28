@@ -2,8 +2,7 @@ package server
 
 import (
 	"github.com/looplab/fsm"
-
-	"passeriform.com/nukeship/internal/pb"
+	"github.com/passeriform/internal/pb"
 )
 
 type (

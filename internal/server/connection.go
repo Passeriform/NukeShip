@@ -1,7 +1,7 @@
 package server
 
 import (
-	"passeriform.com/nukeship/internal/pb"
+	"github.com/passeriform/internal/pb"
 )
 
 //nolint:gochecknoglobals // Holding a global map for connections against wrapping struct.

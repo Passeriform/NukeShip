@@ -248,7 +248,7 @@ formatters:
         - prefix(google.golang.org/grpc)
         - prefix(github.com/wailsapp/wails)
         - default
-        - prefix(passeriform.com/nukeship)
+        - prefix(github.com/passeriform/nukeship)
       no-inline-comments: true
       no-prefix-comments: true
       custom-order: true

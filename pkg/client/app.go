@@ -15,9 +15,9 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"passeriform.com/nukeship/internal/client"
-	"passeriform.com/nukeship/internal/game"
-	"passeriform.com/nukeship/internal/pb"
+	"github.com/passeriform/internal/client"
+	"github.com/passeriform/internal/game"
+	"github.com/passeriform/internal/pb"
 )
 
 const (
@@ -144,10 +144,10 @@ func newWailsApp() *WailsApp {
 	app := &WailsApp{
 		wailsCtx:   nil,
 		configCtx:  nil,
-		connected:  false,
-		roomState:  nil,
 		RoomClient: nil,
 		GameClient: nil,
+		roomState:  nil,
+		connected:  false,
 	}
 
 	return app

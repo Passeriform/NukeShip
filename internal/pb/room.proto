@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "passeriform.com/nukeship/pb";
+option go_package = "github.com/passeriform/pb";
 
 import "common.proto";
 

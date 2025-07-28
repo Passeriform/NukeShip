@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"passeriform.com/nukeship/internal/pb"
-	"passeriform.com/nukeship/internal/server"
+	"github.com/passeriform/internal/pb"
+	"github.com/passeriform/internal/server"
 )
 
 type RoomService struct {

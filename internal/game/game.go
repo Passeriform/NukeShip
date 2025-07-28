@@ -1,7 +1,7 @@
 package game
 
 import (
-	"passeriform.com/nukeship/internal/pb"
+	"github.com/passeriform/internal/pb"
 )
 
 type Game struct {

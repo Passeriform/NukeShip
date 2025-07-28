@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
-	"passeriform.com/nukeship/internal/pb"
-	"passeriform.com/nukeship/internal/server"
+	"github.com/passeriform/internal/pb"
+	"github.com/passeriform/internal/server"
 )
 
 var (
@@ -43,15 +43,12 @@ func handleQuit(cancel context.CancelFunc, srv *grpc.Server) {
 }
 
 func main() {
-	lc := net.ListenConfig{
-		KeepAlive: KeepAliveServerParameters.Time,
-	}
+	lc := net.ListenConfig{KeepAlive: KeepAliveServerParameters.Time}
 
 	lis, err := lc.Listen(context.Background(), "tcp", ":"+strconv.Itoa(Config.Port))
 	if err != nil {
 		log.Panicf("Failed to listen: %v", err)
 	}
-	defer lis.Close()
 
 	shutdownCtx, stop := context.WithCancel(context.Background())
 

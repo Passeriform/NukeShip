@@ -1,4 +1,4 @@
-module passeriform.com/nukeship
+module github.com/passeriform
 
 go 1.24.5
 

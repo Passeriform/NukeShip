@@ -10,8 +10,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 
-	"passeriform.com/nukeship/internal/client"
-	"passeriform.com/nukeship/internal/pb"
+	"github.com/passeriform/internal/client"
+	"github.com/passeriform/internal/pb"
 )
 
 var (

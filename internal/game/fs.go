@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"passeriform.com/nukeship/internal/pb"
+	"github.com/passeriform/internal/pb"
 )
 
 const (

@@ -6,9 +6,8 @@ import (
 
 	"github.com/looplab/fsm"
 	"github.com/necmettindev/randomstring"
-
-	"passeriform.com/nukeship/internal/game"
-	"passeriform.com/nukeship/internal/pb"
+	"github.com/passeriform/internal/game"
+	"github.com/passeriform/internal/pb"
 )
 
 const (
@@ -31,13 +30,13 @@ type (
 	Room struct {
 		Clients         map[string]*Connection
 		Game            *game.Game
-		machine         RoomFSM
+		machine         *RoomFSM
 		ID              string
 		RequiredPlayers int
 	}
 )
 
-//nolint:gocognit,revive // Room initialization also requires setting callbacks for state machine.
+//nolint:funlen,gocognit,revive // Room initialization also requires setting callbacks for state machine.
 func NewRoom(roomType pb.RoomType, stateChangeCallback func(*Room, pb.RoomState)) (*Room, bool) {
 	roomID, err := randomstring.GenerateString(randomstring.GenerationOptions{
 		Length:           ConnectionIDLength,
@@ -54,15 +53,15 @@ func NewRoom(roomType pb.RoomType, stateChangeCallback func(*Room, pb.RoomState)
 		return room, false
 	}
 
-	//nolint:exhaustruct // Initializing state machine requires existing struct's reference.
 	room = &Room{
-		ID:              roomID,
-		Game:            nil,
 		Clients:         map[string]*Connection{},
+		Game:            nil,
+		machine:         nil,
+		ID:              roomID,
 		RequiredPlayers: roomTypeRequiredPlayers[roomType],
 	}
 
-	room.machine = NewRoomFSM(fsm.Callbacks{
+	machine := NewRoomFSM(fsm.Callbacks{
 		"before_" + RoomEventAttemptReadyPhase.String(): func(_ context.Context, e *fsm.Event) {
 			if len(room.Clients) != room.RequiredPlayers {
 				e.Cancel()
@@ -94,6 +93,8 @@ func NewRoom(roomType pb.RoomType, stateChangeCallback func(*Room, pb.RoomState)
 			stateChangeCallback(room, pb.RoomState(pb.RoomState_value[e.Dst]))
 		},
 	})
+
+	room.machine = &machine
 
 	roomMap[roomID] = room
 
