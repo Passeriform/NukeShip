@@ -1,5 +1,4 @@
 //go:build !local_server
-// +build !local_server
 
 package main
 

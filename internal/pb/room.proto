@@ -5,9 +5,9 @@ option go_package = "passeriform.com/nukeship/pb";
 import "common.proto";
 
 enum RoomState {
-    RoomFilled = 0;
+    AwaitingPlayers = 0;
     AwaitingReady = 1;
-    GameStarted = 2;
+    InGame = 2;
 }
 
 enum RoomType {

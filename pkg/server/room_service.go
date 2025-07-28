@@ -14,33 +14,24 @@ import (
 
 type RoomService struct {
 	pb.UnimplementedRoomServiceServer `exhaustruct:"optional"`
+
 	//nolint:containedctx // Carrying shutdown context for in-request client cancellation.
 	ShutdownCtx context.Context
 }
 
-func dispatchEvents(room *server.Room, e string) {
-	var roomState pb.RoomState
-	switch e {
-	case server.RoomStateAwaitingPlayers.String():
-		roomState = pb.RoomState_RoomFilled
-	case server.RoomStateAwaitingReady.String():
-		roomState = pb.RoomState_AwaitingReady
-	case server.RoomStateInGame.String():
-		roomState = pb.RoomState_GameStarted
-	}
-
-	for _, partConn := range room.Clients {
-		partConn.MsgChan <- &pb.MessageStreamResponse{Type: roomState}
-	}
-}
-
-func (srv *RoomService) CreateRoom(
+func (*RoomService) CreateRoom(
 	ctx context.Context,
 	in *pb.CreateRoomRequest,
 ) (*pb.CreateRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 	conn := server.GetConnection(clientID)
-	room, _ := server.NewRoom(in.RoomType, dispatchEvents)
+	room, _ := server.NewRoom(in.GetRoomType(), func(room *server.Room, state pb.RoomState) {
+		for _, partConn := range room.Clients {
+			partConn.MsgChan <- &pb.MessageStreamResponse{Type: state}
+		}
+	})
+
+	//nolint:contextcheck // Intentionally decoupled from request context
 	room.AddConnection(conn)
 
 	conn.Room = room
@@ -56,7 +47,6 @@ func (*RoomService) JoinRoom(
 ) (*pb.JoinRoomResponse, error) {
 	clientID, _ := server.ExtractClientIDMetadata(ctx)
 	roomID := in.GetRoomId()
-
 	conn := server.GetConnection(clientID)
 	room := server.GetRoom(roomID)
 
@@ -64,6 +54,7 @@ func (*RoomService) JoinRoom(
 		return &pb.JoinRoomResponse{Status: pb.ResponseStatus_RoomNotFound}, nil
 	}
 
+	//nolint:contextcheck // Intentionally decoupled from request context
 	room.AddConnection(conn)
 
 	conn.Room = room
@@ -87,6 +78,7 @@ func (*RoomService) LeaveRoom(
 
 	room := conn.Room
 
+	//nolint:contextcheck // Intentionally decoupled from request context
 	room.RemoveConnection(conn.ID)
 
 	log.Printf("Client left room: %v", room.ID)
@@ -94,7 +86,6 @@ func (*RoomService) LeaveRoom(
 	return &pb.LeaveRoomResponse{Status: pb.ResponseStatus_Ok}, nil
 }
 
-//nolint:gocognit // TODO: Split and remodel using FSM.
 func (*RoomService) UpdateReady(
 	ctx context.Context,
 	in *pb.UpdateReadyRequest,
@@ -110,6 +101,7 @@ func (*RoomService) UpdateReady(
 
 	room := conn.Room
 
+	//nolint:contextcheck // Intentionally decoupled from request context
 	room.SetReady(conn.ID, ready)
 
 	log.Printf("Client set ready state to: %t", ready)

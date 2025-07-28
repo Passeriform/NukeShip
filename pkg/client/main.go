@@ -21,7 +21,7 @@ var (
 	//go:embed frontend/src/assets/radioactive.svg
 	icon []byte
 
-	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.
+	//nolint:gochecknoglobals,govet // These mappings are required for wails bindings and thus need to be global.
 	roomTypeMapping = []struct {
 		Value  pb.RoomType
 		TSName string
@@ -30,14 +30,14 @@ var (
 		{pb.RoomType_Siege, "SIEGE"},
 	}
 
-	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.
+	//nolint:gochecknoglobals,govet // These mappings are required for wails bindings and thus need to be global.
 	roomStateMapping = []struct {
 		Value  pb.RoomState
 		TSName string
 	}{
-		{pb.RoomState_RoomFilled, "ROOM_FILLED"},
+		{pb.RoomState_AwaitingPlayers, "AWAITING_PLAYERS"},
 		{pb.RoomState_AwaitingReady, "AWAITING_READY"},
-		{pb.RoomState_GameStarted, "GAME_STARTED"},
+		{pb.RoomState_InGame, "IN_GAME"},
 	}
 
 	//nolint:gochecknoglobals // These mappings are required for wails bindings and thus need to be global.

@@ -2,13 +2,13 @@ package server
 
 import (
 	"github.com/looplab/fsm"
+
+	"passeriform.com/nukeship/internal/pb"
 )
 
 type (
 	// ENUM(AttemptReadyPhase, AttemptGameStart, ResetToLobby)
 	RoomEvent string
-	// ENUM(AwaitingPlayers, AwaitingReady, InGame)
-	RoomState string
 )
 
 type (
@@ -17,25 +17,24 @@ type (
 	}
 )
 
-//nolint:funlen,revive // Allowing longer function as this contains only state machine definition.
 func NewRoomFSM(callbacks fsm.Callbacks) RoomFSM {
 	return RoomFSM{fsm.NewFSM(
-		RoomStateAwaitingPlayers.String(),
+		pb.RoomState_AwaitingPlayers.String(),
 		fsm.Events{
 			{
 				Name: RoomEventAttemptReadyPhase.String(),
-				Src:  []string{RoomStateAwaitingPlayers.String()},
-				Dst:  RoomStateAwaitingReady.String(),
+				Src:  []string{pb.RoomState_AwaitingPlayers.String()},
+				Dst:  pb.RoomState_AwaitingReady.String(),
 			},
 			{
 				Name: RoomEventAttemptGameStart.String(),
-				Src:  []string{RoomStateAwaitingReady.String()},
-				Dst:  RoomStateInGame.String(),
+				Src:  []string{pb.RoomState_AwaitingReady.String()},
+				Dst:  pb.RoomState_InGame.String(),
 			},
 			{
 				Name: RoomEventResetToLobby.String(),
-				Src:  []string{RoomStateAwaitingReady.String(), RoomStateInGame.String()},
-				Dst:  RoomStateAwaitingPlayers.String(),
+				Src:  []string{pb.RoomState_AwaitingReady.String(), pb.RoomState_InGame.String()},
+				Dst:  pb.RoomState_AwaitingPlayers.String(),
 			},
 		},
 		callbacks,

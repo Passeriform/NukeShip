@@ -21,19 +21,19 @@ const WaitingRoom: VoidComponent = () => {
 
     const messageString = () =>
         (gameState() === undefined && "Waiting for an opponent to join...") ||
-        (gameState() === pb.RoomState.ROOM_FILLED && "The playground is set!") ||
+        (gameState() === pb.RoomState.AWAITING_PLAYERS && "The playground is set!") ||
         (gameState() === pb.RoomState.AWAITING_READY && ready() && "Waiting for an opponent to ready...") ||
         (gameState() === pb.RoomState.AWAITING_READY && !ready() && "The playground is set!") ||
-        (gameState() === pb.RoomState.GAME_STARTED && "Let the show begin!")
+        (gameState() === pb.RoomState.IN_GAME && "Let the show begin!")
 
     const tipString = () =>
         (gameState() === undefined && "Share the above room code with an opponent.") ||
-        (gameState() === pb.RoomState.ROOM_FILLED && "Click on ready to begin the game.") ||
+        (gameState() === pb.RoomState.AWAITING_PLAYERS && "Click on ready to begin the game.") ||
         (gameState() === pb.RoomState.AWAITING_READY &&
             ready() &&
             "Grab a coffee. Things are about to get interesting...") ||
         (gameState() === pb.RoomState.AWAITING_READY && !ready() && "Click on ready to begin the game.") ||
-        (gameState() === pb.RoomState.GAME_STARTED && "The game has started! Good luck!")
+        (gameState() === pb.RoomState.IN_GAME && "The game has started! Good luck!")
 
     const showLoader = () => gameState() === undefined || gameState() === pb.RoomState.AWAITING_READY
 
@@ -43,7 +43,7 @@ const WaitingRoom: VoidComponent = () => {
     }
 
     createEffect(() => {
-        if (gameState() == pb.RoomState.GAME_STARTED) {
+        if (gameState() == pb.RoomState.IN_GAME) {
             navigate(`/game/${code}`)
         }
     })
@@ -72,7 +72,7 @@ const WaitingRoom: VoidComponent = () => {
                     </span>
                 </p>
             </section>
-            <Show when={[pb.RoomState.ROOM_FILLED, pb.RoomState.AWAITING_READY].includes(gameState()!)}>
+            <Show when={[pb.RoomState.AWAITING_PLAYERS, pb.RoomState.AWAITING_READY].includes(gameState()!)}>
                 <Button
                     class="h-20 w-56"
                     onClick={async () => {

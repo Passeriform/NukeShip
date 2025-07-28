@@ -43,7 +43,11 @@ func handleQuit(cancel context.CancelFunc, srv *grpc.Server) {
 }
 
 func main() {
-	lis, err := net.Listen("tcp", ":"+strconv.Itoa(Config.Port))
+	lc := net.ListenConfig{
+		KeepAlive: KeepAliveServerParameters.Time,
+	}
+
+	lis, err := lc.Listen(context.Background(), "tcp", ":"+strconv.Itoa(Config.Port))
 	if err != nil {
 		log.Panicf("Failed to listen: %v", err)
 	}

@@ -44,10 +44,113 @@ type WailsApp struct {
 	wailsCtx context.Context
 	//nolint:containedctx // Wails enforces usage of contexts within structs for binding.
 	configCtx  context.Context
-	connected  bool
-	roomState  *pb.RoomState
 	RoomClient pb.RoomServiceClient
 	GameClient pb.GameServiceClient
+	roomState  *pb.RoomState
+	connected  bool
+}
+
+func (app *WailsApp) GetRoomState() *pb.RoomState {
+	return app.roomState
+}
+
+func (app *WailsApp) GetConnectionState() bool {
+	return app.connected
+}
+
+func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+	defer cancel()
+
+	// TODO: Use error codes middleware to handle RPC errors properly.
+	resp, err := app.RoomClient.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
+	if err != nil {
+		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
+
+		return false, fmt.Errorf("could not update ready state: %w", err)
+	}
+
+	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
+		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
+
+		return false, fmt.Errorf("unable to ready as the room is invalid: %w", err)
+	}
+
+	runtime.LogDebugf(app.wailsCtx, "Updated ready state: %t", ready)
+
+	return resp.GetStatus() == pb.ResponseStatus_Ok, nil
+}
+
+func (app *WailsApp) CreateRoom(roomType pb.RoomType) (string, error) {
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+	defer cancel()
+
+	resp, err := app.RoomClient.CreateRoom(
+		unaryCtx,
+		&pb.CreateRoomRequest{RoomType: processRoomType(roomType)},
+	)
+	if err != nil {
+		runtime.LogErrorf(app.wailsCtx, "Could not create room: %v", err)
+
+		return "", fmt.Errorf("could not create room: %w", err)
+	}
+
+	runtime.LogDebugf(app.wailsCtx, "Room created: %s", resp.GetRoomId())
+
+	return resp.GetRoomId(), nil
+}
+
+func (app *WailsApp) JoinRoom(roomCode string) bool {
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+	defer cancel()
+
+	resp, err := app.RoomClient.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
+	if err != nil {
+		runtime.LogErrorf(app.wailsCtx, "Could not join room with id %v: %v", roomCode, err)
+
+		return false
+	}
+
+	runtime.LogDebugf(app.wailsCtx, "Room joined status: %s", resp.GetStatus().String())
+
+	return resp.GetStatus() == pb.ResponseStatus_Ok
+}
+
+func (app *WailsApp) LeaveRoom() bool {
+	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
+	defer cancel()
+
+	resp, err := app.RoomClient.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
+	if err != nil {
+		runtime.LogErrorf(app.wailsCtx, "Could not leave room: %v", err)
+
+		return false
+	}
+
+	runtime.LogDebugf(app.wailsCtx, "Room left status: %s", resp.GetStatus().String())
+
+	return resp.GetStatus() == pb.ResponseStatus_Ok
+}
+
+func processRoomType(roomType pb.RoomType) pb.RoomType {
+	if Config.DebugRoom {
+		return pb.RoomType_Debug
+	}
+
+	return roomType
+}
+
+func newWailsApp() *WailsApp {
+	app := &WailsApp{
+		wailsCtx:   nil,
+		configCtx:  nil,
+		connected:  false,
+		roomState:  nil,
+		RoomClient: nil,
+		GameClient: nil,
+	}
+
+	return app
 }
 
 //nolint:fatcontext // Wails requires the context to be stored within the app struct to provide bindings.
@@ -92,7 +195,6 @@ func (app *WailsApp) publishGameState(wailsCtx, configCtx context.Context, tree 
 
 // TODO: Add reconnection logic to recover streaming messages.
 
-//nolint:gocognit,revive // This method is currently segregated on concerns and readable.
 func (app *WailsApp) connect(wailsCtx, configCtx context.Context) {
 	defer func() {
 		app.connected = false
@@ -131,7 +233,7 @@ func (app *WailsApp) connect(wailsCtx, configCtx context.Context) {
 			return
 		}
 
-		if update.Type == pb.RoomState_GameStarted {
+		if update.GetType() == pb.RoomState_InGame {
 			tree := game.NewFsTree("C:\\Windows", game.TreeGenOptions{
 				Ignore:          game.DefaultTreeGenIgnores[:],
 				VisibilityDepth: treeGenVisibilityDepth,
@@ -142,112 +244,14 @@ func (app *WailsApp) connect(wailsCtx, configCtx context.Context) {
 			app.publishGameState(wailsCtx, configCtx, &tree)
 		}
 
-		app.roomState = &update.Type
+		roomType := update.GetType()
+
+		app.roomState = &roomType
 
 		runtime.EventsEmit(
 			wailsCtx,
 			string(StateChangeEvent),
-			update.Type,
+			update.GetType(),
 		)
 	}
-}
-
-func processRoomType(roomType pb.RoomType) pb.RoomType {
-	if Config.DebugRoom {
-		return pb.RoomType_Debug
-	}
-
-	return roomType
-}
-
-func newWailsApp() *WailsApp {
-	app := &WailsApp{
-		wailsCtx:   nil,
-		configCtx:  nil,
-		connected:  false,
-		roomState:  nil,
-		RoomClient: nil,
-		GameClient: nil,
-	}
-
-	return app
-}
-
-func (app *WailsApp) GetRoomState() *pb.RoomState {
-	return app.roomState
-}
-
-func (app *WailsApp) GetConnectionState() bool {
-	return app.connected
-}
-
-func (app *WailsApp) UpdateReady(ready bool) (bool, error) {
-	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
-	defer cancel()
-
-	// TODO: Use error codes middleware to handle RPC errors properly.
-	resp, err := app.RoomClient.UpdateReady(unaryCtx, &pb.UpdateReadyRequest{Ready: ready})
-	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Could not update ready state: %v", err)
-
-		return false, fmt.Errorf("could not update ready state: %w", err)
-	}
-
-	if resp.GetStatus() == pb.ResponseStatus_NoRoomJoinedYet {
-		runtime.LogError(app.wailsCtx, "Unable to ready as the room is invalid")
-
-		return false, fmt.Errorf("unable to ready as the room is invalid: %w", err)
-	}
-
-	runtime.LogDebugf(app.wailsCtx, "Updated ready state: %t", ready)
-
-	return resp.GetStatus() == pb.ResponseStatus_Ok, nil
-}
-
-func (app *WailsApp) CreateRoom(roomType pb.RoomType) (string, error) {
-	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
-	defer cancel()
-
-	resp, err := app.RoomClient.CreateRoom(unaryCtx, &pb.CreateRoomRequest{RoomType: processRoomType(roomType)})
-	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Could not create room: %v", err)
-
-		return "", fmt.Errorf("could not create room: %w", err)
-	}
-
-	runtime.LogDebugf(app.wailsCtx, "Room created: %s", resp.GetRoomId())
-
-	return resp.GetRoomId(), nil
-}
-
-func (app *WailsApp) JoinRoom(roomCode string) bool {
-	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
-	defer cancel()
-
-	resp, err := app.RoomClient.JoinRoom(unaryCtx, &pb.JoinRoomRequest{RoomId: roomCode})
-	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Could not join room with id %v: %v", roomCode, err)
-
-		return false
-	}
-
-	runtime.LogDebugf(app.wailsCtx, "Room joined status: %s", resp.GetStatus().String())
-
-	return resp.GetStatus() == pb.ResponseStatus_Ok
-}
-
-func (app *WailsApp) LeaveRoom() bool {
-	unaryCtx, cancel := client.NewUnaryContext(app.configCtx)
-	defer cancel()
-
-	resp, err := app.RoomClient.LeaveRoom(unaryCtx, &pb.LeaveRoomRequest{})
-	if err != nil {
-		runtime.LogErrorf(app.wailsCtx, "Could not leave room: %v", err)
-
-		return false
-	}
-
-	runtime.LogDebugf(app.wailsCtx, "Room left status: %s", resp.GetStatus().String())
-
-	return resp.GetStatus() == pb.ResponseStatus_Ok
 }

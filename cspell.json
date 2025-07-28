@@ -75,7 +75,9 @@
         {
             "filename": ".golangci.y?(a)ml",
             "words": [
+                "asasalint",
                 "allowInts",
+                "bidichk",
                 "containedctx",
                 "copyloopvar",
                 "decorder",
@@ -107,6 +109,7 @@
                 "nilnil",
                 "njsproj",
                 "nlreturn",
+                "noinlineerr",
                 "nolint",
                 "ntvs",
                 "perfsprint",

@@ -3,6 +3,8 @@ linters:
   default: all
   disable:
     - godox
+    - noinlineerr
+    - wsl
   settings:
     asasalint:
       use-builtin-exclusions: false
@@ -63,6 +65,7 @@ linters:
         - github\.com/wailsapp/wails/v2/pkg/options/linux\.Options
         - github\.com/wailsapp/wails/v2/pkg/options/linux\.Options
         - github\.com/necmettindev/randomstring\.GenerationOptions
+        - net\.ListenConfig
         - crypto/tls\.Config
     fatcontext:
       check-struct-pointers: true
@@ -183,11 +186,6 @@ linters:
         - google.golang.org/grpc/status.Error(
         - google.golang.org/grpc/status.Errorf(
         - (*github.com/looplab/fsm.FSM).Event(
-    wsl:
-      strict-append: true
-      allow-assign-and-call: false
-      allow-multiline-assign: true
-      force-err-cuddling: true
   exclusions:
     generated: lax
     presets:
@@ -204,6 +202,10 @@ linters:
           - lll
           - revive
         source: "// ENUM\\("
+      - linters:
+          - lll
+          - revive
+        source: "//go:generate"
       - linters:
           - revive
         path: _test/.go

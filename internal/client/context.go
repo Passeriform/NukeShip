@@ -35,10 +35,11 @@ func NewContext() context.Context {
 	})
 }
 
+// TODO: Return error instead of panicking.
 func UnwrapContext(ctx context.Context) Context {
 	c, ok := ctx.Value(contextPropertyKey{}).(Context)
 	if !ok {
-		log.Panicf("Error occurred while fetching context from wrapper")
+		log.Panic("Error occurred while fetching context from wrapper")
 	}
 
 	return c

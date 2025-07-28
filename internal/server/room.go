@@ -19,6 +19,7 @@ var (
 	//nolint:gochecknoglobals // Holding a global map for rooms against wrapping struct.
 	roomMap = map[string]*Room{}
 
+	//nolint:gochecknoglobals,mnd // Mapping room types to required players.
 	roomTypeRequiredPlayers = map[pb.RoomType]int{
 		pb.RoomType_Regular: 2,
 		pb.RoomType_Siege:   5,
@@ -30,14 +31,14 @@ type (
 	Room struct {
 		Clients         map[string]*Connection
 		Game            *game.Game
+		machine         RoomFSM
 		ID              string
 		RequiredPlayers int
-		machine         RoomFSM
 	}
 )
 
-// TODO: Parameterize require players for siege mode.
-func NewRoom(roomType pb.RoomType, cb func(*Room, string)) (*Room, bool) {
+//nolint:gocognit,revive // Room initialization also requires setting callbacks for state machine.
+func NewRoom(roomType pb.RoomType, stateChangeCallback func(*Room, pb.RoomState)) (*Room, bool) {
 	roomID, err := randomstring.GenerateString(randomstring.GenerationOptions{
 		Length:           ConnectionIDLength,
 		DisableNumeric:   true,
@@ -53,6 +54,7 @@ func NewRoom(roomType pb.RoomType, cb func(*Room, string)) (*Room, bool) {
 		return room, false
 	}
 
+	//nolint:exhaustruct // Initializing state machine requires existing struct's reference.
 	room = &Room{
 		ID:              roomID,
 		Game:            nil,
@@ -61,35 +63,35 @@ func NewRoom(roomType pb.RoomType, cb func(*Room, string)) (*Room, bool) {
 	}
 
 	room.machine = NewRoomFSM(fsm.Callbacks{
-		"before_" + RoomEventAttemptReadyPhase.String(): func(ctx context.Context, e *fsm.Event) {
+		"before_" + RoomEventAttemptReadyPhase.String(): func(_ context.Context, e *fsm.Event) {
 			if len(room.Clients) != room.RequiredPlayers {
 				e.Cancel()
 			}
 		},
-		"before_" + RoomEventAttemptGameStart.String(): func(ctx context.Context, e *fsm.Event) {
+		"before_" + RoomEventAttemptGameStart.String(): func(_ context.Context, event *fsm.Event) {
 			if len(room.Clients) != room.RequiredPlayers {
-				e.Cancel()
+				event.Cancel()
 				return
 			}
 
 			for _, partConn := range room.Clients {
 				if !partConn.Ready {
-					e.Cancel()
+					event.Cancel()
 					return
 				}
 			}
 		},
-		"before_" + RoomEventResetToLobby.String(): func(ctx context.Context, e *fsm.Event) {
+		"before_" + RoomEventResetToLobby.String(): func(_ context.Context, e *fsm.Event) {
 			if len(room.Clients) != room.RequiredPlayers {
 				e.Cancel()
 			}
 		},
-		"enter_" + RoomStateInGame.String(): func(ctx context.Context, e *fsm.Event) {
+		"enter_" + pb.RoomState_InGame.String(): func(_ context.Context, _ *fsm.Event) {
 			g := game.NewGame()
 			room.Game = &g
 		},
-		"enter_state": func(ctx context.Context, e *fsm.Event) {
-			cb(room, e.Dst)
+		"enter_state": func(_ context.Context, e *fsm.Event) {
+			stateChangeCallback(room, pb.RoomState(pb.RoomState_value[e.Dst]))
 		},
 	})
 
@@ -105,6 +107,7 @@ func GetRoom(roomID string) *Room {
 
 func (room *Room) AddConnection(conn *Connection) {
 	room.Clients[conn.ID] = conn
+
 	room.machine.Event(context.Background(), RoomEventAttemptReadyPhase.String())
 }
 
@@ -115,10 +118,17 @@ func (room *Room) SetReady(connID string, ready bool) {
 	}
 
 	conn.Ready = ready
+
 	room.machine.Event(context.Background(), RoomEventAttemptGameStart.String())
 }
 
 func (room *Room) RemoveConnection(connID string) {
 	delete(room.Clients, connID)
+
 	room.machine.Event(context.Background(), RoomEventResetToLobby.String())
+
+	if len(room.Clients) == 0 {
+		// Destroy game and room.
+		delete(roomMap, room.ID)
+	}
 }
