@@ -7,7 +7,7 @@ import { PerspectiveCamera } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
 import ActionButton from "@components/ActionButton"
 import NavButton from "@components/NavButton"
-import NodeDetails from "@components/NodeDetails"
+import NodeDetailsPanel from "@components/NodeDetailsPanel"
 import ViewportToolbar from "@components/ViewportToolbar"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
@@ -57,7 +57,7 @@ const GameBoard: VoidComponent = () => {
     const focussedTree = () =>
         (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
 
-    const showNodeDetails = () => Boolean(selectedSapling()) && !cameraTransitioning()
+    const showNodeDetailsPanel = () => Boolean(selectedSapling()) && !cameraTransitioning()
 
     useRaycaster(camera, {
         root: focussedTree(),
@@ -226,18 +226,16 @@ const GameBoard: VoidComponent = () => {
                     )}
                 />
             </section>
-            <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800">
-                <Show when={selectedSapling()}>
-                    <NodeDetails
-                        class="pointer-events-auto"
-                        position={focus() === FocusType.SELF ? "left" : "right"}
-                        show={showNodeDetails}
-                        transitionTiming={100}
-                        data={selectedSapling()!.userData}
-                        revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
-                    />
-                </Show>
-            </div>
+            <Show when={selectedSapling()}>
+                <NodeDetailsPanel
+                    class="pointer-events-auto"
+                    position={focus() === FocusType.SELF ? "left" : "right"}
+                    show={showNodeDetailsPanel}
+                    transitionTiming={100}
+                    data={selectedSapling()!.userData}
+                    revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
+                />
+            </Show>
             <NavButton position="right" class="pointer-events-none cursor-default" disabled>
                 {code}
             </NavButton>
