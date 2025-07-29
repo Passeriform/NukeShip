@@ -5,18 +5,20 @@ import { Show, VoidComponent, createEffect, createSignal, onCleanup, onMount } f
 import toast from "solid-toast"
 import { PerspectiveCamera } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
+import ActionButton from "@components/ActionButton"
 import NavButton from "@components/NavButton"
 import NodeDetails from "@components/NodeDetails"
+import ViewportToolbar from "@components/ViewportToolbar"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { FocusType, ViewType } from "@constants/types"
-import RaycastSelector from "@game/RaycastSelector"
 import TargetControls from "@game/targetControls"
 import Sapling, { Tree } from "@game/tree"
 import useCamera from "@game/useCamera"
 import useLighting from "@game/useLighting"
+import useRaycaster from "@game/useRaycaster"
 import useScene from "@game/useScene"
-import useViewportToolbar from "@game/useViewportToolbar"
+import useViewportToolbar from "@hooks/useViewport"
 import { boundsFromObjects } from "@utility/bounds"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
@@ -50,12 +52,37 @@ const GameBoard: VoidComponent = () => {
     const selfFsTree = new Tree(ExampleFS, 1)
     const opponentFsTree = new Tree(ExampleFS, 2)
 
-    const { view, focus, isBirdsEye, domElement: viewportToolbar } = useViewportToolbar()
+    const { view, focus, birdsEye, actions } = useViewportToolbar()
 
     const focussedTree = () =>
         (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
 
     const showNodeDetails = () => Boolean(selectedSapling()) && !cameraTransitioning()
+
+    useRaycaster(camera, {
+        root: focussedTree(),
+        filter: (matchedMeshes) =>
+            matchedMeshes
+                .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
+                .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[],
+        onClick: (mesh) => {
+            mesh && targetControls.pushTarget(mesh)
+        },
+        onHover: (mesh, repeat, lastNode) => {
+            if (!mesh) {
+                setHoveringSapling(false)
+                lastNode?.glow(false, tweenGroup)
+                return
+            }
+
+            if (!repeat) {
+                lastNode?.glow(false, tweenGroup)
+            }
+
+            setHoveringSapling(true)
+            mesh.glow(true, tweenGroup)
+        },
+    })
 
     const draw = (time: number = 0) => {
         tourControls.update(time)
@@ -149,7 +176,7 @@ const GameBoard: VoidComponent = () => {
     createEffect(() => {
         const tourBoundPoses =
             // If birds eye view or no tree is focussed, single bound pose on both trees.
-            ((isBirdsEye() || !focussedTree()) && [
+            ((birdsEye() || !focussedTree()) && [
                 { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
             ]) ||
             // If elevation view, single bound pose on entire focussed tree.
@@ -162,7 +189,7 @@ const GameBoard: VoidComponent = () => {
             []
 
         const tourCameraOffset =
-            (isBirdsEye() && TOUR_CONTROLS_BIRDS_EYE_OFFSET) ||
+            (birdsEye() && TOUR_CONTROLS_BIRDS_EYE_OFFSET) ||
             (view() === ViewType.ELEVATION && TOUR_CONTROLS_ELEVATION_OFFSET) ||
             (view() === ViewType.PLAN && TOUR_CONTROLS_PLAN_OFFSET) ||
             0
@@ -175,7 +202,7 @@ const GameBoard: VoidComponent = () => {
     createEffect(() => {
         targetControls.setInteractables(focussedTree() ? [focussedTree()!] : [])
         targetControls.setCameraOffset(TARGET_CONTROLS_OFFSET)
-        targetControls.enabled = !isBirdsEye() && view() === ViewType.ELEVATION
+        targetControls.enabled = !birdsEye() && view() === ViewType.ELEVATION
         setSelectedSapling(undefined)
     })
 
@@ -188,34 +215,18 @@ const GameBoard: VoidComponent = () => {
     return (
         <>
             {renderer.domElement}
-            {viewportToolbar}
-            <RaycastSelector
-                camera={camera}
-                filter={(matchedMeshes) =>
-                    matchedMeshes
-                        .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
-                        .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[]
-                }
-                root={focussedTree()}
-                onClick={(mesh) => {
-                    mesh && targetControls.pushTarget(mesh)
-                }}
-                onHover={(mesh, repeat, lastNode) => {
-                    if (!mesh) {
-                        setHoveringSapling(false)
-                        lastNode?.glow(false, tweenGroup)
-                        return
-                    }
-
-                    if (!repeat) {
-                        lastNode?.glow(false, tweenGroup)
-                    }
-
-                    setHoveringSapling(true)
-                    mesh.glow(true, tweenGroup)
-                }}
-            />
-            <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800 transform-style-3d">
+            <section class="absolute bottom-8 flex flex-row justify-evenly gap-8">
+                <ViewportToolbar
+                    actions={actions}
+                    birdsEye={birdsEye}
+                    focus={focus}
+                    view={view}
+                    renderSlot={(slotProps) => (
+                        <ActionButton class="p-8 text-4xl/tight" hintClass="w-72" {...slotProps} />
+                    )}
+                />
+            </section>
+            <div class="pointer-events-none absolute flex h-full w-full items-center justify-center perspective-origin-center perspective-800">
                 <Show when={selectedSapling()}>
                     <NodeDetails
                         class="pointer-events-auto"

@@ -65,7 +65,7 @@ const NodeDetails: VoidComponent<NodeDetailsProps> = (_props) => {
         <Show when={panePresence.isMounted()}>
             <section
                 class={twMerge(
-                    "absolute min-w-114 transform rounded-lg border border-dark-turquoise p-4 text-white shadow-lg transition-all ease-out transform-style-3d",
+                    "absolute min-w-114 transform rounded-lg border border-dark-turquoise p-4 shadow-lg transition-all ease-out",
                     debouncedPosition() === "left" ? "left-1/8 rotate-y-30" : "right-1/8 -rotate-y-30",
                     !ownProps.revealBehind(hovering()) && "backdrop-blur-lg",
                     panePresence.isVisible() ? "scale-y-100" : "scale-y-0",

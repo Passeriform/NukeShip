@@ -1,17 +1,16 @@
-import { VoidProps, onCleanup, onMount } from "solid-js"
+import { onCleanup, onMount } from "solid-js"
 import { Camera, Mesh, Object3D, Raycaster, Vector2 } from "three"
 
 type RaycastInteractionCallback<T> = (mesh: T | undefined, repeat: boolean, lastNode: T | undefined) => void
 
-interface RaycastSelectorProps<T extends Mesh> {
-    camera: Camera
-    filter: (mesh: Object3D[]) => T[]
+interface UseRaycasterOptions<T extends Mesh> {
     root: Object3D | undefined
+    filter: (mesh: Object3D[]) => T[]
     onClick?: RaycastInteractionCallback<T>
     onHover?: RaycastInteractionCallback<T>
 }
 
-const RaycastSelector = <T extends Mesh>(props: VoidProps<RaycastSelectorProps<T>>) => {
+const useRaycaster = <T extends Mesh>(camera: Camera, options: UseRaycasterOptions<T>) => {
     const raycaster = new Raycaster()
 
     let lastHoveredNode: T | undefined
@@ -21,18 +20,18 @@ const RaycastSelector = <T extends Mesh>(props: VoidProps<RaycastSelectorProps<T
         event: MouseEvent,
         repeatTest: (mesh: T | undefined) => boolean,
     ): [T | undefined, boolean] => {
-        if (!props.root) {
+        if (!options.root) {
             return [undefined, false]
         }
 
         raycaster.setFromCamera(
             new Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1),
-            props.camera,
+            camera,
         )
 
-        const intersects = raycaster.intersectObjects([props.root], true)
+        const intersects = raycaster.intersectObjects([options.root], true)
 
-        const [matched] = props
+        const [matched] = options
             .filter(intersects.map((intersection) => intersection.object))
             .map((obj) => obj as unknown as T)
 
@@ -41,13 +40,13 @@ const RaycastSelector = <T extends Mesh>(props: VoidProps<RaycastSelectorProps<T
 
     const onHover = (event: MouseEvent) => {
         const [mesh, repeat] = testNextInteraction(event, (mesh) => mesh === lastHoveredNode)
-        props.onHover?.(mesh, repeat, lastHoveredNode)
+        options.onHover?.(mesh, repeat, lastHoveredNode)
         lastHoveredNode = mesh
     }
 
     const onClick = (event: MouseEvent) => {
         const [mesh, repeat] = testNextInteraction(event, (mesh) => mesh === lastClickedNode)
-        props.onClick?.(mesh, repeat, lastClickedNode)
+        options.onClick?.(mesh, repeat, lastClickedNode)
         lastClickedNode = mesh
     }
 
@@ -60,8 +59,6 @@ const RaycastSelector = <T extends Mesh>(props: VoidProps<RaycastSelectorProps<T
         window.removeEventListener("mousemove", onHover)
         window.removeEventListener("click", onClick)
     })
-
-    return <></>
 }
 
-export default RaycastSelector
+export default useRaycaster
