@@ -39,6 +39,7 @@ export default {
         },
         clipPath: {
             floodlight: "polygon(9rem 1.9rem, 100% 100%, 0 14.7rem)",
+            pleat: "polygon(0 0, 5rem 0, 3rem 100%, 0 100%)",
         },
         extend: {
             width: {

@@ -7,18 +7,20 @@ import { PerspectiveCamera } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
 import ActionButton from "@components/ActionButton"
 import NavButton from "@components/NavButton"
-import NodeDetailsPanel from "@components/NodeDetailsPanel"
-import ViewportToolbar from "@components/ViewportToolbar"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
-import { FocusType, ViewType } from "@constants/types"
+import { AttackType, FocusType, ViewType } from "@constants/types"
+import NodeDetailsPanel from "@game/NodeDetailsPanel"
+import PlannerPanel from "@game/PlannerPanel"
+import ViewportToolbar from "@game/ViewportToolbar"
 import TargetControls from "@game/targetControls"
 import Sapling, { Tree } from "@game/tree"
 import useCamera from "@game/useCamera"
 import useLighting from "@game/useLighting"
+import usePlanner from "@game/usePlanner"
 import useRaycaster from "@game/useRaycaster"
 import useScene from "@game/useScene"
-import useViewportToolbar from "@hooks/useViewport"
+import useViewportToolbar from "@game/useViewport"
 import { boundsFromObjects } from "@utility/bounds"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
@@ -53,6 +55,7 @@ const GameBoard: VoidComponent = () => {
     const opponentFsTree = new Tree(ExampleFS, 2)
 
     const { view, focus, birdsEye, actions } = useViewportToolbar()
+    const { plans } = usePlanner()
 
     const focussedTree = () =>
         (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
@@ -233,12 +236,14 @@ const GameBoard: VoidComponent = () => {
                     show={showNodeDetailsPanel}
                     transitionTiming={100}
                     data={selectedSapling()!.userData}
+                    actions={<></>}
                     revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
                 />
             </Show>
             <NavButton position="right" class="pointer-events-none cursor-default" disabled>
                 {code}
             </NavButton>
+            <PlannerPanel plans={plans} />
         </>
     )
 }

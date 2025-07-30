@@ -1,10 +1,10 @@
-import { CONTENT } from "@constants/content"
+import { Content } from "@constants/content"
 
 interface ContentBodyProps {
-    content: (typeof CONTENT)[keyof typeof CONTENT]
+    content: Content
 }
 
-export const ContentBody = ({ content }: ContentBodyProps) => {
+const ContentBody = ({ content }: ContentBodyProps) => {
     return (
         <section>
             <p class="mt-2">{content.description}</p>
@@ -16,3 +16,5 @@ export const ContentBody = ({ content }: ContentBodyProps) => {
         </section>
     )
 }
+
+export default ContentBody

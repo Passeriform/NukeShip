@@ -12,13 +12,14 @@ import {
     untrack,
 } from "solid-js"
 import { twMerge } from "tailwind-merge"
+import ContentBody from "@components/ContentBody"
+import InfoButton from "@components/InfoButton"
 import { CONTENT } from "@constants/content"
 import { SaplingMetadata } from "@game/tree"
-import { ContentBody } from "./ContentBody"
-import InfoButton from "./InfoButton"
 
 interface NodeDetailsPanelProps extends JSX.HTMLAttributes<HTMLElement> {
     data: SaplingMetadata
+    actions: JSX.Element
     show: Accessor<boolean>
     transitionTiming?: number
     position?: "left" | "right"
@@ -28,7 +29,7 @@ interface NodeDetailsPanelProps extends JSX.HTMLAttributes<HTMLElement> {
 const NodeDetailsPanel: VoidComponent<NodeDetailsPanelProps> = (_props) => {
     const [ownProps, forwardedProps] = splitProps(
         mergeProps({ position: "left", transitionTiming: 400, revealBehind: () => false }, _props),
-        ["show", "transitionTiming", "position", "revealBehind", "data"],
+        ["show", "transitionTiming", "position", "revealBehind", "data", "actions"],
     )
 
     const statData = () => [
@@ -78,7 +79,7 @@ const NodeDetailsPanel: VoidComponent<NodeDetailsPanelProps> = (_props) => {
                 >
                     <article class="flex h-full flex-col gap-2">
                         <h2 class="font-title text-4xl font-bold">{ownProps.data.label}</h2>
-                        <div class="my-2 flex flex-col gap-2">
+                        <section class="my-2 flex flex-col gap-2">
                             <For each={statData()}>
                                 {({ content, value }) => (
                                     <div
@@ -109,7 +110,8 @@ const NodeDetailsPanel: VoidComponent<NodeDetailsPanelProps> = (_props) => {
                                     </div>
                                 )}
                             </For>
-                        </div>
+                        </section>
+                        {/* TODO: Move this inside section */}
                         <Show when={ownProps.data.sentinel}>
                             <InfoButton
                                 class={twMerge(
@@ -126,6 +128,7 @@ const NodeDetailsPanel: VoidComponent<NodeDetailsPanelProps> = (_props) => {
                                 {CONTENT.SENTINEL.icon}
                             </InfoButton>
                         </Show>
+                        <section class="flex items-center justify-center">{ownProps.actions}</section>
                     </article>
                 </section>
             </Show>

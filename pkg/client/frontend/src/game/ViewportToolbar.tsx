@@ -1,16 +1,9 @@
-import { Accessor, ComponentProps, ParentComponent, Setter, Show, VoidComponent, mergeProps } from "solid-js"
+import { ComponentProps, ParentComponent, Show, VoidComponent, mergeProps } from "solid-js"
+import ActionButton from "@components/ActionButton"
 import { FocusType, ViewType } from "@constants/types"
-import ActionButton from "./ActionButton"
+import useViewport from "@game/useViewport"
 
-interface ViewportToolbarProps {
-    birdsEye: Accessor<boolean>
-    view: Accessor<ViewType>
-    focus: Accessor<FocusType>
-    actions: {
-        setBirdsEye: Setter<boolean>
-        setView: Setter<ViewType>
-        setFocus: Setter<FocusType>
-    }
+interface ViewportToolbarProps extends ReturnType<typeof useViewport> {
     renderSlot?: ParentComponent<ComponentProps<typeof ActionButton>>
 }
 

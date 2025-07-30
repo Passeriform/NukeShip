@@ -18,3 +18,14 @@ export type TweenTransform = {
     position: Vector3
     rotation: Quaternion
 }
+
+export const AttackType = {
+    PIPELINE: "PIPELINE",
+    DIRECT: "DIRECT",
+} as const
+
+export type AttackType = (typeof AttackType)[keyof typeof AttackType]
+
+export type RecursiveRecord<P extends PropertyKey, T> = {
+    [K in P]: T | RecursiveRecord<P, T>
+}

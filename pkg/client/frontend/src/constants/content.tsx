@@ -1,3 +1,16 @@
+import { RecursiveRecord } from "./types"
+
+export type Content = {
+    title: string
+    icon: string
+    description: string
+    tip: string
+    lore: {
+        quote: string
+        speaker: string
+    }
+}
+
 export const CONTENT = {
     POWER: {
         title: "Power",
@@ -26,7 +39,7 @@ export const CONTENT = {
         description: "Determines how quickly the node's shield recovers.",
         tip: "Use better redundancy strategies to increase the recharge rate of your shield.",
         lore: {
-            quote: "feat: faster. always faster. the clock cycle won't wait, so why should you?",
+            quote: "fuck stable ABI, broke a few things, sorry, not sorry :P",
             speaker:
                 "@PlasticFissile/QuantumChronos v17 commit message, breakthrough in clock cycle skip computation, November, 3001",
         },
@@ -41,4 +54,28 @@ export const CONTENT = {
             speaker: "Unified Systems Command, CNS-3008: Critical Node Survival Doctrine, October, 3008, pp. 14-19",
         },
     },
-} as const
+    ATTACKS: {
+        DIRECT: {
+            title: "Direct Attack",
+            icon: "🎯",
+            description: "Directly attack one of the opponent's nodes.",
+            tip: "Strategically attack high-value enemy nodes to topple their strategy.",
+            lore: {
+                quote: "The Realm has no sanctuaries. Access is privilege, not birthright, and those who weaponize it against progress will be erased from it entirely.",
+                speaker:
+                    "General Elias Stauffer, Realm Emergency Broadcast, Siege of Charm Sector, State Archives: Public Record 2989-10-14, Section 4A",
+            },
+        },
+        PIPELINE: {
+            title: "Pipeline Attack",
+            icon: "🔱",
+            description: "Execute a chain strike against the opponent's mainframe.",
+            tip: "Pipeline attacks exploit systemic inter-connectivity. Breach from top node and the attack will impact the whole network.",
+            lore: {
+                quote: "All code is bound by duty as much as right. When one branch fails the collective, the Constitution compels its peers to contain the fault.",
+                speaker:
+                    "Programming Constitution, Code Rights Act Amendment I (Corporate Applicability), ratified August 2973; General Constitution Adoption, December 2981, Article 12 Section C",
+            },
+        },
+    },
+} as const satisfies RecursiveRecord<string, Content>
