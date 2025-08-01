@@ -13,7 +13,7 @@ type InfoButtonProps = ComponentProps<typeof Button> & {
 }
 
 const InfoButton: Component<InfoButtonProps> = (_props) => {
-    const [ownProps, forwardedProps] = splitProps(mergeProps({ hintClass: "" }, _props), [
+    const [ownProps, _forwardedProps] = splitProps(mergeProps({ hintClass: "" }, _props), [
         "hintTitle",
         "hintBody",
         "hintClass",
@@ -24,11 +24,11 @@ const InfoButton: Component<InfoButtonProps> = (_props) => {
     const [showTooltip, setShowTooltip] = createSignal(false)
 
     // NOTE: Exception for any typing due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
-    const combinedProps = combineProps(forwardedProps as any, {
+    const combinedProps = combineProps(_forwardedProps as any, {
         ref: setTooltipReference,
         onMouseEnter: () => setShowTooltip(true),
         onMouseLeave: () => setShowTooltip(false),
-    }) as unknown as typeof forwardedProps
+    }) as unknown as typeof _forwardedProps
 
     const floatingResult = useFloating(tooltipReference, tooltipFloating, {
         placement: "top",

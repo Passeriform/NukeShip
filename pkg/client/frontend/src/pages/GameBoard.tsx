@@ -10,6 +10,7 @@ import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
 import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
 import { AttackType, FocusType, ViewType } from "@constants/types"
+import ActionToolbar from "@game/ActionToolbar"
 import NodeDetailsPanel from "@game/NodeDetailsPanel"
 import PlannerPanel from "@game/PlannerPanel"
 import ViewportToolbar from "@game/ViewportToolbar"
@@ -55,7 +56,7 @@ const GameBoard: VoidComponent = () => {
     const opponentFsTree = new Tree(ExampleFS, 2)
 
     const { view, focus, birdsEye, actions } = useViewportToolbar()
-    const { plans } = usePlanner()
+    const { plans, addPlan, removePlan } = usePlanner({ maximum: 3 })
 
     const focussedTree = () =>
         (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
@@ -75,6 +76,7 @@ const GameBoard: VoidComponent = () => {
             if (!mesh) {
                 setHoveringSapling(false)
                 lastNode?.glow(false, tweenGroup)
+                document.body.style.cursor = "default"
                 return
             }
 
@@ -84,6 +86,7 @@ const GameBoard: VoidComponent = () => {
 
             setHoveringSapling(true)
             mesh.glow(true, tweenGroup)
+            document.body.style.cursor = "pointer"
         },
     })
 
@@ -170,11 +173,6 @@ const GameBoard: VoidComponent = () => {
         opponentFsTree.resetOpacity(tweenGroup)
     })
 
-    // Mouse Cursor
-    createEffect(() => {
-        document.body.style.cursor = hoveringSapling() ? "pointer" : "default"
-    })
-
     // Tour Controls
     createEffect(() => {
         const tourBoundPoses =
@@ -236,14 +234,26 @@ const GameBoard: VoidComponent = () => {
                     show={showNodeDetailsPanel}
                     transitionTiming={100}
                     data={selectedSapling()!.userData}
-                    actions={<></>}
+                    // TODO: Make target attacks only available on leaf nodes.
+                    actions={
+                        <ActionToolbar
+                            attacks={[AttackType.TARGET, AttackType.BLENDED]}
+                            onAction={(type) =>
+                                addPlan({ type, source: selectedSapling()!, destination: undefined as any })
+                            }
+                        />
+                    }
                     revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
                 />
             </Show>
             <NavButton position="right" class="pointer-events-none cursor-default" disabled>
                 {code}
             </NavButton>
-            <PlannerPanel plans={plans} />
+            <PlannerPanel
+                plans={plans}
+                removePlan={removePlan}
+                renderPlanItem={(item) => item && item.userData["label"]}
+            />
         </>
     )
 }

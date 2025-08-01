@@ -9,14 +9,14 @@ type ActionButtonProps = ComponentProps<typeof InfoButton> & {
 }
 
 const ActionButton: Component<ActionButtonProps> = (_props) => {
-    const [ownProps, forwardedProps] = splitProps(_props, ["shortcuts"])
+    const [ownProps, _forwardedProps] = splitProps(_props, ["shortcuts"])
 
     const [infoButtonReference, setInfoButtonReference] = createSignal<HTMLButtonElement>()
 
-    // NOTE: Exception for any typing due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
-    const combinedProps = combineProps(forwardedProps as any, {
+    // NOTE: Exception for type casting due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
+    const combinedProps = combineProps(_forwardedProps as any, {
         ref: setInfoButtonReference,
-    }) as unknown as typeof forwardedProps
+    }) as unknown as typeof _forwardedProps
 
     createEffect(() => {
         if (ownProps.shortcuts.length) {

@@ -128,7 +128,9 @@ const NodeDetailsPanel: VoidComponent<NodeDetailsPanelProps> = (_props) => {
                                 {CONTENT.SENTINEL.icon}
                             </InfoButton>
                         </Show>
-                        <section class="flex items-center justify-center">{ownProps.actions}</section>
+                        <section class="flex translate-y-8 items-center justify-center gap-8">
+                            {ownProps.actions}
+                        </section>
                     </article>
                 </section>
             </Show>

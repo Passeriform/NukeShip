@@ -13,18 +13,19 @@
                 "Chronos",
                 "Fugaz",
                 "interactables",
+                "Koyeb",
                 "NukeShip",
                 "Orbitron",
                 "Passeriform",
-                "Koyeb"
+                "Stauffer"
             ]
         },
         {
             "name": "personal",
             "description": "Personal Details Dictionary",
             "words": [
-                "Utkarsh",
-                "Bhardwaj"
+                "Bhardwaj",
+                "Utkarsh"
             ]
         }
     ],
@@ -45,9 +46,9 @@
             ],
             "words": [
                 "Debugf",
-                "Infof",
                 "exhaustruct",
                 "Frameless",
+                "Infof",
                 "statemachine"
             ]
         },

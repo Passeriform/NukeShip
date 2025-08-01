@@ -55,8 +55,8 @@ export const CONTENT = {
         },
     },
     ATTACKS: {
-        DIRECT: {
-            title: "Direct Attack",
+        TARGET: {
+            title: "Target Attack",
             icon: "🎯",
             description: "Directly attack one of the opponent's nodes.",
             tip: "Strategically attack high-value enemy nodes to topple their strategy.",
@@ -66,11 +66,11 @@ export const CONTENT = {
                     "General Elias Stauffer, Realm Emergency Broadcast, Siege of Charm Sector, State Archives: Public Record 2989-10-14, Section 4A",
             },
         },
-        PIPELINE: {
-            title: "Pipeline Attack",
-            icon: "🔱",
-            description: "Execute a chain strike against the opponent's mainframe.",
-            tip: "Pipeline attacks exploit systemic inter-connectivity. Breach from top node and the attack will impact the whole network.",
+        BLENDED: {
+            title: "Blended Attack",
+            icon: "☄️",
+            description: "Execute a blend of attacks against the opponent's mainframe.",
+            tip: "Blended attacks exploit systemic inter-connectivity. Breach from top node and the attack will impact the whole network.",
             lore: {
                 quote: "All code is bound by duty as much as right. When one branch fails the collective, the Constitution compels its peers to contain the fault.",
                 speaker:

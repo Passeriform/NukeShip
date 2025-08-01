@@ -39,7 +39,7 @@ export default {
         },
         clipPath: {
             floodlight: "polygon(9rem 1.9rem, 100% 100%, 0 14.7rem)",
-            pleat: "polygon(0 0, 5rem 0, 3rem 100%, 0 100%)",
+            pleat: "polygon(0 0, 100% 0, 75% 100%, 0 100%)",
         },
         extend: {
             width: {
@@ -78,6 +78,9 @@ export default {
             },
             translate: {
                 "1/2-25deg": "3rem",
+            },
+            rotate: {
+                90: "90deg",
             },
             spacing: {
                 "1/10": "10%",

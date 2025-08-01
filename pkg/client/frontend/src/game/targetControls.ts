@@ -143,11 +143,9 @@ class TargetControls extends Controls<TargetControlsEventMap> {
         }
 
         if (event.button === 2) {
-            if (!this._unselectedPose) {
-                throw new Error("Unselected pose is not defined.")
+            if (this._unselectedPose) {
+                this.animate(this._unselectedPose)
             }
-
-            this.animate(this._unselectedPose)
 
             this.dispatchEvent({
                 type: "deselect",

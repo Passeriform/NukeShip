@@ -22,7 +22,7 @@ const ViewportToolbar: VoidComponent<ViewportToolbarProps> = (_props) => {
                         props.actions.setBirdsEye(false)
                     }}
                 >
-                    ⮪
+                    ↩️
                 </props.renderSlot>
             }
         >
@@ -47,7 +47,7 @@ const ViewportToolbar: VoidComponent<ViewportToolbarProps> = (_props) => {
                             props.actions.setFocus(FocusType.SELF)
                         }}
                     >
-                        ⬅
+                        ⬅️
                     </props.renderSlot>
                 }
             >
@@ -59,7 +59,7 @@ const ViewportToolbar: VoidComponent<ViewportToolbarProps> = (_props) => {
                         props.actions.setFocus(FocusType.OPPONENT)
                     }}
                 >
-                    👁
+                    👁️
                 </props.renderSlot>
             </Show>
             <props.renderSlot
@@ -70,7 +70,7 @@ const ViewportToolbar: VoidComponent<ViewportToolbarProps> = (_props) => {
                     props.actions.setBirdsEye(true)
                 }}
             >
-                🧿
+                🌍
             </props.renderSlot>
         </Show>
     )

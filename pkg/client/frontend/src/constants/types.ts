@@ -1,4 +1,5 @@
 import { Quaternion, Vector3 } from "three"
+import Tree from "@game/tree"
 
 export const FocusType = {
     SELF: "SELF",
@@ -20,11 +21,24 @@ export type TweenTransform = {
 }
 
 export const AttackType = {
-    PIPELINE: "PIPELINE",
-    DIRECT: "DIRECT",
+    TARGET: "TARGET",
+    BLENDED: "BLENDED",
 } as const
 
 export type AttackType = (typeof AttackType)[keyof typeof AttackType]
+
+type TargetAttackPlanMeta = {
+    type: typeof AttackType.TARGET
+    source: Tree
+    destination: Tree
+}
+
+type BlendedAttackPlanMeta = {
+    type: typeof AttackType.BLENDED
+    source: Tree
+}
+
+export type Plan = TargetAttackPlanMeta | BlendedAttackPlanMeta
 
 export type RecursiveRecord<P extends PropertyKey, T> = {
     [K in P]: T | RecursiveRecord<P, T>
