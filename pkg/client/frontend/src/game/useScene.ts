@@ -21,6 +21,7 @@ const useScene = (props: UseSceneProps) => {
         }
 
         renderer.setPixelRatio(window.devicePixelRatio)
+        updateWindowSize()
 
         window.addEventListener("resize", updateWindowSize)
     })
