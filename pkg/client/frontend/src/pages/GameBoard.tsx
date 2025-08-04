@@ -38,6 +38,9 @@ const TARGET_CONTROLS_OFFSET = 1
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
+    const { scene, renderer } = useScene({
+        onError: (errorDiv) => toast.error(<>WebGL is not available {errorDiv}</>, { duration: -1 }),
+    })
     const { ambientLight, directionalLight } = useLighting({
         ambientLightColor: 0x193751,
         directionalLightPosition: STATICS.DIRECTIONAL_LIGHT.position,
@@ -100,11 +103,6 @@ const GameBoard: VoidComponent = () => {
     }
 
     onMount(() => {
-        if (!isWebGL2Available()) {
-            toast.error(`WebGL is not available ${getWebGL2ErrorMessage()}`, { duration: -1 })
-            return
-        }
-
         // Renderer
         renderer.setAnimationLoop(draw)
 
