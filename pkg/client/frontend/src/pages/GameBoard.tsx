@@ -38,8 +38,10 @@ const TARGET_CONTROLS_OFFSET = 1
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
-    const { scene, renderer } = useScene()
-    const { ambientLight, directionalLight } = useLighting()
+    const { ambientLight, directionalLight } = useLighting({
+        ambientLightColor: 0x193751,
+        directionalLightPosition: STATICS.DIRECTIONAL_LIGHT.position,
+    })
     const { camera } = useCamera()
 
     const [hoveringSapling, setHoveringSapling] = createSignal<boolean>(false)
@@ -107,7 +109,6 @@ const GameBoard: VoidComponent = () => {
         renderer.setAnimationLoop(draw)
 
         // Lighting
-        directionalLight.position.copy(STATICS.DIRECTIONAL_LIGHT.position)
         scene.add(ambientLight)
         scene.add(directionalLight)
 
@@ -210,7 +211,6 @@ const GameBoard: VoidComponent = () => {
     onCleanup(() => {
         selfFsTree.clear()
         opponentFsTree.clear()
-        camera.clear()
     })
 
     return (
