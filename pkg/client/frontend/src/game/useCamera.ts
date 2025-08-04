@@ -1,15 +1,13 @@
-import { createSignal, mergeProps, onCleanup } from "solid-js"
-import { OrthographicCamera, PerspectiveCamera } from "three"
+import { mergeProps, onCleanup, onMount } from "solid-js"
+import { PerspectiveCamera } from "three"
 
 const DEFAULT_USE_CAMERA_PROPS = {
-    frustumSize: 10,
     fov: 70,
     far: 2000,
     near: 0.1,
 }
 
 interface UseCameraProps {
-    frustumSize?: number
     fov?: number
     far?: number
     near?: number
@@ -18,27 +16,22 @@ interface UseCameraProps {
 const useCamera = (_props: UseCameraProps = DEFAULT_USE_CAMERA_PROPS) => {
     const props = mergeProps(DEFAULT_USE_CAMERA_PROPS, _props)
 
-    const [isCameraPerspective, _setIsCameraPerspective] = createSignal(true)
+    const camera = new PerspectiveCamera(props.fov, window.innerWidth / window.innerHeight, props.near, props.far)
 
-    const camera = () => {
-        const aspect = window.innerWidth / window.innerHeight
-
-        if (isCameraPerspective()) {
-            return new PerspectiveCamera(props.fov, aspect, props.near, props.far)
-        } else {
-            const left = (-props.frustumSize * aspect) / 2
-            const right = (props.frustumSize * aspect) / 2
-            const top = props.frustumSize / 2
-            const bottom = -props.frustumSize / 2
-            return new OrthographicCamera(left, right, top, bottom, props.near, props.far)
-        }
+    const updateAspect = () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
     }
 
-    onCleanup(() => {
-        camera().clear()
+    onMount(() => {
+        window.addEventListener("resize", updateAspect)
     })
 
-    return { camera: camera() }
+    onCleanup(() => {
+        window.removeEventListener("resize", updateAspect)
+    })
+
+    return { camera }
 }
 
 export default useCamera
