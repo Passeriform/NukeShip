@@ -3,8 +3,7 @@ import { useParams } from "@solidjs/router"
 import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { Show, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import toast from "solid-toast"
-import { PerspectiveCamera } from "three"
-import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
+import { Object3D, PerspectiveCamera } from "three"
 import ActionButton from "@components/ActionButton"
 import NavButton from "@components/NavButton"
 import { ExampleFS } from "@constants/sample"
@@ -35,6 +34,11 @@ const TOUR_CONTROLS_ELEVATION_OFFSET = 4
 const TOUR_CONTROLS_PLAN_OFFSET = 2
 const TARGET_CONTROLS_OFFSET = 1
 
+const filterTreeNode = (meshes: Object3D[]) =>
+    meshes
+        .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
+        .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[]
+
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
@@ -47,8 +51,6 @@ const GameBoard: VoidComponent = () => {
     })
     const { camera } = useCamera()
 
-    const [hoveringSapling, setHoveringSapling] = createSignal<boolean>(false)
-    const [selectedSapling, setSelectedSapling] = createSignal<Sapling | undefined>(undefined)
     const [drilledDepth, setDrilledDepth] = createSignal<number | undefined>(undefined)
     const [cameraTransitioning, setCameraTransitioning] = createSignal<boolean>(false)
 
@@ -68,18 +70,18 @@ const GameBoard: VoidComponent = () => {
 
     const showNodeDetailsPanel = () => Boolean(selectedSapling()) && !cameraTransitioning()
 
-    useRaycaster(camera, {
+    const {
+        hovering: hoveredSapling,
+        selected: selectedSapling,
+        setSelected: setSelectedSapling,
+    } = useRaycaster(camera, {
         root: focussedTree(),
-        filter: (matchedMeshes) =>
-            matchedMeshes
-                .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
-                .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[],
+        filter: filterTreeNode,
         onClick: (mesh) => {
             mesh && targetControls.pushTarget(mesh)
         },
         onHover: (mesh, repeat, lastNode) => {
             if (!mesh) {
-                setHoveringSapling(false)
                 lastNode?.glow(false, tweenGroup)
                 document.body.style.cursor = "default"
                 return
@@ -89,7 +91,6 @@ const GameBoard: VoidComponent = () => {
                 lastNode?.glow(false, tweenGroup)
             }
 
-            setHoveringSapling(true)
             mesh.glow(true, tweenGroup)
             document.body.style.cursor = "pointer"
         },
@@ -125,7 +126,6 @@ const GameBoard: VoidComponent = () => {
 
         targetControls.addEventListener("select", ({ intersect }) => {
             setSelectedSapling(intersect as Sapling)
-            setHoveringSapling(false)
         })
         targetControls.addEventListener("deselect", () => {
             setSelectedSapling(undefined)
@@ -241,7 +241,7 @@ const GameBoard: VoidComponent = () => {
                             }
                         />
                     }
-                    revealBehind={(obstructingHover) => obstructingHover && hoveringSapling()}
+                    revealBehind={(obstructingHover) => obstructingHover && Boolean(hoveredSapling())}
                 />
             </Show>
             <NavButton position="right" class="pointer-events-none cursor-default" disabled>

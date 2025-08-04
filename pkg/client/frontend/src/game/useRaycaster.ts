@@ -1,4 +1,4 @@
-import { onCleanup, onMount } from "solid-js"
+import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js"
 import { Camera, Mesh, Object3D, Raycaster, Vector2 } from "three"
 
 type RaycastInteractionCallback<T> = (mesh: T | undefined, repeat: boolean, lastNode: T | undefined) => void
@@ -13,8 +13,14 @@ interface UseRaycasterOptions<T extends Mesh> {
 const useRaycaster = <T extends Mesh>(camera: Camera, options: UseRaycasterOptions<T>) => {
     const raycaster = new Raycaster()
 
-    let lastHoveredNode: T | undefined
-    let lastClickedNode: T | undefined
+    const [lastHovered, setLastHovered] = createSignal<T | undefined>(undefined)
+    const [lastSelected, setLastSelected] = createSignal<T | undefined>(undefined)
+
+    createEffect(
+        on([lastSelected], () => {
+            setLastHovered(undefined)
+        }),
+    )
 
     const testNextInteraction = (
         event: MouseEvent,
@@ -39,15 +45,17 @@ const useRaycaster = <T extends Mesh>(camera: Camera, options: UseRaycasterOptio
     }
 
     const onHover = (event: MouseEvent) => {
-        const [mesh, repeat] = testNextInteraction(event, (mesh) => mesh === lastHoveredNode)
-        options.onHover?.(mesh, repeat, lastHoveredNode)
-        lastHoveredNode = mesh
+        const [mesh, repeat] = testNextInteraction(event, (mesh) => mesh === lastHovered())
+        options.onHover?.(mesh, repeat, lastHovered())
+        setLastHovered(() => mesh)
     }
 
     const onClick = (event: MouseEvent) => {
-        const [mesh, repeat] = testNextInteraction(event, (mesh) => mesh === lastClickedNode)
-        options.onClick?.(mesh, repeat, lastClickedNode)
-        lastClickedNode = mesh
+        const [mesh, repeat] = testNextInteraction(event, (mesh) => mesh === lastSelected())
+        options.onClick?.(mesh, repeat, lastSelected())
+        if (mesh) {
+            setLastSelected(() => mesh)
+        }
     }
 
     onMount(() => {
@@ -59,6 +67,12 @@ const useRaycaster = <T extends Mesh>(camera: Camera, options: UseRaycasterOptio
         window.removeEventListener("mousemove", onHover)
         window.removeEventListener("click", onClick)
     })
+
+    return {
+        hovering: lastHovered,
+        selected: lastSelected,
+        setSelected: setLastSelected,
+    }
 }
 
 export default useRaycaster
