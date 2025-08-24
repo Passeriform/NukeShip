@@ -1,3 +1,7 @@
+import MaskImagePlugin from "@pyncz/tailwind-mask-image"
+import TransformPlugin from "@xpd/tailwind-3dtransforms"
+import ClipPathPlugin from "tailwind-clip-path"
+import TextShadowPlugin from "tailwindcss-textshadow"
 import { flicker, glitchFont, glitchMovement, glitchOpacity, glitchPath, slowBlink } from "./src/animations"
 
 /** @type {import("tailwindcss").Config} */
@@ -5,6 +9,7 @@ export default {
     mode: "jit",
     content: ["./index.html", "./src/**/*.{ts,tsx}"],
     purge: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Runs as build tool, process.env is always defined
         enabled: process.env.NODE_ENV === "production",
         safeList: [],
         content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -116,10 +121,5 @@ export default {
             },
         },
     },
-    plugins: [
-        require("@xpd/tailwind-3dtransforms"),
-        require("tailwind-clip-path"),
-        require("@pyncz/tailwind-mask-image"),
-        require("tailwindcss-textshadow"),
-    ],
+    plugins: [TransformPlugin, ClipPathPlugin, MaskImagePlugin, TextShadowPlugin],
 }

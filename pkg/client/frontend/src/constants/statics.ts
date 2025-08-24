@@ -5,18 +5,30 @@ export const X_AXIS = Object.freeze(new Vector3(1, 0, 0))
 export const Y_AXIS = Object.freeze(new Vector3(0, 1, 0))
 export const Z_AXIS = Object.freeze(new Vector3(0, 0, 1))
 
-export const ELEVATION_FORWARD_QUATERNION = Object.freeze(new Quaternion(0, 0, 0, 1).normalize())
+export const FLIP_Y_QUATERNION = Object.freeze(new Quaternion().setFromAxisAngle(Y_AXIS, Math.PI))
 
-export const STATICS = {
+export const OBJECTS = {
     DIRECTIONAL_LIGHT: {
         position: Object.freeze(new Vector3(5, 5, 5)),
     },
     SELF: {
-        position: Object.freeze(new Vector3(10, 0, 0)),
-        rotation: Object.freeze(new Quaternion(0, 1, 0, 1).normalize()),
+        position: Object.freeze(new Vector3(-10, 0, 0)),
+        quaternion: Object.freeze(new Quaternion(0, -1, 0, 1).normalize()),
     },
     OPPONENT: {
-        position: Object.freeze(new Vector3(-10, 0, 0)),
-        rotation: Object.freeze(new Quaternion(0, -1, 0, 1).normalize()),
+        position: Object.freeze(new Vector3(10, 0, 0)),
+        quaternion: Object.freeze(new Quaternion(0, 1, 0, 1).normalize()),
     },
 } satisfies Record<string, Partial<TweenTransform>>
+
+export const CONTROLS = {
+    VIEWING_DISTANCE: {
+        ELEVATION: 4,
+        PLAN: 2,
+        SELECTION: 1,
+    },
+    QUATERNION: {
+        ELEVATION: Object.freeze(new Quaternion(0, 0, 0, 1).normalize()),
+        PLAN: Object.freeze(new Quaternion(0, 1, 0, 1).normalize()),
+    },
+}

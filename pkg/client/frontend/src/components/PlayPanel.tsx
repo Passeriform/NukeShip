@@ -10,7 +10,7 @@ import { pb } from "@wails/go/models"
 
 const MAX_ROOM_CODE_LENGTH = 5
 
-const promisifyValue = <T,>(value: T) => (value ? Promise.resolve(value) : Promise.reject())
+const promisifyValue = <T,>(value: T) => (value ? Promise.resolve(value) : Promise.reject(Error()))
 
 const roomTypeValues = Object.keys(pb.RoomType).filter((key) => isNaN(Number(key))) as (keyof typeof pb.RoomType)[]
 
@@ -100,7 +100,7 @@ const PlayPanel: VoidComponent = () => {
             <div class="h-96 w-8 bg-divider" />
             <section class="flex flex-col items-center justify-evenly gap-16 p-24">
                 <input
-                    class="relative m-0 min-h-20 w-48 min-w-48 appearance-none rounded-lg border border-dark-turquoise/30 bg-transparent p-0 text-center text-4xl/relaxed font-medium uppercase tracking-wide text-dark-turquoise/50 caret-transparent outline-none transition-all duration-200 ease-in-out focus:border-medium-slate-blue focus:text-dark-turquoise focus:shadow-sm focus:shadow-dark-turquoise/30 focus:text-shadow"
+                    class="relative m-0 min-h-20 w-48 min-w-48 appearance-none rounded-lg border border-dark-turquoise/30 bg-transparent p-0 text-center text-4xl/relaxed font-medium uppercase tracking-wide text-dark-turquoise/50 caret-transparent outline-none transition-all duration-200 ease-in-out focus-visible:border-medium-slate-blue focus-visible:text-dark-turquoise focus-visible:shadow-sm focus-visible:shadow-dark-turquoise/30 focus-visible:text-shadow"
                     ref={setInputRef}
                     maxLength={MAX_ROOM_CODE_LENGTH}
                     placeholder="Code..."
@@ -108,8 +108,8 @@ const PlayPanel: VoidComponent = () => {
                     onInput={(e) => {
                         setRoomCode(e.currentTarget.value.toLocaleUpperCase())
                     }}
-                    onkeydown={setCaretToEnd}
-                    onmousedown={setCaretToEnd}
+                    onKeyDown={setCaretToEnd}
+                    onMouseDown={setCaretToEnd}
                 />
                 <Button class="min-h-20 min-w-56" onClick={joinRoom}>
                     Join Room

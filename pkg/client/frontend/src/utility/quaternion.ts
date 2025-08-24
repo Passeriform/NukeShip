@@ -1,12 +1,9 @@
-import { Camera, Quaternion } from "three"
+import { Quaternion } from "three"
 
 export const averageQuaternions = (...inputs: Quaternion[]) => {
-    const rotation = inputs[0]!.clone()
+    const quaternion = inputs[0]!.clone()
     inputs.slice(1).forEach((input, idx) => {
-        rotation.slerp(input, 1 / (idx + 1))
+        quaternion.slerp(input, 1 / (idx + 1))
     })
-    return rotation.normalize()
+    return quaternion.normalize()
 }
-
-export const lookAtFromQuaternion = (cam: Camera, q: Quaternion) =>
-    q.clone().multiply(new Quaternion().setFromAxisAngle(cam.up, Math.PI)).normalize()

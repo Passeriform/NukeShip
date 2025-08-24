@@ -13,6 +13,7 @@ package.json.md5
 dist
 dist-ssr
 *.local
+.eslintcache
 
 # Wails
 wailsjs

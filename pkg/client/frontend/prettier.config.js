@@ -1,0 +1,24 @@
+/** @import { Config } from "prettier" */
+
+/** @type {Config} */
+export default {
+    plugins: ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
+    tabWidth: 4,
+    singleQuote: false,
+    useTabs: false,
+    semi: false,
+    quoteProps: "consistent",
+    jsxSingleQuote: false,
+    trailingComma: "all",
+    bracketSpacing: true,
+    bracketSameLine: false,
+    arrowParens: "always",
+    printWidth: 120,
+    importOrder: [
+        "<THIRD_PARTY_MODULES>",
+        "^@(animations|assets|components|constants|game|hooks|pages|providers|utility|wails).*$",
+        "^[./].*$",
+    ],
+    importOrderSortSpecifiers: true,
+    importOrderGroupNamespaceSpecifiers: true,
+}

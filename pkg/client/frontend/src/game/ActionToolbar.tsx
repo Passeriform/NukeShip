@@ -1,33 +1,54 @@
-import { For, VoidComponent } from "solid-js"
+import { VoidComponent } from "solid-js"
 import ActionButton from "@components/ActionButton"
-import ContentBody from "@components/ContentBody"
+import Description from "@components/Description"
 import { CONTENT } from "@constants/content"
 import { AttackType } from "@constants/types"
+import { usePlanner } from "@providers/Planner"
+import { Plan } from "./PlannerPanel"
+import { Sapling } from "./tree"
 
-interface ActionToolbarProps {
-    attacks: AttackType[]
-    onAction: (attack: AttackType) => void
+type ActionToolbarProps = {
+    source: Sapling
+    destination: Sapling
 }
 
 const ActionToolbar: VoidComponent<ActionToolbarProps> = (props) => {
+    const { addPlan } = usePlanner<Plan>()
+
     return (
-        <For each={props.attacks}>
-            {(attack) => (
-                <ActionButton
-                    class="p-8 text-4xl/tight"
-                    hintTitle={CONTENT.ATTACKS[attack].title}
-                    hintBody={<ContentBody content={CONTENT.ATTACKS[attack]} />}
-                    hintClass="w-96"
-                    // TODO: Move to content to make shortcuts configurable and re-bindable.
-                    shortcuts={attack === AttackType.TARGET ? ["1"] : ["2"]}
-                    onClick={() => {
-                        props.onAction(attack)
-                    }}
-                >
-                    {CONTENT.ATTACKS[attack].icon}
-                </ActionButton>
-            )}
-        </For>
+        <section class="flex translate-y-8 items-center justify-center gap-8">
+            <ActionButton
+                class="px-8 py-2 text-4xl"
+                hintTitle={CONTENT.ATTACKS.TARGET.title}
+                hintBody={<Description content={CONTENT.ATTACKS.TARGET} />}
+                hintClass="w-96"
+                shortcuts={CONTENT.ATTACKS.TARGET.shortcuts}
+                onClick={() => {
+                    addPlan({
+                        type: AttackType.TARGET,
+                        source: props.source,
+                        destination: props.destination,
+                    })
+                }}
+            >
+                {CONTENT.ATTACKS.TARGET.icon}
+            </ActionButton>
+            <ActionButton
+                class="px-8 py-2 text-4xl"
+                hintTitle={CONTENT.ATTACKS.BLENDED.title}
+                hintBody={<Description content={CONTENT.ATTACKS.BLENDED} />}
+                hintClass="w-96"
+                shortcuts={CONTENT.ATTACKS.BLENDED.shortcuts}
+                onClick={() => {
+                    addPlan({
+                        type: AttackType.BLENDED,
+                        source: props.source,
+                    })
+                }}
+            >
+                {CONTENT.ATTACKS.BLENDED.icon}
+            </ActionButton>
+        </section>
     )
 }
 

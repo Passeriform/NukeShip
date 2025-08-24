@@ -1,257 +1,39 @@
-import TourControls from "@passeriform/three-tour-controls"
 import { useParams } from "@solidjs/router"
-import { Group as TweenGroup } from "@tweenjs/tween.js"
-import { Show, VoidComponent, createEffect, createSignal, onCleanup, onMount } from "solid-js"
+import { VoidComponent } from "solid-js"
 import toast from "solid-toast"
-import { Object3D, PerspectiveCamera } from "three"
-import ActionButton from "@components/ActionButton"
 import NavButton from "@components/NavButton"
-import { ExampleFS } from "@constants/sample"
-import { ELEVATION_FORWARD_QUATERNION, STATICS } from "@constants/statics"
-import { AttackType, FocusType, ViewType } from "@constants/types"
-import ActionToolbar from "@game/ActionToolbar"
-import NodeDetailsPanel from "@game/NodeDetailsPanel"
-import PlannerPanel from "@game/PlannerPanel"
-import ViewportToolbar from "@game/ViewportToolbar"
-import TargetControls from "@game/targetControls"
-import Sapling, { Tree } from "@game/tree"
-import useCamera from "@game/useCamera"
-import useLighting from "@game/useLighting"
-import usePlanner from "@game/usePlanner"
-import useRaycaster from "@game/useRaycaster"
-import useScene from "@game/useScene"
-import useViewportToolbar from "@game/useViewport"
-import { boundsFromObjects } from "@utility/bounds"
+import { OBJECTS } from "@constants/statics"
+import { PlacementPosition } from "@constants/types"
+import Game from "@game/Game"
+import InteractionProvider from "@providers/Interaction"
+import SceneProvider from "@providers/Scene"
+import ViewportProvider from "@providers/Viewport"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
 // TODO: Use actual FS data from native client.
-// TODO: Fix regression of resizing the window not updating the renderer size.
-// TODO: Target controls node change should also dispatch the changed node to the event handlers.
-// TODO: RMB click to restore camera position, camera orientation, selected sapling, and drilled depth.
-
-const TOUR_CONTROLS_BIRDS_EYE_OFFSET = 20
-const TOUR_CONTROLS_ELEVATION_OFFSET = 4
-const TOUR_CONTROLS_PLAN_OFFSET = 2
-const TARGET_CONTROLS_OFFSET = 1
-
-const filterTreeNode = (meshes: Object3D[]) =>
-    meshes
-        .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
-        .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[]
 
 const GameBoard: VoidComponent = () => {
     const { code } = useParams()
 
-    const { scene, renderer } = useScene({
-        onError: (errorDiv) => toast.error(<>WebGL is not available {errorDiv}</>, { duration: -1 }),
-    })
-    const { ambientLight, directionalLight } = useLighting({
-        ambientLightColor: 0x193751,
-        directionalLightPosition: STATICS.DIRECTIONAL_LIGHT.position,
-    })
-    const { camera } = useCamera()
-
-    const [drilledDepth, setDrilledDepth] = createSignal<number | undefined>(undefined)
-    const [cameraTransitioning, setCameraTransitioning] = createSignal<boolean>(false)
-
-    const tourControls = new TourControls(camera as PerspectiveCamera, [], window.document.body)
-    const targetControls = new TargetControls(camera, window.document.body)
-
-    const tweenGroup = new TweenGroup()
-
-    const selfFsTree = new Tree(ExampleFS, 1)
-    const opponentFsTree = new Tree(ExampleFS, 2)
-
-    const { view, focus, birdsEye, actions } = useViewportToolbar()
-    const { plans, addPlan, removePlan } = usePlanner({ maximum: 3 })
-
-    const focussedTree = () =>
-        (focus() === FocusType.SELF && selfFsTree) || (focus() === FocusType.OPPONENT && opponentFsTree) || undefined
-
-    const showNodeDetailsPanel = () => Boolean(selectedSapling()) && !cameraTransitioning()
-
-    const {
-        hovering: hoveredSapling,
-        selected: selectedSapling,
-        setSelected: setSelectedSapling,
-    } = useRaycaster(camera, {
-        root: focussedTree(),
-        filter: filterTreeNode,
-        onClick: (mesh) => {
-            mesh && targetControls.pushTarget(mesh)
-        },
-        onHover: (mesh, repeat, lastNode) => {
-            if (!mesh) {
-                lastNode?.glow(false, tweenGroup)
-                document.body.style.cursor = "default"
-                return
-            }
-
-            if (!repeat) {
-                lastNode?.glow(false, tweenGroup)
-            }
-
-            mesh.glow(true, tweenGroup)
-            document.body.style.cursor = "pointer"
-        },
-    })
-
-    const draw = (time: number = 0) => {
-        tourControls.update(time)
-        targetControls.update(time)
-        tweenGroup.update(time)
-        renderer.render(scene, camera)
-    }
-
-    onMount(() => {
-        // Renderer
-        renderer.setAnimationLoop(draw)
-
-        // Lighting
-        scene.add(ambientLight)
-        scene.add(directionalLight)
-
-        // Node trees
-        selfFsTree.position.copy(STATICS.SELF.position)
-        selfFsTree.quaternion.copy(STATICS.SELF.rotation)
-        opponentFsTree.position.copy(STATICS.OPPONENT.position)
-        opponentFsTree.quaternion.copy(STATICS.OPPONENT.rotation)
-        scene.add(selfFsTree)
-        scene.add(opponentFsTree)
-
-        // Controls
-        tourControls.addEventListener("drill", ({ historyIdx }) => {
-            setDrilledDepth(historyIdx + 1)
-        })
-
-        targetControls.addEventListener("select", ({ intersect }) => {
-            setSelectedSapling(intersect as Sapling)
-        })
-        targetControls.addEventListener("deselect", () => {
-            setSelectedSapling(undefined)
-        })
-        targetControls.addEventListener("transitionChange", ({ transitioning }) => {
-            setCameraTransitioning(transitioning)
-        })
-
-        // Disable context menu
-        window.addEventListener("contextmenu", (event) => {
-            event.preventDefault()
-        })
-    })
-
-    // Opacity
-    createEffect(() => {
-        if (selectedSapling()) {
-            focussedTree()?.traverse((obj) => {
-                if (!obj.userData["depth"]) {
-                    return
-                }
-
-                ;(obj as Sapling).setOpacity(tweenGroup, 0.8)
-            })
-            selectedSapling()!.setOpacity(tweenGroup, 1)
-            return
-        }
-
-        if (view() === ViewType.PLAN && drilledDepth()) {
-            focussedTree()!.traverse((obj) => {
-                if (!obj.userData["depth"]) {
-                    return
-                }
-
-                const opacity =
-                    obj.userData["depth"] < drilledDepth()! ? 0 : obj.userData["depth"] > drilledDepth()! ? 0.2 : 1
-
-                ;(obj as Sapling).setOpacity(tweenGroup, opacity)
-            })
-            return
-        }
-
-        selfFsTree.resetOpacity(tweenGroup)
-        opponentFsTree.resetOpacity(tweenGroup)
-    })
-
-    // Tour Controls
-    createEffect(() => {
-        const tourBoundPoses =
-            // If birds eye view or no tree is focussed, single bound pose on both trees.
-            ((birdsEye() || !focussedTree()) && [
-                { bounds: boundsFromObjects(selfFsTree, opponentFsTree), quaternion: ELEVATION_FORWARD_QUATERNION },
-            ]) ||
-            // If elevation view, single bound pose on entire focussed tree.
-            (view() === ViewType.ELEVATION && [
-                { bounds: boundsFromObjects(focussedTree()!), quaternion: ELEVATION_FORWARD_QUATERNION },
-            ]) ||
-            // If plan view, bound poses for each level of the focussed tree.
-            (view() === ViewType.PLAN &&
-                focussedTree()!.levelBounds.map((bounds) => ({ bounds, quaternion: focussedTree()!.quaternion }))) ||
-            []
-
-        const tourCameraOffset =
-            (birdsEye() && TOUR_CONTROLS_BIRDS_EYE_OFFSET) ||
-            (view() === ViewType.ELEVATION && TOUR_CONTROLS_ELEVATION_OFFSET) ||
-            (view() === ViewType.PLAN && TOUR_CONTROLS_PLAN_OFFSET) ||
-            0
-
-        tourControls.setBoundPoses(tourBoundPoses)
-        tourControls.setCameraOffset(tourCameraOffset)
-    })
-
-    // Target Controls
-    createEffect(() => {
-        targetControls.setInteractables(focussedTree() ? [focussedTree()!] : [])
-        targetControls.setCameraOffset(TARGET_CONTROLS_OFFSET)
-        targetControls.enabled = !birdsEye() && view() === ViewType.ELEVATION
-        setSelectedSapling(undefined)
-    })
-
-    onCleanup(() => {
-        selfFsTree.clear()
-        opponentFsTree.clear()
-    })
+    const onWebGLError = (errorDiv: HTMLDivElement) =>
+        toast.error(<>WebGL is not available {errorDiv}</>, { duration: -1 })
 
     return (
         <>
-            {renderer.domElement}
-            <section class="absolute bottom-8 flex flex-row justify-evenly gap-8">
-                <ViewportToolbar
-                    actions={actions}
-                    birdsEye={birdsEye}
-                    focus={focus}
-                    view={view}
-                    renderSlot={(slotProps) => (
-                        <ActionButton class="p-8 text-4xl/tight" hintClass="w-72" {...slotProps} />
-                    )}
-                />
-            </section>
-            <Show when={selectedSapling()}>
-                <NodeDetailsPanel
-                    class="pointer-events-auto"
-                    position={focus() === FocusType.SELF ? "left" : "right"}
-                    show={showNodeDetailsPanel}
-                    transitionTiming={100}
-                    data={selectedSapling()!.userData}
-                    // TODO: Make target attacks only available on leaf nodes.
-                    actions={
-                        <ActionToolbar
-                            attacks={[AttackType.TARGET, AttackType.BLENDED]}
-                            onAction={(type) =>
-                                addPlan({ type, source: selectedSapling()!, destination: undefined as any })
-                            }
-                        />
-                    }
-                    revealBehind={(obstructingHover) => obstructingHover && Boolean(hoveredSapling())}
-                />
-            </Show>
-            <NavButton position="right" class="pointer-events-none cursor-default" disabled>
+            <SceneProvider
+                onWebGLError={onWebGLError}
+                ambientLightColor={0x193751}
+                directionalLightPosition={OBJECTS.DIRECTIONAL_LIGHT.position}
+            >
+                <ViewportProvider>
+                    <InteractionProvider>
+                        <Game />
+                    </InteractionProvider>
+                </ViewportProvider>
+            </SceneProvider>
+            <NavButton position={PlacementPosition.RIGHT} class="pointer-events-none cursor-default" disabled>
                 {code}
             </NavButton>
-            <PlannerPanel
-                plans={plans}
-                removePlan={removePlan}
-                renderPlanItem={(item) => item && item.userData["label"]}
-            />
         </>
     )
 }

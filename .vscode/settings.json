@@ -1,6 +1,4 @@
 {
-    "editor.formatOnPaste": true,
-    "editor.formatOnSave": true,
     "[html]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
@@ -24,26 +22,28 @@
         "editor.defaultFormatter": "redhat.vscode-yaml",
         "editor.tabSize": 2
     },
-    "protoc": {
-        "options": [
-            "--proto_path=${workspaceRoot}/internal/pb"
-        ]
-    },
-    "prettier.tabWidth": 4,
+    "css.customData": [
+        ".vscode/tailwind.json"
+    ],
     "editor.detectIndentation": false,
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
+    "prettier.tabWidth": 4,
     "gopls": {
         "build.buildFlags": [
             // "-tags=local_server",
+        ]
+    },
+    "protoc": {
+        "options": [
+            "--proto_path=${workspaceRoot}/internal/pb"
         ]
     },
     "tailwindCSS.classAttributes": [
         "class",
         "className",
         "hintClass"
-    ],
-    "css.customData": [
-        ".vscode/tailwind.json"
     ]
 }

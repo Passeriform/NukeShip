@@ -1,20 +1,37 @@
-import { For, JSX, Match, Show, Switch, VoidComponent, createSignal, mergeProps, onCleanup, onMount } from "solid-js"
+import { For, Match, Show, Switch, VoidComponent, createSignal, onCleanup, onMount } from "solid-js"
 import { twMerge } from "tailwind-merge"
 import TaggedButton from "@components/TaggedButton"
 import { CONTENT } from "@constants/content"
-import { AttackType, Plan } from "@constants/types"
-import Tree from "./tree"
+import { AttackType } from "@constants/types"
+import { usePlanner } from "@providers/Planner"
+import { Sapling } from "./tree"
 
-type PlannerPanelProps = {
-    plans: Plan[]
-    removePlan: (plan: Partial<Plan>) => void
-    renderPlanItem?: (item: Tree) => JSX.Element
+type TargetAttackPlan = {
+    type: typeof AttackType.TARGET
+    source: Sapling
+    destination: Sapling
 }
 
-const PlannerPanel: VoidComponent<PlannerPanelProps> = (_props) => {
-    const props = mergeProps({ renderPlanItem: (item: Tree) => item }, _props)
+type BlendedAttackPlan = {
+    type: typeof AttackType.BLENDED
+    source: Sapling
+}
+
+export type Plan = TargetAttackPlan | BlendedAttackPlan
+
+const PlannerPanel: VoidComponent = () => {
+    const { plans, removePlan } = usePlanner<Plan>()
 
     const [open, setOpen] = createSignal(false)
+
+    const getAccentClass = (plan: Plan) => {
+        switch (plan.type) {
+            case "TARGET":
+                return "bg-nile-blue"
+            case "BLENDED":
+                return "bg-vivid-cerise"
+        }
+    }
 
     const handleMouseMove = (e: MouseEvent) => {
         if (e.clientX < 40) {
@@ -33,7 +50,7 @@ const PlannerPanel: VoidComponent<PlannerPanelProps> = (_props) => {
     })
 
     return (
-        <Show when={props.plans.length}>
+        <Show when={plans().length}>
             <div class="absolute left-0 top-0 h-full">
                 <span
                     class={twMerge(
@@ -50,33 +67,32 @@ const PlannerPanel: VoidComponent<PlannerPanelProps> = (_props) => {
                     )}
                 >
                     <section class="flex flex-col gap-4 p-4">
-                        <For each={props.plans}>
+                        <For each={plans()}>
                             {(plan) => (
                                 <TaggedButton
-                                    accent={{
-                                        text: CONTENT.ATTACKS[plan.type].icon,
-                                        class:
-                                            (plan.type === AttackType.TARGET && "bg-nile-blue") ||
-                                            (plan.type === AttackType.BLENDED && "bg-vivid-cerise") ||
-                                            "",
-                                    }}
-                                    hoverAccent={{ text: "🗑️", class: "bg-red-800" }}
+                                    accentText={CONTENT.ATTACKS[plan.type].icon}
+                                    accentClass={getAccentClass(plan)}
+                                    accentHoverText={CONTENT.MISC.REMOVE_PLAN.icon}
+                                    accentHoverClass="bg-red-800"
                                     class="text-2xl"
-                                    action={() => props.removePlan(plan)}
+                                    action={() => {
+                                        removePlan(plan)
+                                    }}
                                 >
                                     <p class="flex grow flex-col items-center justify-center">
                                         <Switch>
                                             <Match when={plan.type === AttackType.TARGET && plan}>
                                                 {(matched) => (
                                                     <>
-                                                        {props.renderPlanItem(matched().source)}
+                                                        {matched().source.userData.label}
                                                         <span class="rotate-90 transform">↣</span>
-                                                        {props.renderPlanItem(matched().destination)}
+                                                        {/* TODO: Make this wait for the destination to load if not already present */}
+                                                        {matched().destination.userData.label}
                                                     </>
                                                 )}
                                             </Match>
                                             <Match when={plan.type === AttackType.BLENDED && plan}>
-                                                {(matched) => <>{props.renderPlanItem(matched().source)}</>}
+                                                {(matched) => <>{matched().source.userData.label}</>}
                                             </Match>
                                         </Switch>
                                     </p>

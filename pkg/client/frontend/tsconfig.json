@@ -3,7 +3,7 @@
         /* Build properties */
         "target": "ESNext",
         "module": "ESNext",
-        "moduleResolution": "bundler",
+        "moduleResolution": "node",
         "esModuleInterop": true,
         "noEmit": true,
         "isolatedModules": true,
@@ -25,6 +25,7 @@
             "@game/*": ["./src/game/*"],
             "@hooks/*": ["./src/hooks/*"],
             "@pages/*": ["./src/pages/*"],
+            "@providers/*": ["./src/providers/*"],
             "@shaders/*": ["./src/shaders/*"],
             "@utility/*": ["./src/utility/*"],
             "@wails/*": ["./wailsjs/*"]

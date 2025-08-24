@@ -1,10 +1,10 @@
-import { autoUpdate, offset } from "@floating-ui/dom"
+import { autoPlacement, autoUpdate, offset } from "@floating-ui/dom"
 import { combineProps } from "@solid-primitives/props"
 import { useFloating } from "solid-floating-ui"
-import { Component, ComponentProps, JSX, createSignal, mergeProps, splitProps } from "solid-js"
+import { ComponentProps, JSX, ParentComponent, createSignal, mergeProps, splitProps } from "solid-js"
 import { Portal } from "solid-js/web"
 import { twMerge } from "tailwind-merge"
-import Button from "./Button"
+import Button from "@components/Button"
 
 type InfoButtonProps = ComponentProps<typeof Button> & {
     hintTitle: string
@@ -12,18 +12,15 @@ type InfoButtonProps = ComponentProps<typeof Button> & {
     hintClass?: string
 }
 
-const InfoButton: Component<InfoButtonProps> = (_props) => {
-    const [ownProps, _forwardedProps] = splitProps(mergeProps({ hintClass: "" }, _props), [
-        "hintTitle",
-        "hintBody",
-        "hintClass",
-    ])
+const InfoButton: ParentComponent<InfoButtonProps> = (_props) => {
+    const _defaultedProps = mergeProps({ hintClass: "" }, _props)
+    const [ownProps, _forwardedProps] = splitProps(_defaultedProps, ["hintTitle", "hintBody", "hintClass"])
 
     const [tooltipReference, setTooltipReference] = createSignal<HTMLButtonElement>()
     const [tooltipFloating, setTooltipFloating] = createSignal<HTMLElement>()
     const [showTooltip, setShowTooltip] = createSignal(false)
 
-    // NOTE: Exception for any typing due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Exception for type casting due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
     const combinedProps = combineProps(_forwardedProps as any, {
         ref: setTooltipReference,
         onMouseEnter: () => setShowTooltip(true),
@@ -31,9 +28,13 @@ const InfoButton: Component<InfoButtonProps> = (_props) => {
     }) as unknown as typeof _forwardedProps
 
     const floatingResult = useFloating(tooltipReference, tooltipFloating, {
-        placement: "top",
         whileElementsMounted: autoUpdate,
-        middleware: [offset(20)],
+        middleware: [
+            offset(20),
+            autoPlacement({
+                allowedPlacements: ["top", "bottom"],
+            }),
+        ],
     })
 
     return (

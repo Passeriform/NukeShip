@@ -1,11 +1,9 @@
-import { Object3D, Quaternion, Vector3 } from "three"
+import { Object3D, Quaternion } from "three"
 
-const _position = new Vector3()
-const _rotation = new Quaternion()
+const _quaternion = new Quaternion()
 
-export const getWorldPose = (object: Object3D) => {
-    object.getWorldPosition(_position)
-    object.getWorldQuaternion(_rotation)
+export const getWorldQuaternion = (object: Object3D) => {
+    object.getWorldQuaternion(_quaternion)
 
-    return [_position.clone(), _rotation.clone()] as [Vector3, Quaternion]
+    return _quaternion.clone()
 }

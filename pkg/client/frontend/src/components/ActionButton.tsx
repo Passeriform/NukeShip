@@ -1,26 +1,27 @@
 import { combineProps } from "@solid-primitives/props"
 import Mousetrap from "mousetrap"
-import { Component, ComponentProps, For, Show, createEffect, createSignal, onCleanup, splitProps } from "solid-js"
-import InfoButton from "./InfoButton"
-import Shortcut from "./Shortcut"
+import { ComponentProps, For, ParentComponent, Show, createEffect, createSignal, onCleanup, splitProps } from "solid-js"
+import InfoButton from "@components/InfoButton"
+import Shortcut from "@components/Shortcut"
 
 type ActionButtonProps = ComponentProps<typeof InfoButton> & {
     shortcuts: string[]
 }
 
-const ActionButton: Component<ActionButtonProps> = (_props) => {
+const ActionButton: ParentComponent<ActionButtonProps> = (_props) => {
     const [ownProps, _forwardedProps] = splitProps(_props, ["shortcuts"])
 
     const [infoButtonReference, setInfoButtonReference] = createSignal<HTMLButtonElement>()
 
-    // NOTE: Exception for type casting due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Exception for type casting due to combineProps breaking in typescript (https://github.com/solidjs-community/solid-primitives/issues/554)
     const combinedProps = combineProps(_forwardedProps as any, {
         ref: setInfoButtonReference,
     }) as unknown as typeof _forwardedProps
 
     createEffect(() => {
         if (ownProps.shortcuts.length) {
-            Mousetrap.bind(ownProps.shortcuts, () => infoButtonReference()?.click())
+            const clickHandler = () => infoButtonReference()?.click()
+            Mousetrap.bind(ownProps.shortcuts, clickHandler)
         }
 
         onCleanup(() => {
@@ -29,30 +30,28 @@ const ActionButton: Component<ActionButtonProps> = (_props) => {
     })
 
     return (
-        <>
-            <InfoButton
-                {...combinedProps}
-                hintBody={
-                    <>
-                        {combinedProps.hintBody}
-                        <Show when={ownProps.shortcuts.length}>
-                            <p class="my-4 text-xs text-gray-500">
-                                <For each={ownProps.shortcuts}>
-                                    {(shortcut, shortcutIdx) => (
-                                        <>
-                                            <Shortcut shortcut={shortcut} />
-                                            {shortcutIdx() < ownProps.shortcuts!.length - 1 && (
-                                                <span class="mx-2 text-xs">or</span>
-                                            )}
-                                        </>
-                                    )}
-                                </For>
-                            </p>
-                        </Show>
-                    </>
-                }
-            />
-        </>
+        <InfoButton
+            {...combinedProps}
+            hintBody={
+                <>
+                    {combinedProps.hintBody}
+                    <Show when={ownProps.shortcuts.length}>
+                        <p class="my-4 text-xs text-gray-500">
+                            <For each={ownProps.shortcuts}>
+                                {(shortcut, shortcutIdx) => (
+                                    <>
+                                        <Shortcut shortcut={shortcut} />
+                                        {shortcutIdx() < ownProps.shortcuts.length - 1 && (
+                                            <span class="mx-2 text-xs">or</span>
+                                        )}
+                                    </>
+                                )}
+                            </For>
+                        </p>
+                    </Show>
+                </>
+            }
+        />
     )
 }
 

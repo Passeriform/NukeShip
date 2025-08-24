@@ -1,77 +1,61 @@
-import { ComponentProps, ParentComponent, Show, VoidComponent, mergeProps } from "solid-js"
+import { Show, VoidComponent } from "solid-js"
 import ActionButton from "@components/ActionButton"
+import { ActionContent, CONTENT } from "@constants/content"
 import { FocusType, ViewType } from "@constants/types"
-import useViewport from "@game/useViewport"
+import { useViewport } from "@providers/Viewport"
 
-interface ViewportToolbarProps extends ReturnType<typeof useViewport> {
-    renderSlot?: ParentComponent<ComponentProps<typeof ActionButton>>
-}
+const contentToActionButtonProps = (content: ActionContent) => ({
+    hintTitle: content.title,
+    hintBody: content.description,
+    shortcuts: content.shortcuts,
+    children: content.icon,
+})
 
-const ViewportToolbar: VoidComponent<ViewportToolbarProps> = (_props) => {
-    const props = mergeProps({ renderSlot: ActionButton }, _props)
+const ViewportToolbar: VoidComponent = () => {
+    const { viewport, setViewport } = useViewport()
 
     return (
         <Show
-            when={!props.birdsEye()}
+            when={!viewport.birdsEye}
             fallback={
-                <props.renderSlot
-                    hintTitle="Back"
-                    hintBody=""
-                    shortcuts={["esc", "b"]}
+                <ActionButton
+                    {...contentToActionButtonProps(CONTENT.VIEWPORT_ACTIONS.BACK_FROM_BIRDS_EYE_VIEW)}
+                    class="px-8 py-2 text-4xl"
+                    hintClass="w-72"
                     onClick={() => {
-                        props.actions.setBirdsEye(false)
+                        setViewport("birdsEye", false)
                     }}
-                >
-                    ↩️
-                </props.renderSlot>
+                />
             }
         >
-            <props.renderSlot
-                hintTitle="Switch Views"
-                hintBody="Switch between a side (elevation) view or top-down (plan) view"
-                shortcuts={["q"]}
+            <ActionButton
+                {...contentToActionButtonProps(CONTENT.VIEWPORT_ACTIONS.SWITCH_VIEWS)}
+                class="px-8 py-2 text-4xl"
+                hintClass="w-72"
                 onClick={() => {
-                    props.actions.setView(props.view() === ViewType.PLAN ? ViewType.ELEVATION : ViewType.PLAN)
+                    setViewport("view", viewport.view === ViewType.PLAN ? ViewType.ELEVATION : ViewType.PLAN)
                 }}
-            >
-                🔄
-            </props.renderSlot>
-            <Show
-                when={props.focus() === FocusType.SELF}
-                fallback={
-                    <props.renderSlot
-                        hintTitle="Back"
-                        hintBody="Get back to your board"
-                        shortcuts={["esc", "r"]}
-                        onClick={() => {
-                            props.actions.setFocus(FocusType.SELF)
-                        }}
-                    >
-                        ⬅️
-                    </props.renderSlot>
-                }
-            >
-                <props.renderSlot
-                    hintTitle="Peek At Opponent"
-                    hintBody="Peek at the opponent's board"
-                    shortcuts={["r"]}
-                    onClick={() => {
-                        props.actions.setFocus(FocusType.OPPONENT)
-                    }}
-                >
-                    👁️
-                </props.renderSlot>
-            </Show>
-            <props.renderSlot
-                hintTitle="Bird's Eye View"
-                hintBody="Switch to a bird's eye view of the game board."
-                shortcuts={["b"]}
+            />
+            <ActionButton
+                {...contentToActionButtonProps(
+                    viewport.focus === FocusType.SELF
+                        ? CONTENT.VIEWPORT_ACTIONS.PEEK_AT_OPPONENT
+                        : CONTENT.VIEWPORT_ACTIONS.BACK_FROM_PEEK_AT_OPPONENT,
+                )}
+                class="px-8 py-2 text-4xl"
+                hintClass="w-72"
                 onClick={() => {
-                    props.actions.setBirdsEye(true)
+                    setViewport("focus", viewport.focus === FocusType.SELF ? FocusType.OPPONENT : FocusType.SELF)
                 }}
-            >
-                🌍
-            </props.renderSlot>
+            />
+            <ActionButton
+                {...contentToActionButtonProps(CONTENT.VIEWPORT_ACTIONS.BIRDS_EYE_VIEW)}
+                class="px-8 py-2 text-4xl"
+                hintClass="w-72"
+                onClick={() => {
+                    setViewport("birdsEye", true)
+                }}
+            />
         </Show>
     )
 }

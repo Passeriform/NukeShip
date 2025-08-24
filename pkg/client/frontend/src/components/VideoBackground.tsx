@@ -1,6 +1,6 @@
 import { VoidComponent } from "solid-js"
 
-interface VideoBackgroundProps {
+type VideoBackgroundProps = {
     src: string
 }
 

@@ -1,4 +1,4 @@
-import path from "path"
+import path from "node:path"
 import { defineConfig } from "vite"
 import glsl from "vite-plugin-glsl"
 import solid from "vite-plugin-solid"
@@ -17,6 +17,7 @@ export default defineConfig({
             "@game": path.resolve(__dirname, "./src/game"),
             "@hooks": path.resolve(__dirname, "./src/hooks"),
             "@pages": path.resolve(__dirname, "./src/pages"),
+            "@providers": path.resolve(__dirname, "./src/providers"),
             "@shaders": path.resolve(__dirname, "./src/shaders"),
             "@utility": path.resolve(__dirname, "./src/utility"),
             "@wails": path.resolve(__dirname, "./wailsjs"),

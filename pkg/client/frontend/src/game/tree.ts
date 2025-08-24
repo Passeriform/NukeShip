@@ -10,7 +10,6 @@ import {
     Vector3,
     Vector3Tuple,
 } from "three"
-import { boundsFromMeshGeometries } from "@utility/bounds"
 
 // TODO: Fixup according to client structure.
 export type RawDataStream = SaplingMetadata & {
@@ -46,12 +45,12 @@ type SaplingCtorOptions = Partial<{
     depth: number
     colorSeed: number
     position: Vector3Tuple
-    collector: Sapling[][]
+    collector: Record<number, Sapling[]>
 }>
 
 type AddChildSaplingOptions = Required<Pick<SaplingCtorOptions, "depth" | "colorSeed">> & {
     withConnectors?: boolean
-    collector?: Sapling[][]
+    collector?: Record<number, Sapling[]>
 }
 
 export type SaplingMetadata = {
@@ -68,7 +67,7 @@ type SaplingInternalData = {
     ignoreRaycast: boolean
 }
 
-class Sapling extends Mesh {
+export class Sapling extends Mesh {
     declare userData: SaplingMetadata & SaplingInternalData
 
     private static NODE_GEOMETRY = new SphereGeometry(NODE_RADIUS, 64, 64)
@@ -116,23 +115,23 @@ class Sapling extends Mesh {
 
     constructor(
         root: RawDataStream,
-        { depth = 1, colorSeed = 0, position = [0, 0, 0], collector = [] }: SaplingCtorOptions,
+        { depth = 1, colorSeed = 0, position = [0, 0, 0], collector = {} }: SaplingCtorOptions,
     ) {
         super(Sapling.NODE_GEOMETRY, Sapling.NODE_MATERIALS.at(colorSeed % COLORS.length)?.clone())
 
         this.name = Sapling.MESH_NAME
         this.position.fromArray(position)
-        this.userData["label"] = root.label
-        this.userData["power"] = root.power
-        this.userData["shield"] = root.shield
-        this.userData["rechargeRate"] = root.rechargeRate
-        this.userData["sentinel"] = root.sentinel
-        this.userData["depth"] = depth
+        this.userData.label = root.label
+        this.userData.power = root.power
+        this.userData.shield = root.shield
+        this.userData.rechargeRate = root.rechargeRate
+        this.userData.sentinel = root.sentinel
+        this.userData.depth = depth
 
-        if (collector.length < depth) {
-            collector?.push([this])
+        if (collector[depth]) {
+            collector[depth].push(this)
         } else {
-            collector[depth - 1]!.push(this)
+            collector[depth] = [this]
         }
 
         if (!root.children.length) {
@@ -144,17 +143,17 @@ class Sapling extends Mesh {
 
     glow(_value: boolean, _tweenGroup: TweenGroup) {}
 
-    setOpacity(group: TweenGroup, to: number) {
+    setOpacity(tweenGroup: TweenGroup, to: number) {
         ;[this.material, ...this.connectors.map((line) => line.material)]
             .map((material) => material as Material)
-            .forEach((material) =>
-                group.add(
-                    new Tween({ opacity: (this.material as Material).opacity })
+            .forEach((material) => {
+                tweenGroup.add(
+                    new Tween({ opacity: material.opacity })
                         .to({ opacity: to }, 400)
                         .easing(Easing.Cubic.InOut)
                         .onStart(() => {
                             if (to !== 0) {
-                                this.userData["ignoreRaycast"] = false
+                                this.userData.ignoreRaycast = false
                             }
                         })
                         .onUpdate(({ opacity }) => {
@@ -162,43 +161,35 @@ class Sapling extends Mesh {
                         })
                         .onComplete(() => {
                             if (to === 0) {
-                                this.userData["ignoreRaycast"] = true
+                                this.userData.ignoreRaycast = true
                             }
                         })
                         .start(),
-                ),
-            )
+                )
+            })
     }
 }
 
 export class Tree extends Sapling {
-    private positionCollection: Sapling[][] = []
+    public levels: Record<number, Sapling[]>
 
     constructor(root: RawDataStream, colorSeed = 0) {
-        const positionCollection: Sapling[][] = []
+        const levels: Record<number, Sapling[]> = {}
 
-        super(root, { colorSeed, collector: positionCollection })
+        super(root, { colorSeed, collector: levels })
 
-        this.userData["root"] = true
+        this.userData.root = true
 
-        this.positionCollection = positionCollection
+        this.levels = levels
     }
 
-    get levelBounds() {
-        return this.positionCollection.map((level) => boundsFromMeshGeometries(...level))
-    }
+    override setOpacity(tweenGroup: TweenGroup, to: number | ((depth: number) => number)) {
+        Object.entries(this.levels).forEach(([depth, level]) => {
+            const resolvedOpacity = typeof to === "function" ? to(Number(depth)) : to
 
-    get levels() {
-        return this.positionCollection.length
-    }
-
-    resetOpacity(tweenGroup: TweenGroup) {
-        this.traverse((child) => {
-            if (child.name !== Sapling.MESH_NAME || !child.userData["depth"]) {
-                return
-            }
-
-            ;(child as Sapling).setOpacity(tweenGroup, 1)
+            level.forEach((sapling) => {
+                super.setOpacity.apply(sapling, [tweenGroup, resolvedOpacity])
+            })
         })
     }
 }
