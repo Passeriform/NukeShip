@@ -1,5 +1,5 @@
 import { Quaternion, Vector3 } from "three"
-import { CONTENT } from "./content"
+import { CONTENT } from "@constants/content"
 
 export const ViewType = {
     PLAN: "PLAN",

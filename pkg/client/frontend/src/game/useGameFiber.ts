@@ -4,11 +4,11 @@ import { Object3D } from "three"
 import { ExampleFS } from "@constants/sample"
 import { CONTROLS, FLIP_Y_QUATERNION, OBJECTS } from "@constants/statics"
 import { ViewType } from "@constants/types"
+import createTree from "@game/createTree"
+import { Sapling } from "@game/tree"
 import { useInteraction } from "@providers/Interaction"
 import { useScene } from "@providers/Scene"
 import { useViewport } from "@providers/Viewport"
-import { Sapling } from "../game/tree"
-import createTree from "./createTree"
 
 const TREE_OPACITY_TWEEN_RENDER_ID = "TREE_OPACITY_TWEEN"
 
@@ -88,7 +88,7 @@ const useGameFiber = () => {
         }
     })
 
-    const controlsUpdate = (location: Sapling[]) => {
+    const controlsUpdater = () => (location: Sapling[]) => {
         setFocussedSaplings(location)
     }
 
@@ -161,7 +161,7 @@ const useGameFiber = () => {
         })
     })
 
-    return { focussingSelfTree, switchFocussedTree, selectedSapling, controlsItinerary, controlsUpdate }
+    return { focussingSelfTree, switchFocussedTree, selectedSapling, controlsItinerary, controlsUpdater }
 }
 
 export default useGameFiber

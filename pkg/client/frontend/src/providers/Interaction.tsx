@@ -14,7 +14,7 @@ import {
 } from "solid-js"
 import { Store, createStore } from "solid-js/store"
 import { Mesh, Object3D, Raycaster, Vector2 } from "three"
-import { useScene } from "./Scene"
+import { useScene } from "@providers/Scene"
 
 type InteractionState<T extends Mesh> = {
     current: T | undefined

@@ -6,18 +6,19 @@ import NodeDetails from "@game/NodeDetails"
 import PlannerPanel from "@game/PlannerPanel"
 import ViewportToolbar from "@game/ViewportToolbar"
 import { Sapling } from "@game/tree"
-import useControls from "@hooks/useControls"
+import useControls from "@game/useControls"
+import useGameFiber from "@game/useGameFiber"
 import { useInteraction } from "@providers/Interaction"
 import PlannerProvider from "@providers/Planner"
-import useGameFiber from "../hooks/useGameFiber"
 
 const Game = () => {
-    const { focussingSelfTree, selectedSapling, switchFocussedTree, controlsItinerary, controlsUpdate } = useGameFiber()
+    const { focussingSelfTree, selectedSapling, switchFocussedTree, controlsItinerary, controlsUpdater } =
+        useGameFiber()
 
     const { interaction } = useInteraction()
     const { transitioning: cameraTransitioning } = useControls({
         itinerary: controlsItinerary,
-        onLocationChange: controlsUpdate,
+        onLocationChange: controlsUpdater,
     })
 
     const [hoveringSelectionPanel, setHoveringSelectionPanel] = createSignal(false)

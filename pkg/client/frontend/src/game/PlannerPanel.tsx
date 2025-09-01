@@ -3,8 +3,8 @@ import { twMerge } from "tailwind-merge"
 import TaggedButton from "@components/TaggedButton"
 import { CONTENT } from "@constants/content"
 import { AttackType } from "@constants/types"
+import { Sapling } from "@game/tree"
 import { usePlanner } from "@providers/Planner"
-import { Sapling } from "./tree"
 
 type TargetAttackPlan = {
     type: typeof AttackType.TARGET

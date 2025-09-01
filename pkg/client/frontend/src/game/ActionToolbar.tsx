@@ -3,9 +3,9 @@ import ActionButton from "@components/ActionButton"
 import Description from "@components/Description"
 import { CONTENT } from "@constants/content"
 import { AttackType } from "@constants/types"
+import { Plan } from "@game/PlannerPanel"
+import { Sapling } from "@game/tree"
 import { usePlanner } from "@providers/Planner"
-import { Plan } from "./PlannerPanel"
-import { Sapling } from "./tree"
 
 type ActionToolbarProps = {
     source: Sapling
