@@ -1,10 +1,9 @@
 import { ParentComponent, createContext, createEffect, on, useContext } from "solid-js"
 import { SetStoreFunction, createStore } from "solid-js/store"
-import { FocusType, ViewType } from "@constants/types"
+import { ViewType } from "@constants/types"
 
 type ViewportState = {
     birdsEye: boolean
-    focus: FocusType
     view: ViewType
 }
 
@@ -18,12 +17,11 @@ const ViewportContext = createContext<ViewportContextValue>()
 const ViewportProvider: ParentComponent = (props) => {
     const [viewport, setViewport] = createStore<ViewportState>({
         birdsEye: false,
-        focus: FocusType.SELF,
         view: ViewType.PLAN,
     })
 
     createEffect(
-        on([() => viewport.focus, () => viewport.birdsEye], () => {
+        on([() => viewport.birdsEye], () => {
             setViewport("view", ViewType.ELEVATION)
         }),
     )
