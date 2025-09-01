@@ -45,6 +45,7 @@ type SaplingCtorOptions = Partial<{
     depth: number
     colorSeed: number
     position: Vector3Tuple
+    accessPath: string
     collector: Record<number, Sapling[]>
 }>
 
@@ -65,6 +66,7 @@ type SaplingInternalData = {
     root: boolean
     depth: number
     ignoreRaycast: boolean
+    accessPath: string
 }
 
 export class Sapling extends Mesh {
@@ -77,7 +79,7 @@ export class Sapling extends Mesh {
     private static CONNECTOR_MATERIALS = COLORS.map((color) => new LineBasicMaterial({ color, transparent: true }))
     public static MESH_NAME = "TREE_NODE" as const
 
-    public connectors: Line[] = []
+    private connectors: Line[] = []
 
     private populateChildSaplings(
         root: RawDataStream,
@@ -103,6 +105,7 @@ export class Sapling extends Mesh {
         const subSaplings = root.children.map(
             (child, idx) =>
                 new Sapling(child, {
+                    accessPath: `${this.userData.accessPath}|${idx}`,
                     colorSeed: (colorSeed + 1) % COLORS.length,
                     depth: depth + 1,
                     position: childPositions[idx]!,
@@ -115,7 +118,7 @@ export class Sapling extends Mesh {
 
     constructor(
         root: RawDataStream,
-        { depth = 1, colorSeed = 0, position = [0, 0, 0], collector = {} }: SaplingCtorOptions,
+        { accessPath = "", depth = 1, colorSeed = 0, position = [0, 0, 0], collector = {} }: SaplingCtorOptions,
     ) {
         super(Sapling.NODE_GEOMETRY, Sapling.NODE_MATERIALS.at(colorSeed % COLORS.length)?.clone())
 
@@ -127,6 +130,7 @@ export class Sapling extends Mesh {
         this.userData.rechargeRate = root.rechargeRate
         this.userData.sentinel = root.sentinel
         this.userData.depth = depth
+        this.userData.accessPath = accessPath
 
         if (collector[depth]) {
             collector[depth].push(this)
@@ -171,26 +175,60 @@ export class Sapling extends Mesh {
 }
 
 export class Tree extends Sapling {
+    private taintedSaplings = new Set<Sapling>()
+    private baseOpacity: number
     public levels: Record<number, Sapling[]>
 
     constructor(root: RawDataStream, colorSeed = 0) {
-        const levels: Record<number, Sapling[]> = {}
+        const collector: Record<number, Sapling[]> = {}
 
-        super(root, { colorSeed, collector: levels })
+        super(root, { colorSeed, collector })
 
         this.userData.root = true
 
-        this.levels = levels
+        this.levels = collector
+
+        this.baseOpacity = (this.material as Material).opacity
     }
 
-    override setOpacity(tweenGroup: TweenGroup, to: number | ((depth: number) => number)) {
+    traverseLevels(callback: (sapling: Sapling, index: number, depth: number) => void) {
         Object.entries(this.levels).forEach(([depth, level]) => {
-            const resolvedOpacity = typeof to === "function" ? to(Number(depth)) : to
-
-            level.forEach((sapling) => {
-                super.setOpacity.apply(sapling, [tweenGroup, resolvedOpacity])
+            level.forEach((sapling, idx) => {
+                callback(sapling, idx, Number(depth))
             })
         })
+    }
+
+    focus(tweenGroup: TweenGroup, saplings: Sapling[], otherOpacity: number): void
+    focus(tweenGroup: TweenGroup, opacityResolver: (depth: number) => number): void
+    focus(tweenGroup: TweenGroup, ...args: [Sapling[], number] | [(depth: number) => number]) {
+        this.blur(tweenGroup)
+
+        if (args.length === 2) {
+            const [saplings, otherOpacity] = args
+            this.traverseLevels((sapling) => {
+                if (!saplings.includes(sapling)) {
+                    this.taintedSaplings.add(sapling)
+                    sapling.setOpacity(tweenGroup, otherOpacity)
+                }
+            })
+        } else {
+            const [opacityResolver] = args
+            this.traverseLevels((sapling, _, depth) => {
+                const resolvedOpacity = opacityResolver(depth)
+                if (resolvedOpacity !== this.baseOpacity) {
+                    this.taintedSaplings.add(sapling)
+                    sapling.setOpacity(tweenGroup, resolvedOpacity)
+                }
+            })
+        }
+    }
+
+    blur(tweenGroup: TweenGroup) {
+        this.taintedSaplings.forEach((sapling) => {
+            sapling.setOpacity(tweenGroup, this.baseOpacity)
+        })
+        this.taintedSaplings.clear()
     }
 }
 
