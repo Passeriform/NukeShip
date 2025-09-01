@@ -142,6 +142,10 @@ const InteractionProvider = (_props: ParentProps<InteractionProviderProps>) => {
         }),
     )
 
+    createEffect(() => {
+        document.body.style.cursor = interaction.hovered.current ? "pointer" : "default"
+    })
+
     onMount(() => {
         window.addEventListener("mousemove", onHover)
         window.addEventListener("click", onClick)
@@ -159,7 +163,12 @@ const InteractionProvider = (_props: ParentProps<InteractionProviderProps>) => {
     )
 }
 
-export const useInteraction = <T extends Mesh>() => {
+type UseInteractionProps<T extends Mesh> = {
+    root?: Accessor<Object3D | undefined>
+    filter?: Accessor<(meshes: Object3D[]) => T[]>
+}
+
+export const useInteraction = <T extends Mesh>(props?: UseInteractionProps<T>) => {
     const context = useContext<InteractionContextValue<T> | undefined>(
         InteractionContext as Context<InteractionContextValue<T> | undefined>,
     )
@@ -168,11 +177,22 @@ export const useInteraction = <T extends Mesh>() => {
         throw new Error("useInteraction must be used within an InteractionProvider")
     }
 
+    createEffect(() => {
+        if (props?.root) {
+            context.setRoot(props.root())
+        }
+    })
+
+    createEffect(() => {
+        const filter = props?.filter?.()
+        if (filter) {
+            context.setFilter(() => filter)
+        }
+    })
+
     return {
         interaction: context.interaction,
         resetSelected: context.resetSelected,
-        setRoot: context.setRoot,
-        setFilter: context.setFilter,
     }
 }
 
