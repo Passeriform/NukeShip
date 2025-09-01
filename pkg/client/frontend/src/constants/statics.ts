@@ -23,6 +23,7 @@ export const OBJECTS = {
 
 export const CONTROLS = {
     VIEWING_DISTANCE: {
+        BIRDS_EYE: 10,
         ELEVATION: 4,
         PLAN: 2,
         SELECTION: 1,

@@ -1,13 +1,6 @@
 import { Quaternion, Vector3 } from "three"
 import { CONTENT } from "./content"
 
-export const FocusType = {
-    SELF: "SELF",
-    OPPONENT: "OPPONENT",
-} as const
-
-export type FocusType = (typeof FocusType)[keyof typeof FocusType]
-
 export const ViewType = {
     PLAN: "PLAN",
     ELEVATION: "ELEVATION",

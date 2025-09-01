@@ -1,5 +1,5 @@
 import { useParams } from "@solidjs/router"
-import { VoidComponent } from "solid-js"
+import { VoidComponent, onMount } from "solid-js"
 import toast from "solid-toast"
 import NavButton from "@components/NavButton"
 import { OBJECTS } from "@constants/statics"
@@ -17,6 +17,12 @@ const GameBoard: VoidComponent = () => {
 
     const onWebGLError = (errorDiv: HTMLDivElement) =>
         toast.error(<>WebGL is not available {errorDiv}</>, { duration: -1 })
+
+    onMount(() => {
+        window.addEventListener("contextmenu", (event) => {
+            event.preventDefault()
+        })
+    })
 
     return (
         <>

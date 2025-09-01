@@ -7,7 +7,7 @@ import { PlacementPosition } from "@constants/types"
 type PerspectivePanelProps = JSX.HTMLAttributes<HTMLElement> & {
     show: boolean
     position?: PlacementPosition
-    seeThrough?: boolean
+    seeThrough?: boolean | ((hovering: boolean) => boolean)
     transitionTiming?: number
 }
 

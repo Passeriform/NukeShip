@@ -1,7 +1,7 @@
 import { Show, VoidComponent } from "solid-js"
 import ActionButton from "@components/ActionButton"
 import { ActionContent, CONTENT } from "@constants/content"
-import { FocusType, ViewType } from "@constants/types"
+import { ViewType } from "@constants/types"
 import { useViewport } from "@providers/Viewport"
 
 const contentToActionButtonProps = (content: ActionContent) => ({
@@ -11,7 +11,12 @@ const contentToActionButtonProps = (content: ActionContent) => ({
     children: content.icon,
 })
 
-const ViewportToolbar: VoidComponent = () => {
+type ViewportToolbarProps = {
+    focussingSelf: boolean
+    switchFocus: () => void
+}
+
+const ViewportToolbar: VoidComponent<ViewportToolbarProps> = (props) => {
     const { viewport, setViewport } = useViewport()
 
     return (
@@ -38,14 +43,14 @@ const ViewportToolbar: VoidComponent = () => {
             />
             <ActionButton
                 {...contentToActionButtonProps(
-                    viewport.focus === FocusType.SELF
+                    props.focussingSelf
                         ? CONTENT.VIEWPORT_ACTIONS.PEEK_AT_OPPONENT
                         : CONTENT.VIEWPORT_ACTIONS.BACK_FROM_PEEK_AT_OPPONENT,
                 )}
                 class="px-8 py-2 text-4xl"
                 hintClass="w-72"
                 onClick={() => {
-                    setViewport("focus", viewport.focus === FocusType.SELF ? FocusType.OPPONENT : FocusType.SELF)
+                    props.switchFocus()
                 }}
             />
             <ActionButton

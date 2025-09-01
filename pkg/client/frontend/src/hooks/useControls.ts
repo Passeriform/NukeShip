@@ -2,26 +2,26 @@ import TourControls, { MeshPose } from "@passeriform/three-tour-controls"
 import { Accessor, createEffect, createMemo, createSignal, on, onCleanup, onMount } from "solid-js"
 import { Mesh } from "three"
 import { CONTROLS } from "@constants/statics"
-import { ViewType } from "@constants/types"
 import { useInteraction } from "@providers/Interaction"
 import { useScene } from "@providers/Scene"
 import { useViewport } from "@providers/Viewport"
+import { CollisionStrategy } from "@providers/drawDirective"
 import { getWorldQuaternion } from "@utility/pureTransform"
 
 const TOUR_CONTROLS_RENDER_ID = "TOUR_CONTROLS"
 
 type UseControlsProps<T extends Mesh> = {
-    locations: Accessor<MeshPose<T>[]>
+    itinerary: Accessor<MeshPose<T>[]>
+    onLocationChange?: (meshes: T[]) => void
 }
 
-export const useControls = <T extends Mesh>(props: UseControlsProps<T>) => {
+const useControls = <T extends Mesh>(props: UseControlsProps<T>) => {
     const { camera, addDrawDirective } = useScene()
-    const { viewport, setViewport } = useViewport()
+    const { viewport } = useViewport()
     const { interaction, resetSelected } = useInteraction<T>()
 
     const tourControls = new TourControls<T>(camera, window.document.body)
 
-    const [activeLocation, setActiveLocation] = createSignal<T[] | undefined>(undefined)
     const [transitioning, setTransitioning] = createSignal<boolean>(false)
 
     const selectionQuaternion = createMemo(() => {
@@ -41,19 +41,13 @@ export const useControls = <T extends Mesh>(props: UseControlsProps<T>) => {
     }
 
     createEffect(
-        on([() => viewport.birdsEye, () => viewport.focus, () => viewport.view], () => {
+        on([() => viewport.birdsEye, () => viewport.view, () => props.itinerary()], () => {
             tourControls.endDetour()
         }),
     )
 
-    createEffect(
-        on([() => viewport.birdsEye, () => viewport.focus], () => {
-            setViewport("view", ViewType.ELEVATION)
-        }),
-    )
-
     createEffect(() => {
-        tourControls.setItinerary(props.locations())
+        tourControls.setItinerary(props.itinerary())
     })
 
     createEffect(() => {
@@ -71,9 +65,13 @@ export const useControls = <T extends Mesh>(props: UseControlsProps<T>) => {
     })
 
     onMount(() => {
-        addDrawDirective(TOUR_CONTROLS_RENDER_ID, (time) => {
-            tourControls.update(time)
-        })
+        addDrawDirective(
+            TOUR_CONTROLS_RENDER_ID,
+            (time) => {
+                tourControls.update(time)
+            },
+            { onCollision: CollisionStrategy.REPLACE },
+        )
 
         tourControls.detourExitCondition = "first"
         tourControls.detourExitStrategy = "same"
@@ -82,7 +80,7 @@ export const useControls = <T extends Mesh>(props: UseControlsProps<T>) => {
             setTransitioning(transitioning)
         })
         tourControls.addEventListener("navigate", ({ location }) => {
-            setActiveLocation(location)
+            props.onLocationChange?.(location)
         })
         tourControls.addEventListener("detourEnd", () => {
             resetSelected()
@@ -96,7 +94,7 @@ export const useControls = <T extends Mesh>(props: UseControlsProps<T>) => {
         tourControls.dispose()
     })
 
-    return { activeLocation, transitioning }
+    return { transitioning }
 }
 
 export default useControls

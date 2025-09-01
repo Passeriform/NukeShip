@@ -56,7 +56,11 @@ const InfoButton: ParentComponent<InfoButtonProps> = (_props) => {
                     >
                         <h3 class="mb-4 font-title text-2xl">{ownProps.hintTitle}</h3>
                         {/* Change the font of description text from Fugaz to something more legible. Make that the default font instead. */}
-                        {ownProps.hintBody === "string" ? <p class="mb-8">{ownProps.hintBody}</p> : ownProps.hintBody}
+                        {typeof ownProps.hintBody === "string" ? (
+                            <p class="mb-8">{ownProps.hintBody}</p>
+                        ) : (
+                            ownProps.hintBody
+                        )}
                     </div>
                 </Portal>
             )}
