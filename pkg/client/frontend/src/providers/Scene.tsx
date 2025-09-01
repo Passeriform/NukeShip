@@ -19,12 +19,17 @@ import {
     WebGLRenderer,
 } from "three"
 import { getWebGL2ErrorMessage, isWebGL2Available } from "three-stdlib"
-import createDrawDirective, { DRAW_DIRECTIVE_ID, DrawDirective } from "@providers/drawDirective"
+import createDrawDirective, {
+    CollisionStrategy,
+    DRAW_DIRECTIVE_ID,
+    DrawDirective,
+    DrawDirectiveOptions,
+} from "@providers/drawDirective"
 
 type SceneContextValue = {
     camera: PerspectiveCamera
     addToScene: (object: Object3D) => void
-    addDrawDirective: (identifier: string, directive: XRFrameRequestCallback) => void
+    addDrawDirective: (identifier: string, directive: XRFrameRequestCallback, options?: DrawDirectiveOptions) => void
 }
 
 const SceneContext = createContext<SceneContextValue>()
@@ -46,13 +51,17 @@ const SceneProvider: ParentComponent<SceneProviderProps> = (_props) => {
 
     const [drawDirectives, setDrawDirectives] = createSignal<DrawDirective[]>([])
 
-    const addDrawDirective = (identifier: string, call: XRFrameRequestCallback) => {
-        const found = drawDirectives().findIndex((current) => current[DRAW_DIRECTIVE_ID] === identifier)
-        const newDirective = createDrawDirective(identifier, call)
-        if (found === -1) {
-            setDrawDirectives(drawDirectives().concat(newDirective))
+    const addDrawDirective = (identifier: string, call: XRFrameRequestCallback, options?: DrawDirectiveOptions) => {
+        const newDirective = createDrawDirective(identifier, call, options)
+        if (options?.onCollision === CollisionStrategy.REPLACE) {
+            const found = drawDirectives().findIndex((current) => current[DRAW_DIRECTIVE_ID].identifier === identifier)
+            if (found === -1) {
+                setDrawDirectives(drawDirectives().concat(newDirective))
+            } else {
+                setDrawDirectives(drawDirectives().with(found, newDirective))
+            }
         } else {
-            setDrawDirectives(drawDirectives().with(found, newDirective))
+            setDrawDirectives(drawDirectives().concat(newDirective))
         }
     }
 
@@ -111,9 +120,13 @@ const SceneProvider: ParentComponent<SceneProviderProps> = (_props) => {
         sceneMount()
         lightingMount()
 
-        addDrawDirective("renderer", () => {
-            renderer.render(scene, camera)
-        })
+        addDrawDirective(
+            "renderer",
+            () => {
+                renderer.render(scene, camera)
+            },
+            { onCollision: CollisionStrategy.REPLACE },
+        )
 
         renderer.setAnimationLoop(draw)
 
