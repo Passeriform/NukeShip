@@ -96,7 +96,12 @@ const WaitingRoom: VoidComponent = () => {
                     </span>
                 </p>
             </section>
-            <Show when={[pb.RoomState.AWAITING_PLAYERS, pb.RoomState.AWAITING_READY].includes(gameState()!)}>
+            <Show
+                when={
+                    gameState() !== undefined &&
+                    [pb.RoomState.AWAITING_PLAYERS, pb.RoomState.AWAITING_READY].includes(gameState()!)
+                }
+            >
                 <Button class="h-20 w-56" onClick={() => toggleReady()}>
                     {ready() ? "⛌ Unready" : "✓ Ready"}
                 </Button>

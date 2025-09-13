@@ -1,3 +1,4 @@
+import { useInteraction } from "@passeriform/solid-fiber-interaction"
 import { Show, createSignal } from "solid-js"
 import PerspectivePanel from "@components/PerspectivePanel"
 import { PlacementPosition } from "@constants/types"
@@ -8,7 +9,6 @@ import ViewportToolbar from "@game/ViewportToolbar"
 import { Sapling } from "@game/tree"
 import useControls from "@game/useControls"
 import useGameFiber from "@game/useGameFiber"
-import { useInteraction } from "@providers/Interaction"
 import PlannerProvider from "@providers/Planner"
 
 const Game = () => {

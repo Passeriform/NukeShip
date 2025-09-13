@@ -14,7 +14,9 @@
     },
     "dependencies": {
         "@floating-ui/dom": "^1.7.0",
-        "@passeriform/three-tour-controls": "^0.1.12",
+        "@passeriform/three-tour-controls": "^0.1.14",
+        "@passeriform/solid-fiber-scene": "^0.1.0",
+        "@passeriform/solid-fiber-interaction": "^0.1.0",
         "@solid-primitives/presence": "^0.1.2",
         "@solid-primitives/props": "^3.2.2",
         "@solidjs/router": "^0.15.2",

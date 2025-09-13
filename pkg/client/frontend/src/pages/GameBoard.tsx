@@ -1,12 +1,14 @@
+import InteractionProvider from "@passeriform/solid-fiber-interaction"
+import SceneProvider from "@passeriform/solid-fiber-scene"
 import { useParams } from "@solidjs/router"
 import { VoidComponent, onMount } from "solid-js"
 import toast from "solid-toast"
+import { Object3D } from "three"
 import NavButton from "@components/NavButton"
 import { OBJECTS } from "@constants/statics"
 import { PlacementPosition } from "@constants/types"
 import Game from "@game/Game"
-import InteractionProvider from "@providers/Interaction"
-import SceneProvider from "@providers/Scene"
+import { Sapling } from "@game/tree"
 import ViewportProvider from "@providers/Viewport"
 
 // TODO: Cull whole node if it is being partially culled (https://discourse.threejs.org/t/how-to-do-frustum-culling-with-instancedmesh/22633/5).
@@ -32,7 +34,14 @@ const GameBoard: VoidComponent = () => {
                 directionalLightPosition={OBJECTS.DIRECTIONAL_LIGHT.position}
             >
                 <ViewportProvider>
-                    <InteractionProvider>
+                    <InteractionProvider
+                        filter={(meshes: Object3D[]) =>
+                            meshes
+                                .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
+                                .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[]
+                        }
+                        allowEmptySelection={false}
+                    >
                         <Game />
                     </InteractionProvider>
                 </ViewportProvider>

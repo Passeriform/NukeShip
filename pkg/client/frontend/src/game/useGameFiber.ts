@@ -1,13 +1,12 @@
+import { useInteraction } from "@passeriform/solid-fiber-interaction"
+import { useScene } from "@passeriform/solid-fiber-scene"
 import { Group as TweenGroup } from "@tweenjs/tween.js"
 import { createEffect, createMemo, createSignal, on, onMount } from "solid-js"
-import { Object3D } from "three"
 import { ExampleFS } from "@constants/sample"
 import { CONTROLS, FLIP_Y_QUATERNION, OBJECTS } from "@constants/statics"
 import { ViewType } from "@constants/types"
 import createTree from "@game/createTree"
 import { Sapling } from "@game/tree"
-import { useInteraction } from "@providers/Interaction"
-import { useScene } from "@providers/Scene"
 import { useViewport } from "@providers/Viewport"
 
 const TREE_OPACITY_TWEEN_RENDER_ID = "TREE_OPACITY_TWEEN"
@@ -48,10 +47,6 @@ const useGameFiber = () => {
     // [Tree -> Interaction] Focussed tree as root of raycaster hit
     const { interaction } = useInteraction<Sapling>({
         root: focussedTree,
-        filter: () => (meshes: Object3D[]) =>
-            meshes
-                .filter((mesh) => mesh.userData["ignoreRaycast"] !== true)
-                .filter((mesh) => mesh.name === Sapling.MESH_NAME) as Sapling[],
     })
 
     const selectedSapling = () =>
